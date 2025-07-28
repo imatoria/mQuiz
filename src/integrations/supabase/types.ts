@@ -14,7 +14,330 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          class_level: Database["public"]["Enums"]["class_level"]
+          created_at: string
+          file_path: string
+          id: string
+          processing_status: string | null
+          subject_id: string
+          title: string
+          total_pages: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          class_level: Database["public"]["Enums"]["class_level"]
+          created_at?: string
+          file_path: string
+          id?: string
+          processing_status?: string | null
+          subject_id: string
+          title: string
+          total_pages?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          class_level?: Database["public"]["Enums"]["class_level"]
+          created_at?: string
+          file_path?: string
+          id?: string
+          processing_status?: string | null
+          subject_id?: string
+          title?: string
+          total_pages?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_paper_questions: {
+        Row: {
+          id: string
+          question_id: string
+          question_order: number
+          question_paper_id: string
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          question_order: number
+          question_paper_id: string
+        }
+        Update: {
+          id?: string
+          question_id?: string
+          question_order?: number
+          question_paper_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_paper_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_paper_questions_question_paper_id_fkey"
+            columns: ["question_paper_id"]
+            isOneToOne: false
+            referencedRelation: "question_papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_papers: {
+        Row: {
+          class_level: Database["public"]["Enums"]["class_level"]
+          created_at: string
+          difficulty_filter:
+            | Database["public"]["Enums"]["difficulty_level"][]
+            | null
+          id: string
+          subject_id: string
+          time_limit_minutes: number
+          title: string
+          total_questions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          class_level: Database["public"]["Enums"]["class_level"]
+          created_at?: string
+          difficulty_filter?:
+            | Database["public"]["Enums"]["difficulty_level"][]
+            | null
+          id?: string
+          subject_id: string
+          time_limit_minutes: number
+          title: string
+          total_questions: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          class_level?: Database["public"]["Enums"]["class_level"]
+          created_at?: string
+          difficulty_filter?:
+            | Database["public"]["Enums"]["difficulty_level"][]
+            | null
+          id?: string
+          subject_id?: string
+          time_limit_minutes?: number
+          title?: string
+          total_questions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_papers_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          difficulty: Database["public"]["Enums"]["difficulty_level"]
+          document_id: string
+          id: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          page_number: number | null
+          question_text: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          difficulty: Database["public"]["Enums"]["difficulty_level"]
+          document_id: string
+          id?: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          page_number?: number | null
+          question_text: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          document_id?: string
+          id?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          page_number?: number | null
+          question_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_tests: {
+        Row: {
+          assign_to_all: boolean
+          created_at: string
+          creator_id: string
+          end_time: string
+          id: string
+          max_attempts: number
+          question_paper_id: string
+          start_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assign_to_all?: boolean
+          created_at?: string
+          creator_id: string
+          end_time: string
+          id?: string
+          max_attempts?: number
+          question_paper_id: string
+          start_time: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assign_to_all?: boolean
+          created_at?: string
+          creator_id?: string
+          end_time?: string
+          id?: string
+          max_attempts?: number
+          question_paper_id?: string
+          start_time?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_tests_question_paper_id_fkey"
+            columns: ["question_paper_id"]
+            isOneToOne: false
+            referencedRelation: "question_papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      test_assignments: {
+        Row: {
+          assigned_to_user_id: string
+          created_at: string
+          id: string
+          scheduled_test_id: string
+        }
+        Insert: {
+          assigned_to_user_id: string
+          created_at?: string
+          id?: string
+          scheduled_test_id: string
+        }
+        Update: {
+          assigned_to_user_id?: string
+          created_at?: string
+          id?: string
+          scheduled_test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_assignments_scheduled_test_id_fkey"
+            columns: ["scheduled_test_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_attempts: {
+        Row: {
+          answers: Json | null
+          attempt_number: number
+          completed_at: string | null
+          id: string
+          scheduled_test_id: string
+          score: number | null
+          started_at: string
+          total_questions: number | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          attempt_number?: number
+          completed_at?: string | null
+          id?: string
+          scheduled_test_id: string
+          score?: number | null
+          started_at?: string
+          total_questions?: number | null
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          attempt_number?: number
+          completed_at?: string | null
+          id?: string
+          scheduled_test_id?: string
+          score?: number | null
+          started_at?: string
+          total_questions?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_attempts_scheduled_test_id_fkey"
+            columns: ["scheduled_test_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +346,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      class_level:
+        | "1"
+        | "2"
+        | "3"
+        | "4"
+        | "5"
+        | "6"
+        | "7"
+        | "8"
+        | "9"
+        | "10"
+        | "11"
+        | "12"
+      difficulty_level: "easy" | "medium" | "difficult"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +486,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      class_level: [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+      ],
+      difficulty_level: ["easy", "medium", "difficult"],
+    },
   },
 } as const
