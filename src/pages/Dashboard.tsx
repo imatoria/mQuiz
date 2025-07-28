@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { ContentCreation } from '@/components/parent/ContentCreation';
 import { 
   BookOpen, 
   FileText, 
@@ -130,104 +131,7 @@ export const Dashboard = ({ role }: DashboardProps) => {
         );
 
       case 'parent':
-        return (
-          <div className="space-y-6">
-            {/* Parent Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">My Documents</CardTitle>
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">24</div>
-                  <p className="text-xs text-muted-foreground">Course materials uploaded</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Question Papers</CardTitle>
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">Created this month</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Student Results</CardTitle>
-                  <Trophy className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">89%</div>
-                  <p className="text-xs text-muted-foreground">Average score</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Parent Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Plus className="w-5 h-5 mr-2" />
-                    Create New Content
-                  </CardTitle>
-                  <CardDescription>
-                    Upload documents and generate question papers
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button className="w-full justify-start bg-gradient-success">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Course Document
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Generate Question Paper
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Clock className="w-4 h-4 mr-2" />
-                    Schedule Test
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Papers</CardTitle>
-                  <CardDescription>Your latest question papers</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div>
-                        <h4 className="text-sm font-medium">Mathematics - Algebra</h4>
-                        <p className="text-xs text-muted-foreground">Grade 8 • 20 questions</p>
-                      </div>
-                      <Badge variant="secondary">Draft</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div>
-                        <h4 className="text-sm font-medium">Science - Physics</h4>
-                        <p className="text-xs text-muted-foreground">Grade 9 • 15 questions</p>
-                      </div>
-                      <Badge className="bg-success">Active</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div>
-                        <h4 className="text-sm font-medium">English - Grammar</h4>
-                        <p className="text-xs text-muted-foreground">Grade 7 • 25 questions</p>
-                      </div>
-                      <Badge variant="outline">Completed</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
+        return <ContentCreation />;
 
       case 'child':
         return (
