@@ -11,8 +11,10 @@ import {
   Clock, 
   Trophy,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface NavigationProps {
   currentRole: 'admin' | 'parent' | 'child' | null;
@@ -21,6 +23,7 @@ interface NavigationProps {
 
 export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { profile, signOut } = useAuth();
 
   const roleConfig = {
     admin: {
@@ -57,26 +60,26 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
-            {currentRole && (
+            {profile && (
               <div className="flex items-center space-x-2">
-                {React.createElement(roleConfig[currentRole].icon, {
-                  className: "w-4 h-4"
-                })}
-                <span className="text-sm font-medium">
-                  {roleConfig[currentRole].label}
+                <span className="text-sm text-muted-foreground">
+                  {profile.full_name || profile.email}
                 </span>
-                <Badge variant="secondary" className="text-xs">
-                  Active
-                </Badge>
+                {currentRole && (
+                  <Badge variant="secondary" className="text-xs">
+                    {roleConfig[currentRole].label}
+                  </Badge>
+                )}
               </div>
             )}
             
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onRoleChange(null)}
+              onClick={signOut}
             >
-              Switch Role
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
             </Button>
           </div>
 
@@ -94,18 +97,17 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t">
-            {currentRole && (
-              <div className="flex items-center space-x-2 mb-4">
-                {React.createElement(roleConfig[currentRole].icon, {
-                  className: "w-4 h-4"
-                })}
-                <span className="text-sm font-medium">
-                  {roleConfig[currentRole].label}
+          <div className="md:hidden py-4 border-t space-y-3">
+            {profile && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">
+                  {profile.full_name || profile.email}
                 </span>
-                <Badge variant="secondary" className="text-xs">
-                  Active
-                </Badge>
+                {currentRole && (
+                  <Badge variant="secondary" className="text-xs">
+                    {roleConfig[currentRole].label}
+                  </Badge>
+                )}
               </div>
             )}
             
@@ -113,12 +115,13 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
               variant="outline"
               size="sm"
               onClick={() => {
-                onRoleChange(null);
+                signOut();
                 setIsMenuOpen(false);
               }}
               className="w-full"
             >
-              Switch Role
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
             </Button>
           </div>
         )}

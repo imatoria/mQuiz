@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_providers: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          provider_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          provider_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          provider_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           class_level: Database["public"]["Enums"]["class_level"]
@@ -60,6 +90,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parent_child_relationships: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          parent_id: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id?: string
+          parent_id: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          is_approved: boolean
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          is_approved?: boolean
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          is_approved?: boolean
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       question_paper_questions: {
         Row: {
@@ -334,6 +421,41 @@ export type Database = {
             columns: ["scheduled_test_id"]
             isOneToOne: false
             referencedRelation: "scheduled_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_ai_provider_keys: {
+        Row: {
+          ai_provider_id: string
+          created_at: string
+          encrypted_api_key: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_provider_id: string
+          created_at?: string
+          encrypted_api_key: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_provider_id?: string
+          created_at?: string
+          encrypted_api_key?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ai_provider_keys_ai_provider_id_fkey"
+            columns: ["ai_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
             referencedColumns: ["id"]
           },
         ]
