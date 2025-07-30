@@ -56,27 +56,31 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
       // Get children associated with this parent
       const { data: relationships, error: relError } = await supabase
         .from('parent_child_relationships')
-        .select(`
-          child_id,
-          profiles!parent_child_relationships_child_id_fkey(
-            id,
-            user_id,
-            email,
-            full_name,
-            is_approved
-          )
-        `)
+        .select('child_id')
         .eq('parent_id', user.user.id);
 
       if (relError) throw relError;
 
-      const childrenData = relationships?.map(rel => ({
-        id: rel.profiles?.user_id || '',
-        name: rel.profiles?.full_name || rel.profiles?.email || 'Unnamed Child',
-        email: rel.profiles?.email || ''
-      })).filter(child => child.id) || [];
+      if (relationships && relationships.length > 0) {
+        const childIds = relationships.map(rel => rel.child_id);
+        
+        const { data: childrenData, error: childrenError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('user_id', childIds);
 
-      setChildren(childrenData);
+        if (childrenError) throw childrenError;
+        
+        const formattedChildren = childrenData?.map(child => ({
+          id: child.user_id,
+          name: child.full_name || child.email || 'Unnamed Child',
+          email: child.email || ''
+        })) || [];
+
+        setChildren(formattedChildren);
+      } else {
+        setChildren([]);
+      }
     } catch (error: any) {
       console.error('Error fetching children:', error);
       setChildren([]);

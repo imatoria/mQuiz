@@ -55,22 +55,25 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
       const { data: relationships, error: relError } = await supabase
         .from('parent_child_relationships')
         .select(`
-          child_id,
-          profiles!parent_child_relationships_child_id_fkey(
-            id,
-            user_id,
-            email,
-            full_name,
-            is_approved,
-            created_at
-          )
+          child_id
         `)
         .eq('parent_id', user.user.id);
 
       if (relError) throw relError;
 
-      const childrenData = relationships?.map(rel => rel.profiles).filter(Boolean) || [];
-      setChildren(childrenData as Child[]);
+      if (relationships && relationships.length > 0) {
+        const childIds = relationships.map(rel => rel.child_id);
+        
+        const { data: childrenData, error: childrenError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('user_id', childIds);
+
+        if (childrenError) throw childrenError;
+        setChildren(childrenData || []);
+      } else {
+        setChildren([]);
+      }
     } catch (error: any) {
       toast({
         title: "Error fetching children",
@@ -103,7 +106,7 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
         .from('profiles')
         .select('*')
         .eq('email', newChildEmail)
-        .single();
+        .maybeSingle();
 
       let childUserId: string;
 

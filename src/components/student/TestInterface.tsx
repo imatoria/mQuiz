@@ -132,7 +132,7 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
             correct_answer
           )
         `)
-        .eq('question_paper_id', test.question_papers.id)
+        .eq('question_paper_id', test.id)
         .order('question_order');
 
       if (questionsError) throw questionsError;
