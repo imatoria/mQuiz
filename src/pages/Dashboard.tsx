@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ContentCreation } from '@/components/parent/ContentCreation';
+import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { 
   BookOpen, 
   FileText, 
@@ -134,143 +135,7 @@ export const Dashboard = ({ role }: DashboardProps) => {
         return <ContentCreation />;
 
       case 'child':
-        return (
-          <div className="space-y-6">
-            {/* Child Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Tests Available</CardTitle>
-                  <PlayCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">7</div>
-                  <p className="text-xs text-muted-foreground">Ready to attempt</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">23</div>
-                  <p className="text-xs text-muted-foreground">This semester</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-                  <Trophy className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">85%</div>
-                  <p className="text-xs text-success">+5% improvement</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Available Tests */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <PlayCircle className="w-5 h-5 mr-2" />
-                  Available Tests
-                </CardTitle>
-                <CardDescription>
-                  Tests ready for you to attempt
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
-                    <div className="flex-1">
-                      <h4 className="font-medium">Mathematics - Quadratic Equations</h4>
-                      <p className="text-sm text-muted-foreground">Grade 9 • 20 questions • 45 minutes</p>
-                      <div className="flex items-center mt-2 space-x-4">
-                        <Badge variant="outline">Medium</Badge>
-                        <span className="text-xs text-muted-foreground flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          Due: Tomorrow 5:00 PM
-                        </span>
-                      </div>
-                    </div>
-                    <Button className="bg-quiz">
-                      Start Test
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
-                    <div className="flex-1">
-                      <h4 className="font-medium">Science - Chemical Reactions</h4>
-                      <p className="text-sm text-muted-foreground">Grade 9 • 15 questions • 30 minutes</p>
-                      <div className="flex items-center mt-2 space-x-4">
-                        <Badge variant="outline">Easy</Badge>
-                        <span className="text-xs text-muted-foreground flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          Due: Friday 3:00 PM
-                        </span>
-                      </div>
-                    </div>
-                    <Button variant="outline">
-                      Start Test
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
-                    <div className="flex-1">
-                      <h4 className="font-medium">English - Literature Analysis</h4>
-                      <p className="text-sm text-muted-foreground">Grade 9 • 18 questions • 40 minutes</p>
-                      <div className="flex items-center mt-2 space-x-4">
-                        <Badge variant="outline">Hard</Badge>
-                        <span className="text-xs text-muted-foreground flex items-center">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Scheduled for next week
-                        </span>
-                      </div>
-                    </div>
-                    <Button disabled>
-                      Not Available
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Results */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Results</CardTitle>
-                <CardDescription>Your latest test performances</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
-                      <h4 className="text-sm font-medium">Physics - Motion</h4>
-                      <p className="text-xs text-muted-foreground">Completed 2 days ago</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-success">92%</div>
-                      <Badge className="bg-success text-xs">Excellent</Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
-                      <h4 className="text-sm font-medium">History - World Wars</h4>
-                      <p className="text-xs text-muted-foreground">Completed 1 week ago</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-warning">78%</div>
-                      <Badge variant="outline" className="text-xs">Good</Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <StudentDashboard />;
 
       default:
         return null;
