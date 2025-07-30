@@ -49,14 +49,38 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
   };
 
   const fetchChildren = async () => {
-    // For demo purposes, we'll create mock children data
-    // In a real app, you'd fetch this from a profiles/users table with role filtering
-    const mockChildren = [
-      { id: '1', name: 'Alice Johnson', email: 'alice@example.com' },
-      { id: '2', name: 'Bob Smith', email: 'bob@example.com' },
-      { id: '3', name: 'Charlie Brown', email: 'charlie@example.com' },
-    ];
-    setChildren(mockChildren);
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      // Get children associated with this parent
+      const { data: relationships, error: relError } = await supabase
+        .from('parent_child_relationships')
+        .select(`
+          child_id,
+          profiles!parent_child_relationships_child_id_fkey(
+            id,
+            user_id,
+            email,
+            full_name,
+            is_approved
+          )
+        `)
+        .eq('parent_id', user.user.id);
+
+      if (relError) throw relError;
+
+      const childrenData = relationships?.map(rel => ({
+        id: rel.profiles?.user_id || '',
+        name: rel.profiles?.full_name || rel.profiles?.email || 'Unnamed Child',
+        email: rel.profiles?.email || ''
+      })).filter(child => child.id) || [];
+
+      setChildren(childrenData);
+    } catch (error: any) {
+      console.error('Error fetching children:', error);
+      setChildren([]);
+    }
   };
 
   const handleChildSelection = (childId: string, checked: boolean) => {

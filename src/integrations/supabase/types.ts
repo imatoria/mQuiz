@@ -44,10 +44,53 @@ export type Database = {
         }
         Relationships: []
       }
-      documents: {
+      books: {
         Row: {
           class_level: Database["public"]["Enums"]["class_level"]
           created_at: string
+          description: string | null
+          id: string
+          subject_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          class_level: Database["public"]["Enums"]["class_level"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          subject_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          class_level?: Database["public"]["Enums"]["class_level"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          subject_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "books_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          book_id: string | null
+          class_level: Database["public"]["Enums"]["class_level"]
+          created_at: string
+          document_order: number | null
           file_path: string
           id: string
           processing_status: string | null
@@ -58,8 +101,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          book_id?: string | null
           class_level: Database["public"]["Enums"]["class_level"]
           created_at?: string
+          document_order?: number | null
           file_path: string
           id?: string
           processing_status?: string | null
@@ -70,8 +115,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          book_id?: string | null
           class_level?: Database["public"]["Enums"]["class_level"]
           created_at?: string
+          document_order?: number | null
           file_path?: string
           id?: string
           processing_status?: string | null
@@ -82,6 +129,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_subject_id_fkey"
             columns: ["subject_id"]
@@ -192,6 +246,8 @@ export type Database = {
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
           id: string
+          max_questions_per_page: number | null
+          min_questions_per_page: number | null
           subject_id: string
           time_limit_minutes: number
           title: string
@@ -206,6 +262,8 @@ export type Database = {
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
           id?: string
+          max_questions_per_page?: number | null
+          min_questions_per_page?: number | null
           subject_id: string
           time_limit_minutes: number
           title: string
@@ -220,6 +278,8 @@ export type Database = {
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
           id?: string
+          max_questions_per_page?: number | null
+          min_questions_per_page?: number | null
           subject_id?: string
           time_limit_minutes?: number
           title?: string

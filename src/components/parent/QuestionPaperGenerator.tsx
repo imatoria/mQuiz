@@ -19,6 +19,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   const [classLevel, setClassLevel] = useState('');
   const [totalQuestions, setTotalQuestions] = useState('');
   const [timeLimit, setTimeLimit] = useState('');
+  const [minQuestionsPerPage, setMinQuestionsPerPage] = useState('1');
+  const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState('10');
   const [difficulties, setDifficulties] = useState<('easy' | 'medium' | 'difficult')[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [availableQuestions, setAvailableQuestions] = useState(0);
@@ -65,7 +67,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   };
 
   const handleGenerate = async () => {
-    if (!title || !subject || !classLevel || !totalQuestions || !timeLimit || difficulties.length === 0) {
+    if (!title || !subject || !classLevel || !totalQuestions || !timeLimit || !minQuestionsPerPage || !maxQuestionsPerPage || difficulties.length === 0) {
       toast({
         title: "Missing information",
         description: "Please fill in all fields.",
@@ -75,6 +77,18 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
     }
 
     const questionsNeeded = parseInt(totalQuestions);
+    const minPerPage = parseInt(minQuestionsPerPage);
+    const maxPerPage = parseInt(maxQuestionsPerPage);
+
+    if (minPerPage > maxPerPage) {
+      toast({
+        title: "Invalid pagination settings",
+        description: "Minimum questions per page cannot be greater than maximum questions per page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (questionsNeeded > availableQuestions) {
       toast({
         title: "Not enough questions",
@@ -100,6 +114,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
           class_level: classLevel as any,
           total_questions: questionsNeeded,
           time_limit_minutes: parseInt(timeLimit),
+          min_questions_per_page: minPerPage,
+          max_questions_per_page: maxPerPage,
           difficulty_filter: difficulties
         })
         .select()
@@ -146,6 +162,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       setClassLevel('');
       setTotalQuestions('');
       setTimeLimit('');
+      setMinQuestionsPerPage('1');
+      setMaxQuestionsPerPage('10');
       setDifficulties([]);
       onPaperGenerated();
 
@@ -215,7 +233,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="questions">Number of Questions</Label>
+            <Label htmlFor="questions">Total Questions</Label>
             <Input
               id="questions"
               type="number"
@@ -234,6 +252,32 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
               value={timeLimit}
               onChange={(e) => setTimeLimit(e.target.value)}
               placeholder="e.g., 60"
+              min="1"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="minPerPage">Minimum Questions per Page</Label>
+            <Input
+              id="minPerPage"
+              type="number"
+              value={minQuestionsPerPage}
+              onChange={(e) => setMinQuestionsPerPage(e.target.value)}
+              placeholder="e.g., 1"
+              min="1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="maxPerPage">Maximum Questions per Page</Label>
+            <Input
+              id="maxPerPage"
+              type="number"
+              value={maxQuestionsPerPage}
+              onChange={(e) => setMaxQuestionsPerPage(e.target.value)}
+              placeholder="e.g., 10"
               min="1"
             />
           </div>
@@ -263,9 +307,9 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
           </div>
         )}
 
-        <Button 
-          onClick={handleGenerate} 
-          disabled={!title || !subject || !classLevel || !totalQuestions || !timeLimit || difficulties.length === 0 || isGenerating}
+        <Button
+          onClick={handleGenerate}
+          disabled={!title || !subject || !classLevel || !totalQuestions || !timeLimit || !minQuestionsPerPage || !maxQuestionsPerPage || difficulties.length === 0 || isGenerating}
           className="w-full"
         >
           {isGenerating ? (

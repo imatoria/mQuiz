@@ -185,3 +185,38 @@ CREATE TRIGGER update_user_ai_provider_keys_updated_at
 BEFORE UPDATE ON public.user_ai_provider_keys
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Create books table for organizing documents
+CREATE TABLE public.books (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  subject_id UUID REFERENCES public.subjects(id) NOT NULL,
+  class_level class_level NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Enable RLS for books
+ALTER TABLE public.books ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for books
+CREATE POLICY "Users can view their own books" ON public.books FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create their own books" ON public.books FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own books" ON public.books FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own books" ON public.books FOR DELETE USING (auth.uid() = user_id);
+
+-- Add book_id and document_order to documents table
+ALTER TABLE public.documents ADD COLUMN book_id UUID REFERENCES public.books(id) ON DELETE SET NULL;
+ALTER TABLE public.documents ADD COLUMN document_order INTEGER DEFAULT 0;
+
+-- Add question pagination settings to question_papers table
+ALTER TABLE public.question_papers ADD COLUMN min_questions_per_page INTEGER DEFAULT 1;
+ALTER TABLE public.question_papers ADD COLUMN max_questions_per_page INTEGER DEFAULT 10;
+
+-- Create trigger for books updated_at
+CREATE TRIGGER update_books_updated_at
+BEFORE UPDATE ON public.books
+FOR EACH ROW
+EXECUTE FUNCTION public.update_updated_at_column();

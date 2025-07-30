@@ -5,6 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { DocumentUpload } from './DocumentUpload';
 import { QuestionPaperGenerator } from './QuestionPaperGenerator';
 import { TestScheduler } from './TestScheduler';
+import { ChildrenManagement } from './ChildrenManagement';
+import { BookManagement } from './BookManagement';
+import { AIProviderSettings } from './AIProviderSettings';
 import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -97,10 +100,13 @@ export const ContentCreation = () => {
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="upload">Upload Documents</TabsTrigger>
+          <TabsTrigger value="books">Manage Books</TabsTrigger>
           <TabsTrigger value="generate">Generate Papers</TabsTrigger>
           <TabsTrigger value="schedule">Schedule Tests</TabsTrigger>
+          <TabsTrigger value="children">Manage Children</TabsTrigger>
+          <TabsTrigger value="settings">AI Settings</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
         </TabsList>
 
@@ -143,6 +149,10 @@ export const ContentCreation = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="books" className="space-y-6">
+          <BookManagement onBooksUpdate={handleRefresh} />
         </TabsContent>
 
         <TabsContent value="generate" className="space-y-6">
@@ -215,6 +225,14 @@ export const ContentCreation = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="children" className="space-y-6">
+          <ChildrenManagement onChildrenUpdate={handleRefresh} />
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <AIProviderSettings onSettingsUpdate={handleRefresh} />
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
