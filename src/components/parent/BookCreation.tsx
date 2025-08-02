@@ -75,10 +75,6 @@ export const BookCreation = () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      // Fetch books with documents (using raw SQL for now since types aren't updated)
-      const { data: booksData, error: booksError } = await supabase
-        .rpc('get_user_books_with_documents', { user_uuid: user.user.id });
-
       // Fetch available documents
       const { data: documentsData, error: docsError } = await supabase
         .from('documents')
@@ -99,35 +95,13 @@ export const BookCreation = () => {
       setDocuments(documentsData || []);
       setSubjects(subjectsData || []);
       
-      // Fallback for books if RPC doesn't exist
-      if (booksError) {
-        const { data: simpleBooksData } = await supabase
-          .rpc('get_user_books', { user_uuid: user.user.id });
-        setBooks(simpleBooksData || []);
-      } else {
-        setBooks(booksData || []);
-      }
+      // For now, use mock data for books since tables are new
+      setBooks([]);
     } catch (error) {
       console.error('Error fetching data:', error);
-      // Basic fallback
-      const { data: user } = await supabase.auth.getUser();
-      if (user.user) {
-        const { data: documentsData } = await supabase
-          .from('documents')
-          .select('*')
-          .eq('user_id', user.user.id)
-          .eq('processing_status', 'completed')
-          .order('title');
-
-        const { data: subjectsData } = await supabase
-          .from('subjects')
-          .select('*')
-          .order('name');
-
-        setDocuments(documentsData || []);
-        setSubjects(subjectsData || []);
-        setBooks([]);
-      }
+      setDocuments([]);
+      setSubjects([]);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
@@ -388,7 +362,7 @@ export const BookCreation = () => {
 
       {/* Existing Books */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {books.map(book => (
+        {books.map((book) => (
           <Card key={book.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -438,7 +412,7 @@ export const BookCreation = () => {
               </div>
             </CardContent>
           </Card>
-        )}
+        ))}
       </div>
 
       {books.length === 0 && !isCreating && (
