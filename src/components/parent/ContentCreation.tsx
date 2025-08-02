@@ -8,6 +8,9 @@ import { TestScheduler } from './TestScheduler';
 import { ChildrenManagement } from './ChildrenManagement';
 import { BookManagement } from './BookManagement';
 import { AIProviderSettings } from './AIProviderSettings';
+import QuestionBank from './QuestionBank';
+import QuestionAnalytics from './QuestionAnalytics';
+import BulkQuestionOperations from './BulkQuestionOperations';
 import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -100,12 +103,15 @@ export const ContentCreation = () => {
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="upload">Upload Documents</TabsTrigger>
-          <TabsTrigger value="books">Manage Books</TabsTrigger>
-          <TabsTrigger value="generate">Generate Papers</TabsTrigger>
-          <TabsTrigger value="schedule">Schedule Tests</TabsTrigger>
-          <TabsTrigger value="children">Manage Children</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+          <TabsTrigger value="upload">Upload</TabsTrigger>
+          <TabsTrigger value="books">Books</TabsTrigger>
+          <TabsTrigger value="generate">Papers</TabsTrigger>
+          <TabsTrigger value="questions">Question Bank</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="bulk">Bulk Ops</TabsTrigger>
+          <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          <TabsTrigger value="children">Children</TabsTrigger>
           <TabsTrigger value="settings">AI Settings</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
         </TabsList>
@@ -225,6 +231,18 @@ export const ContentCreation = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="questions" className="space-y-6">
+          <QuestionBank onQuestionUpdate={handleRefresh} />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <QuestionAnalytics />
+        </TabsContent>
+
+        <TabsContent value="bulk" className="space-y-6">
+          <BulkQuestionOperations />
         </TabsContent>
 
         <TabsContent value="children" className="space-y-6">
