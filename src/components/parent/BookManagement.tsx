@@ -101,8 +101,8 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
 
   const getFilteredDocuments = () => {
     return documents.filter(doc => {
-      if (selectedSubject && doc.subject_id !== selectedSubject) return false;
-      if (selectedClass && doc.class_level !== selectedClass) return false;
+      if (selectedSubject && selectedSubject !== 'all' && doc.subject_id !== selectedSubject) return false;
+      if (selectedClass && selectedClass !== 'all' && doc.class_level !== selectedClass) return false;
       return true;
     });
   };
@@ -166,7 +166,7 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
                   <SelectValue placeholder="All subjects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All subjects</SelectItem>
+                  <SelectItem value="all">All subjects</SelectItem>
                   {subjects.map((subject) => (
                     <SelectItem key={subject.id} value={subject.id}>
                       {subject.name}
@@ -183,7 +183,7 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
                   <SelectValue placeholder="All classes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All classes</SelectItem>
+                  <SelectItem value="all">All classes</SelectItem>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((level) => (
                     <SelectItem key={level} value={level.toString()}>
                       Class {level}

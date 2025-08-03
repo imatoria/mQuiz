@@ -104,9 +104,9 @@ export const DocumentLibrary = () => {
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = !selectedSubject || doc.subject_id === selectedSubject;
-    const matchesClass = !selectedClass || doc.class_level === selectedClass;
-    const matchesStatus = !selectedStatus || doc.processing_status === selectedStatus;
+    const matchesSubject = !selectedSubject || selectedSubject === 'all' || doc.subject_id === selectedSubject;
+    const matchesClass = !selectedClass || selectedClass === 'all' || doc.class_level === selectedClass;
+    const matchesStatus = !selectedStatus || selectedStatus === 'all' || doc.processing_status === selectedStatus;
 
     return matchesSearch && matchesSubject && matchesClass && matchesStatus;
   });
@@ -158,7 +158,7 @@ export const DocumentLibrary = () => {
               <SelectValue placeholder="All Subjects" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Subjects</SelectItem>
+              <SelectItem value="all">All Subjects</SelectItem>
               {subjects.map(subject => (
                 <SelectItem key={subject.id} value={subject.id}>
                   {subject.name}
@@ -172,7 +172,7 @@ export const DocumentLibrary = () => {
               <SelectValue placeholder="All Classes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Classes</SelectItem>
+              <SelectItem value="all">All Classes</SelectItem>
               {Array.from({ length: 12 }, (_, i) => (
                 <SelectItem key={i + 1} value={(i + 1).toString()}>
                   Class {i + 1}
@@ -186,7 +186,7 @@ export const DocumentLibrary = () => {
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="processing">Processing</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
