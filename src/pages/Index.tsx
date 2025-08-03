@@ -83,10 +83,24 @@ const Index = () => {
     );
   }
 
+  // Don't render if profile isn't loaded yet
+  if (!profile?.role) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <Card className="w-96">
+          <CardContent className="pt-6 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading profile...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Navigation currentRole={profile?.role || 'child'} onRoleChange={() => signOut()} />
-      <Dashboard role={profile?.role || 'child'} />
+      <Navigation currentRole={profile.role} onRoleChange={() => signOut()} />
+      <Dashboard role={profile.role} />
     </div>
   );
 };
