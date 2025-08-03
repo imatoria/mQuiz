@@ -44,10 +44,170 @@ export type Database = {
         }
         Relationships: []
       }
+      book_documents: {
+        Row: {
+          book_id: string
+          chapter_number: number
+          chapter_title: string | null
+          created_at: string
+          document_id: string
+          id: string
+          order_index: number
+        }
+        Insert: {
+          book_id: string
+          chapter_number: number
+          chapter_title?: string | null
+          created_at?: string
+          document_id: string
+          id?: string
+          order_index: number
+        }
+        Update: {
+          book_id?: string
+          chapter_number?: number
+          chapter_title?: string | null
+          created_at?: string
+          document_id?: string
+          id?: string
+          order_index?: number
+        }
+        Relationships: []
+      }
+      books: {
+        Row: {
+          author_id: string
+          class_level: Database["public"]["Enums"]["class_level"]
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          subject_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          class_level: Database["public"]["Enums"]["class_level"]
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          subject_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          class_level?: Database["public"]["Enums"]["class_level"]
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          subject_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_shares: {
+        Row: {
+          created_at: string
+          document_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          permission_level: string
+          shared_by: string
+          shared_with: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          permission_level?: string
+          shared_by: string
+          shared_with: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          permission_level?: string
+          shared_by?: string
+          shared_with?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_tags: {
+        Row: {
+          created_at: string
+          document_id: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: []
+      }
+      document_versions: {
+        Row: {
+          changes_description: string | null
+          created_at: string
+          created_by: string
+          document_id: string
+          file_path: string
+          id: string
+          title: string
+          version_number: number
+        }
+        Insert: {
+          changes_description?: string | null
+          created_at?: string
+          created_by: string
+          document_id: string
+          file_path: string
+          id?: string
+          title: string
+          version_number: number
+        }
+        Update: {
+          changes_description?: string | null
+          created_at?: string
+          created_by?: string
+          document_id?: string
+          file_path?: string
+          id?: string
+          title?: string
+          version_number?: number
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           class_level: Database["public"]["Enums"]["class_level"]
           created_at: string
+          current_version: number | null
           file_path: string
           id: string
           processing_status: string | null
@@ -60,6 +220,7 @@ export type Database = {
         Insert: {
           class_level: Database["public"]["Enums"]["class_level"]
           created_at?: string
+          current_version?: number | null
           file_path: string
           id?: string
           processing_status?: string | null
@@ -72,6 +233,7 @@ export type Database = {
         Update: {
           class_level?: Database["public"]["Enums"]["class_level"]
           created_at?: string
+          current_version?: number | null
           file_path?: string
           id?: string
           processing_status?: string | null
@@ -347,6 +509,30 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
           id?: string
           name?: string
         }
