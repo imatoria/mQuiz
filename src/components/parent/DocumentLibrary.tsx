@@ -102,6 +102,45 @@ export const DocumentLibrary = () => {
     }
   };
 
+  const handleRegenerateQuestions = async (documentId: string) => {
+    try {
+      // Update status to processing
+      await supabase
+        .from('documents')
+        .update({ processing_status: 'processing' })
+        .eq('id', documentId);
+
+      // Delete existing questions for this document
+      await supabase
+        .from('questions')
+        .delete()
+        .eq('document_id', documentId);
+
+      // Call the process document function
+      const { error } = await supabase.functions.invoke('process-document', {
+        body: { documentId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Questions are being regenerated for this document.",
+      });
+
+      // Refresh the documents list
+      fetchData();
+
+    } catch (error) {
+      console.error('Error regenerating questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to regenerate questions. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSubject = !selectedSubject || selectedSubject === 'all' || doc.subject_id === selectedSubject;
@@ -285,9 +324,21 @@ export const DocumentLibrary = () => {
                           <BookOpen className="h-4 w-4 mr-2" />
                           Add to Book
                         </Button>
-                        <Button size="sm" variant="outline">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
+                        {document.processing_status === 'failed' ? (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleRegenerateQuestions(document.id)}
+                            className="flex-1"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Retry
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline">
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
 
                       <div className="text-xs text-muted-foreground">

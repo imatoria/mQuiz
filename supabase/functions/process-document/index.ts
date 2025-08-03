@@ -119,9 +119,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let documentId;
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { documentId } = await req.json();
+    const body = await req.json();
+    documentId = body.documentId;
 
     console.log('Processing document:', documentId);
 
@@ -281,6 +283,20 @@ Ensure you create exactly 5 questions per page with a mix of difficulty levels.`
 
   } catch (error) {
     console.error('Error in process-document function:', error);
+    
+    // Update document status to failed if we have the documentId
+    if (documentId) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        await supabase
+          .from('documents')
+          .update({ processing_status: 'failed' })
+          .eq('id', documentId);
+      } catch (updateError) {
+        console.error('Failed to update document status:', updateError);
+      }
+    }
+    
     return new Response(JSON.stringify({ 
       error: error.message 
     }), {
