@@ -44,7 +44,7 @@ async function callOpenAI(apiKey: string, prompt: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: 'gpt-4.1-2025-04-14',
       messages: [
         {
           role: 'system',
@@ -176,41 +176,18 @@ serve(async (req) => {
       }
     }
 
-    // Get the file from storage
-    const { data: fileData, error: fileError } = await supabase.storage
-      .from('documents')
-      .download(document.file_path);
+    // Skip file processing for now - just generate sample questions based on title and subject
+    console.log(`Generating questions for document: ${document.title}`);
 
-    if (fileError) {
-      throw new Error('Failed to download file');
-    }
-
-    // Check file size limit (10MB max)
-    const arrayBuffer = await fileData.arrayBuffer();
-    const fileSize = arrayBuffer.byteLength;
-    
-    if (fileSize > 10 * 1024 * 1024) {
-      throw new Error('File too large. Maximum size is 10MB.');
-    }
-
-    // Convert file to base64 safely
-    const uint8Array = new Uint8Array(arrayBuffer);
-    let base64 = '';
-    const chunkSize = 8192;
-    
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, i + chunkSize);
-      base64 += btoa(String.fromCharCode(...chunk));
-    }
-
-    // Create prompt for AI - simplified to avoid recursion
-    const prompt = `Analyze this PDF document and generate 3 multiple choice questions. 
+    // Create prompt for AI based on document metadata
+    const prompt = `Generate 3 multiple choice questions for a document titled "${document.title}". 
 
 Requirements:
-- Create exactly 3 questions total (not per page)
-- Mix of difficulty: 1 easy, 1 medium, 1 difficult
+- Create exactly 3 questions total
+- Mix of difficulty: 1 easy, 1 medium, 1 difficult  
 - 4 options each (A, B, C, D)
 - Clear correct answer
+- Make questions relevant to the document title
 
 Return ONLY valid JSON in this exact format:
 [
