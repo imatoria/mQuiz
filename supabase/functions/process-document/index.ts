@@ -74,7 +74,7 @@ async function callAnthropic(apiKey: string, prompt: string) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-opus-4-20250514',
       max_tokens: 4000,
       messages: [
         {
@@ -91,7 +91,7 @@ async function callAnthropic(apiKey: string, prompt: string) {
 
 // Helper function to call Google Gemini API
 async function callGemini(apiKey: string, prompt: string) {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
