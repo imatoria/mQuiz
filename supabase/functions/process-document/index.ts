@@ -185,32 +185,46 @@ serve(async (req) => {
       throw new Error('Failed to download file');
     }
 
-    // Convert file to base64 for OpenAI
+    // Check file size limit (10MB max)
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const fileSize = arrayBuffer.byteLength;
+    
+    if (fileSize > 10 * 1024 * 1024) {
+      throw new Error('File too large. Maximum size is 10MB.');
+    }
 
-    // Create prompt for OpenAI
-    const prompt = `Please analyze this PDF document and generate 5 multiple choice questions (MCQs) per page. For each question:
-1. Create questions of varying difficulty levels: easy, medium, and difficult
-2. Provide 4 options labeled A, B, C, D
-3. Indicate the correct answer
-4. Base questions on the content of each page
+    // Convert file to base64 safely
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let base64 = '';
+    const chunkSize = 8192;
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      base64 += btoa(String.fromCharCode(...chunk));
+    }
 
-Format your response as a JSON array with this structure:
+    // Create prompt for AI - simplified to avoid recursion
+    const prompt = `Analyze this PDF document and generate 3 multiple choice questions. 
+
+Requirements:
+- Create exactly 3 questions total (not per page)
+- Mix of difficulty: 1 easy, 1 medium, 1 difficult
+- 4 options each (A, B, C, D)
+- Clear correct answer
+
+Return ONLY valid JSON in this exact format:
 [
   {
     "page_number": 1,
-    "question_text": "Question here?",
-    "option_a": "First option",
-    "option_b": "Second option", 
-    "option_c": "Third option",
-    "option_d": "Fourth option",
+    "question_text": "Your question?",
+    "option_a": "Option A",
+    "option_b": "Option B", 
+    "option_c": "Option C",
+    "option_d": "Option D",
     "correct_answer": "A",
     "difficulty": "easy"
   }
-]
-
-Ensure you create exactly 5 questions per page with a mix of difficulty levels.`;
+]`;
 
     // Call the appropriate AI provider
     let generatedText;
@@ -228,18 +242,44 @@ Ensure you create exactly 5 questions per page with a mix of difficulty levels.`
         throw new Error('Unsupported AI provider');
     }
 
-    // Parse the JSON response
+    // Parse the JSON response with better error handling
     let questions;
     try {
-      questions = JSON.parse(generatedText);
-    } catch (e) {
-      // If JSON parsing fails, extract JSON from markdown code blocks
-      const jsonMatch = generatedText.match(/```json\n([\s\S]*?)\n```/);
+      // Clean the response text
+      let cleanText = generatedText.trim();
+      
+      // Try to extract JSON from markdown code blocks first
+      const jsonMatch = cleanText.match(/```json\n([\s\S]*?)\n```/) || cleanText.match(/```\n([\s\S]*?)\n```/);
       if (jsonMatch) {
-        questions = JSON.parse(jsonMatch[1]);
-      } else {
-        throw new Error('Failed to parse OpenAI response');
+        cleanText = jsonMatch[1].trim();
       }
+      
+      // Remove any non-JSON content before/after the array
+      const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        cleanText = arrayMatch[0];
+      }
+      
+      questions = JSON.parse(cleanText);
+      
+      // Validate the structure
+      if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error('Invalid questions format - not an array or empty');
+      }
+      
+      // Validate each question has required fields
+      questions = questions.filter(q => 
+        q.question_text && q.option_a && q.option_b && q.option_c && q.option_d && q.correct_answer
+      );
+      
+      if (questions.length === 0) {
+        throw new Error('No valid questions found in response');
+      }
+      
+    } catch (e) {
+      console.error('JSON parsing error:', e);
+      console.error('Raw response:', generatedText);
+      throw new Error(`Failed to parse AI response: ${e.message}`);
     }
 
     // Insert questions into database
