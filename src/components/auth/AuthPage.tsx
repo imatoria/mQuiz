@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { CompactRoleSelector } from './CompactRoleSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
@@ -210,52 +212,15 @@ export const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
   };
 
   const RoleSelector = () => (
-    <div className="space-y-3">
-      <Label className="text-sm font-medium">Select your role</Label>
-      <div className="grid gap-3">
-        {Object.entries(roleInfo).map(([role, info]) => (
-          <div
-            key={role}
-            className={`cursor-pointer rounded-lg border p-3 transition-all ${
-              selectedRole === role 
-                ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
-                : 'border-border hover:border-primary/50'
-            }`}
-            onClick={() => setSelectedRole(role as UserRole)}
-          >
-            <div className="flex items-center space-x-3">
-              <div className={`w-8 h-8 ${info.gradient} rounded-lg flex items-center justify-center`}>
-                <info.icon className="w-4 h-4 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-sm">{info.title}</h3>
-                  {selectedRole === role && (
-                    <CheckCircle className="w-4 h-4 text-primary" />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">{info.description}</p>
-                {role === 'admin' && (
-                  <Badge variant="secondary" className="text-xs mt-1">
-                    Requires Approval
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription className="text-xs">
-          {roleInfo[selectedRole].note}
-        </AlertDescription>
-      </Alert>
-    </div>
+    <CompactRoleSelector 
+      selectedRole={selectedRole}
+      onRoleSelect={setSelectedRole}
+    />
   );
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card className="shadow-elegant">
           <CardHeader className="text-center pb-4">
@@ -416,5 +381,6 @@ export const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
         </Card>
       </div>
     </div>
+    </TooltipProvider>
   );
 };

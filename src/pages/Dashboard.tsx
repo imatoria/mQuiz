@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ContentCreation } from '@/components/parent/ContentCreation';
+import { ParentDashboard } from '@/components/parent/ParentDashboard';
 import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { 
@@ -32,7 +32,7 @@ export const Dashboard = ({ role }: DashboardProps) => {
         return <AdminDashboard />;
 
       case 'parent':
-        return <ContentCreation />;
+        return <ParentDashboard />;
 
       case 'child':
         return <StudentDashboard />;
