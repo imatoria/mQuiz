@@ -118,6 +118,81 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      backup_schedules: {
+        Row: {
+          backup_type: string
+          created_at: string
+          frequency: string
+          id: string
+          is_active: boolean
+          last_backup_at: string | null
+          next_backup_at: string | null
+          retention_days: number
+          schedule_name: string
+          updated_at: string
+        }
+        Insert: {
+          backup_type: string
+          created_at?: string
+          frequency: string
+          id?: string
+          is_active?: boolean
+          last_backup_at?: string | null
+          next_backup_at?: string | null
+          retention_days?: number
+          schedule_name: string
+          updated_at?: string
+        }
+        Update: {
+          backup_type?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_backup_at?: string | null
+          next_backup_at?: string | null
+          retention_days?: number
+          schedule_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       book_documents: {
         Row: {
           book_id: string
@@ -184,6 +259,36 @@ export type Database = {
           subject_id?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      data_encryption_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_name: string
+          key_version: number
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name: string
+          key_version?: number
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name?: string
+          key_version?: number
         }
         Relationships: []
       }
@@ -479,6 +584,51 @@ export type Database = {
         }
         Relationships: []
       }
+      privacy_settings: {
+        Row: {
+          analytics_consent: boolean | null
+          coppa_compliant: boolean | null
+          created_at: string
+          data_deletion_requested: boolean | null
+          data_export_requested: boolean | null
+          data_retention_period: number | null
+          id: string
+          marketing_consent: boolean | null
+          parental_consent_verified: boolean | null
+          third_party_sharing: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analytics_consent?: boolean | null
+          coppa_compliant?: boolean | null
+          created_at?: string
+          data_deletion_requested?: boolean | null
+          data_export_requested?: boolean | null
+          data_retention_period?: number | null
+          id?: string
+          marketing_consent?: boolean | null
+          parental_consent_verified?: boolean | null
+          third_party_sharing?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analytics_consent?: boolean | null
+          coppa_compliant?: boolean | null
+          created_at?: string
+          data_deletion_requested?: boolean | null
+          data_export_requested?: boolean | null
+          data_retention_period?: number | null
+          id?: string
+          marketing_consent?: boolean | null
+          parental_consent_verified?: boolean | null
+          third_party_sharing?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -654,6 +804,42 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          blocked_until: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          ip_address: unknown | null
+          request_count: number
+          updated_at: string
+          user_id: string | null
+          window_start: string
+        }
+        Insert: {
+          blocked_until?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_address?: unknown | null
+          request_count?: number
+          updated_at?: string
+          user_id?: string | null
+          window_start?: string
+        }
+        Update: {
+          blocked_until?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_address?: unknown | null
+          request_count?: number
+          updated_at?: string
+          user_id?: string | null
+          window_start?: string
+        }
+        Relationships: []
+      }
       scheduled_tests: {
         Row: {
           assign_to_all: boolean
@@ -775,8 +961,12 @@ export type Database = {
       test_attempts: {
         Row: {
           answers: Json | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           attempt_number: number
           completed_at: string | null
+          feedback: string | null
           id: string
           scheduled_test_id: string
           score: number | null
@@ -786,8 +976,12 @@ export type Database = {
         }
         Insert: {
           answers?: Json | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           attempt_number?: number
           completed_at?: string | null
+          feedback?: string | null
           id?: string
           scheduled_test_id: string
           score?: number | null
@@ -797,8 +991,12 @@ export type Database = {
         }
         Update: {
           answers?: Json | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           attempt_number?: number
           completed_at?: string | null
+          feedback?: string | null
           id?: string
           scheduled_test_id?: string
           score?: number | null

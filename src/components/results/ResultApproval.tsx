@@ -91,30 +91,29 @@ export const ResultApproval = () => {
               subjects (name)
             )
           ),
-          profiles!test_attempts_user_id_fkey (
+          profiles!user_id (
             full_name,
             email
           )
         `)
         .in('user_id', childIds)
         .not('completed_at', 'is', null)
-        .in('approval_status', ['pending', 'approved', 'rejected'])
         .order('completed_at', { ascending: false });
 
       if (attemptsError) throw attemptsError;
 
       const formatted: PendingResult[] = attempts?.map(attempt => ({
         id: attempt.id,
-        score: attempt.score,
-        total_questions: attempt.total_questions,
+        score: attempt.score || 0,
+        total_questions: attempt.total_questions || 0,
         completed_at: attempt.completed_at,
-        status: attempt.approval_status || 'pending',
+        status: (attempt.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
         feedback: attempt.feedback,
-        answers: attempt.answers || {},
+        answers: (attempt.answers as Record<string, string>) || {},
         student: {
           id: attempt.user_id,
-          full_name: attempt.profiles?.full_name || 'Unknown',
-          email: attempt.profiles?.email || ''
+          full_name: (attempt.profiles as any)?.full_name || 'Unknown',
+          email: (attempt.profiles as any)?.email || ''
         },
         test: {
           title: attempt.scheduled_test?.title || 'Unknown Test',

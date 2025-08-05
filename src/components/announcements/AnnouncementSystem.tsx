@@ -80,15 +80,15 @@ export const AnnouncementSystem = () => {
         .from('announcements')
         .select(`
           *,
-          creator:profiles!announcements_creator_id_fkey(full_name, email),
-          read_status:announcement_recipients!left(is_read, read_at)
+          creator:profiles!creator_id(full_name, email),
+          read_status:announcement_recipients!announcement_id(is_read, read_at)
         `)
         .eq('is_active', true)
         .or('expires_at.is.null,expires_at.gt.now()')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAnnouncements(data as Announcement[] || []);
+      setAnnouncements((data as any) || []);
     } catch (error) {
       console.error('Error fetching announcements:', error);
       toast({

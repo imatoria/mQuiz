@@ -85,7 +85,10 @@ export const TestResults = () => {
         .order('completed_at', { ascending: false });
 
       if (error) throw error;
-      setAttempts(data || []);
+      setAttempts(data?.map(attempt => ({
+        ...attempt,
+        answers: attempt.answers as Record<string, string> || {}
+      })) || []);
     } catch (error) {
       console.error('Error loading test results:', error);
       toast({
@@ -117,7 +120,7 @@ export const TestResults = () => {
             correct_answer
           )
         `)
-        .eq('question_paper_id', attempt.scheduled_test.question_papers);
+        .eq('question_paper_id', (attempt.scheduled_test.question_papers as any)?.id);
 
       if (error) throw error;
 

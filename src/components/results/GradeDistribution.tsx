@@ -85,7 +85,7 @@ export const GradeDistribution = () => {
         .from('parent_child_relationships')
         .select(`
           child_id,
-          profiles!parent_child_relationships_child_id_fkey (
+          profiles!child_id (
             user_id,
             full_name,
             email
@@ -139,10 +139,11 @@ export const GradeDistribution = () => {
       }>();
 
       children?.forEach(child => {
-        if (child.profiles) {
+        if (child.profiles && child.profiles !== null && typeof child.profiles === 'object' && !Array.isArray(child.profiles) && 'full_name' in child.profiles) {
+          const profile = child.profiles as any;
           studentMap.set(child.child_id, {
-            name: child.profiles.full_name || 'Unknown',
-            email: child.profiles.email || '',
+            name: profile.full_name || 'Unknown',
+            email: profile.email || '',
             scores: [],
             tests: 0
           });

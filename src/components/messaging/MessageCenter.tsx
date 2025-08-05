@@ -74,14 +74,14 @@ export const MessageCenter = () => {
         .from('messages')
         .select(`
           *,
-          sender:profiles!messages_sender_id_fkey(full_name, email, avatar_url),
-          recipient:profiles!messages_recipient_id_fkey(full_name, email, avatar_url)
+          sender:profiles!sender_id(full_name, email, avatar_url),
+          recipient:profiles!recipient_id(full_name, email, avatar_url)
         `)
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMessages(data as Message[] || []);
+      setMessages((data as any) || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast({
