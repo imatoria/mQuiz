@@ -179,15 +179,26 @@ serve(async (req) => {
     // Skip file processing for now - just generate sample questions based on title and subject
     console.log(`Generating questions for document: ${document.title}`);
 
+    // Get subject information for better context
+    const { data: subjectData } = await supabase
+      .from('subjects')
+      .select('name')
+      .eq('id', document.subject_id)
+      .single();
+
+    const subjectName = subjectData?.name || 'General';
+
     // Create prompt for AI based on document metadata
-    const prompt = `Generate 3 multiple choice questions for a document titled "${document.title}". 
+    const prompt = `Generate 5 multiple choice questions for a ${document.class_level} level document titled "${document.title}" in the subject of ${subjectName}. 
 
 Requirements:
-- Create exactly 3 questions total
-- Mix of difficulty: 1 easy, 1 medium, 1 difficult  
+- Create exactly 5 questions total
+- Mix of difficulty: 2 easy, 2 medium, 1 difficult  
 - 4 options each (A, B, C, D)
 - Clear correct answer
-- Make questions relevant to the document title
+- Make questions relevant to the document title and subject
+- Questions should be appropriate for Class ${document.class_level} students
+- Focus on key concepts and understanding
 
 Return ONLY valid JSON in this exact format:
 [
@@ -203,20 +214,27 @@ Return ONLY valid JSON in this exact format:
   }
 ]`;
 
+    console.log(`Using ${providerType} provider for document processing`);
+
     // Call the appropriate AI provider
     let generatedText;
-    switch (providerType) {
-      case 'openai':
-        generatedText = await callOpenAI(apiKey, prompt);
-        break;
-      case 'anthropic':
-        generatedText = await callAnthropic(apiKey, prompt);
-        break;
-      case 'gemini':
-        generatedText = await callGemini(apiKey, prompt);
-        break;
-      default:
-        throw new Error('Unsupported AI provider');
+    try {
+      switch (providerType) {
+        case 'openai':
+          generatedText = await callOpenAI(apiKey, prompt);
+          break;
+        case 'anthropic':
+          generatedText = await callAnthropic(apiKey, prompt);
+          break;
+        case 'gemini':
+          generatedText = await callGemini(apiKey, prompt);
+          break;
+        default:
+          throw new Error('Unsupported AI provider');
+      }
+    } catch (aiError) {
+      console.error(`${providerType} API error:`, aiError);
+      throw new Error(`AI provider error: ${aiError.message}`);
     }
 
     // Parse the JSON response with better error handling
@@ -281,13 +299,17 @@ Return ONLY valid JSON in this exact format:
     }
 
     // Update document processing status
-    await supabase
+    const { error: updateError } = await supabase
       .from('documents')
       .update({ 
         processing_status: 'completed',
-        total_pages: Math.max(...questions.map((q: any) => q.page_number))
+        total_pages: Math.max(...questions.map((q: any) => q.page_number || 1), 1)
       })
       .eq('id', documentId);
+
+    if (updateError) {
+      console.error('Error updating document status:', updateError);
+    }
 
     console.log(`Successfully processed ${questions.length} questions for document ${documentId}`);
 
@@ -307,7 +329,9 @@ Return ONLY valid JSON in this exact format:
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         await supabase
           .from('documents')
-          .update({ processing_status: 'failed' })
+          .update({ 
+            processing_status: 'failed'
+          })
           .eq('id', documentId);
       } catch (updateError) {
         console.error('Failed to update document status:', updateError);
@@ -315,7 +339,8 @@ Return ONLY valid JSON in this exact format:
     }
     
     return new Response(JSON.stringify({ 
-      error: error.message 
+      error: error.message,
+      documentId: documentId
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

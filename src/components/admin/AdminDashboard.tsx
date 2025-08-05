@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserManagement } from './UserManagement';
 import { SystemAnalytics } from './SystemAnalytics';
+import { SystemAPIKeys } from './SystemAPIKeys';
 import { ContentModeration } from './ContentModeration';
 import { AdminAIProviderConfig } from './AdminAIProviderConfig';
 import { SystemSettings } from './SystemSettings';
+import { ApprovalWorkflow } from './ApprovalWorkflow';
 import { 
   Users, 
   BarChart3, 
@@ -22,15 +24,6 @@ import {
 export const AdminDashboard = () => {
   return (
     <div className="space-y-6">
-      {/* Admin Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Administrator Dashboard</CardTitle>
-          <CardDescription>
-            Manage users, monitor system performance, and configure platform settings
-          </CardDescription>
-        </CardHeader>
-      </Card>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -80,8 +73,12 @@ export const AdminDashboard = () => {
       </div>
 
       {/* Admin Tools Tabs */}
-      <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs defaultValue="approvals" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="approvals" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Approvals
+          </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Users
@@ -104,6 +101,10 @@ export const AdminDashboard = () => {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="approvals">
+          <ApprovalWorkflow />
+        </TabsContent>
+
         <TabsContent value="users">
           <UserManagement />
         </TabsContent>
@@ -121,7 +122,10 @@ export const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="settings">
-          <SystemSettings />
+          <div className="space-y-6">
+            <SystemSettings />
+            <SystemAPIKeys />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

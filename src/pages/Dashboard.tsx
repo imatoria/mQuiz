@@ -50,14 +50,17 @@ export const Dashboard = ({ role }: DashboardProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             {roleLabels[role]}
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Welcome back! Here's what's happening in your learning environment.
+          <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
+            {role === 'admin' 
+              ? 'Manage users, monitor system performance, and configure platform settings'
+              : "Welcome back! Here's what's happening in your learning environment."
+            }
           </p>
         </div>
 

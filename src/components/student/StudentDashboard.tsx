@@ -2,17 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { TestInterface } from './TestInterface';
+import { TestResults } from '@/components/results/TestResults';
+import { PerformanceAnalytics } from '@/components/results/PerformanceAnalytics';
 import { 
   PlayCircle, 
   CheckCircle2, 
   Trophy, 
   Clock,
   AlertCircle,
-  Calendar
+  Calendar,
+  BarChart3,
+  Award
 } from 'lucide-react';
 
 interface ScheduledTest {
@@ -42,6 +47,7 @@ export const StudentDashboard = () => {
   const [completedTests, setCompletedTests] = useState<ScheduledTest[]>([]);
   const [currentTest, setCurrentTest] = useState<ScheduledTest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('tests');
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -144,8 +150,25 @@ export const StudentDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="tests" className="flex items-center gap-2">
+            <PlayCircle className="w-4 h-4" />
+            Tests
+          </TabsTrigger>
+          <TabsTrigger value="results" className="flex items-center gap-2">
+            <Award className="w-4 h-4" />
+            Results
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="tests" className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tests Available</CardTitle>
@@ -291,6 +314,16 @@ export const StudentDashboard = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="results" className="mt-6">
+          <TestResults />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-6">
+          <PerformanceAnalytics />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

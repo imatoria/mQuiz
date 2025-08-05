@@ -117,5 +117,26 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    /* Prevent zoom on double tap for mobile */
+    touch-action: manipulation;
+  }
+  
+  /* Touch-friendly scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Better touch targets */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  @media (min-width: 768px) {
+    button, a, [role="button"] {
+      min-height: auto;
+      min-width: auto;
+    }
   }
 }

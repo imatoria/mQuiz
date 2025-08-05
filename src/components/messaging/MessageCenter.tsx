@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { createNotification, notificationTemplates } from '@/lib/notifications';
 
 interface Message {
   id: string;
@@ -177,6 +178,14 @@ export const MessageCenter = () => {
 
       if (error) throw error;
 
+      // Create notification for recipient
+      const senderName = profile?.full_name || profile?.email || 'Someone';
+      const notificationData = notificationTemplates.messageReceived(senderName, newMessage.subject);
+      await createNotification({
+        userId: newMessage.recipient_id,
+        ...notificationData,
+      });
+
       setNewMessage({ recipient_id: '', subject: '', content: '' });
       setActiveTab('sent');
       await fetchMessages();
@@ -210,6 +219,14 @@ export const MessageCenter = () => {
         });
 
       if (error) throw error;
+
+      // Create notification for recipient
+      const senderName = profile?.full_name || profile?.email || 'Someone';
+      const notificationData = notificationTemplates.messageReceived(senderName, `Re: ${selectedMessage.subject}`);
+      await createNotification({
+        userId: selectedMessage.sender_id,
+        ...notificationData,
+      });
 
       setReplyContent('');
       await fetchMessages();

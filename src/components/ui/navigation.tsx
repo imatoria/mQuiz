@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { 
   User, 
   Users, 
@@ -49,17 +50,19 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
   return (
     <nav className="bg-card border-b shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-14 md:h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-primary-foreground" />
+          <div className="flex items-center space-x-1 md:space-x-2">
+            <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">QuizMaster</span>
+            <span className="text-lg md:text-xl font-bold text-foreground">QuizMaster</span>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
+            <NotificationCenter />
+            
             {profile && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">
@@ -98,6 +101,10 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t space-y-3">
+            <div className="flex justify-center">
+              <NotificationCenter />
+            </div>
+            
             {profile && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">

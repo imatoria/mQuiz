@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DocumentUpload } from './DocumentUpload';
+import { DocumentProcessingStatus } from './DocumentProcessingStatus';
 import { QuestionPaperGenerator } from './QuestionPaperGenerator';
 import { TestScheduler } from './TestScheduler';
 import { ChildrenManagement } from './ChildrenManagement';
