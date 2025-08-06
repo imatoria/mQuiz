@@ -483,6 +483,33 @@ export type Database = {
         }
         Relationships: []
       }
+      encryption_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_name: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -887,6 +914,36 @@ export type Database = {
           },
         ]
       }
+      security_events: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           created_at: string
@@ -1054,9 +1111,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_scheduled_test: {
+        Args: { test_id: string; user_id: string }
+        Returns: boolean
+      }
+      can_view_scheduled_test: {
+        Args: { test_id: string; user_id: string }
+        Returns: boolean
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      validate_role_change: {
+        Args: { target_user_id: string; new_role: string }
+        Returns: boolean
       }
     }
     Enums: {

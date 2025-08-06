@@ -94,25 +94,34 @@ export const UserManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
+      // Use secure server-side function for role management
+      const { data, error } = await supabase.functions.invoke('manage-user-role', {
+        body: {
+          targetUserId: userId,
+          newRole: newRole,
+          reason: `Role change via admin panel`
+        }
+      });
 
       if (error) throw error;
+      if (!data.success) throw new Error(data.error);
 
+      // Update local state
       setUsers(users.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));
 
       toast({
-        title: "Role updated",
-        description: `User role has been updated to ${newRole}.`,
+        title: "Role updated securely",
+        description: `User role has been updated to ${newRole} with audit logging.`,
       });
+
+      // Refresh users to ensure consistency
+      fetchUsers();
     } catch (error: any) {
       toast({
         title: "Error updating user role",
-        description: error.message,
+        description: error.message || "Unauthorized role change or admin limit exceeded",
         variant: "destructive",
       });
     }

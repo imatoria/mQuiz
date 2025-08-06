@@ -120,45 +120,21 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     setIsSaving(true);
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      // Use secure server-side encryption function
+      const { data, error } = await supabase.functions.invoke('encrypt-api-key', {
+        body: {
+          providerId: selectedProvider.id,
+          apiKey: apiKey
+        }
+      });
 
-      // Simple encryption (in production, use proper encryption)
-      const encryptedKey = btoa(apiKey); // Base64 encoding as simple encryption
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
 
-      // Check if key already exists for this provider
-      const existingKey = userKeys.find(key => key.ai_provider_id === selectedProvider.id);
-
-      if (existingKey) {
-        // Update existing key
-        const { error } = await supabase
-          .from('user_ai_provider_keys')
-          .update({ encrypted_api_key: encryptedKey })
-          .eq('id', existingKey.id);
-
-        if (error) throw error;
-
-        toast({
-          title: "API key updated",
-          description: `Your ${selectedProvider.name} API key has been updated.`,
-        });
-      } else {
-        // Insert new key
-        const { error } = await supabase
-          .from('user_ai_provider_keys')
-          .insert({
-            user_id: user.user.id,
-            ai_provider_id: selectedProvider.id,
-            encrypted_api_key: encryptedKey
-          });
-
-        if (error) throw error;
-
-        toast({
-          title: "API key added",
-          description: `Your ${selectedProvider.name} API key has been saved.`,
-        });
-      }
+      toast({
+        title: "API key saved securely",
+        description: `Your ${selectedProvider.name} API key has been encrypted and saved with audit logging.`,
+      });
 
       setIsDialogOpen(false);
       setApiKey('');
@@ -169,7 +145,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     } catch (error: any) {
       toast({
         title: "Failed to save API key",
-        description: error.message,
+        description: error.message || "Server-side encryption failed",
         variant: "destructive",
       });
     } finally {

@@ -9,6 +9,7 @@ import { ContentModeration } from './ContentModeration';
 import { AdminAIProviderConfig } from './AdminAIProviderConfig';
 import { SystemSettings } from './SystemSettings';
 import { ApprovalWorkflow } from './ApprovalWorkflow';
+import { SecurityDashboard } from './SecurityDashboard';
 import { 
   Users, 
   BarChart3, 
@@ -74,7 +75,7 @@ export const AdminDashboard = () => {
 
       {/* Admin Tools Tabs */}
       <Tabs defaultValue="approvals" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="approvals" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
             Approvals
@@ -83,12 +84,16 @@ export const AdminDashboard = () => {
             <Users className="w-4 h-4" />
             Users
           </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Security
+          </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             Analytics
           </TabsTrigger>
           <TabsTrigger value="moderation" className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
+            <AlertTriangle className="w-4 h-4" />
             Moderation
           </TabsTrigger>
           <TabsTrigger value="ai-config" className="flex items-center gap-2">
@@ -107,6 +112,10 @@ export const AdminDashboard = () => {
 
         <TabsContent value="users">
           <UserManagement />
+        </TabsContent>
+
+        <TabsContent value="security">
+          <SecurityDashboard />
         </TabsContent>
 
         <TabsContent value="analytics">
