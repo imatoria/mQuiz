@@ -201,13 +201,13 @@ export const AuthPage = ({
     </div>;
   return <TooltipProvider>
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-3 sm:p-4">
-        <div className="w-full max-w-md">
-        <Card className="shadow-elegant">
-          <CardHeader className="text-center pb-4">
-            <div className="mx-auto w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4">
-              <Lock className="w-6 h-6 text-white" />
+        <div className="w-full max-w-sm sm:max-w-md">
+        <Card className="shadow-elegant mx-auto">
+          <CardHeader className="text-center pb-4 px-4 sm:px-6">
+            <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+              <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <CardTitle className="text-2xl">Welcome to QuizMaster</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">Welcome to QuizMaster</CardTitle>
             <CardDescription>
               {authMode === 'signin' && 'Sign in to your account'}
               {authMode === 'signup' && 'Create your account'}
@@ -215,12 +215,12 @@ export const AuthPage = ({
             </CardDescription>
           </CardHeader>
           
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-4 sm:px-6">
             <Tabs value={authMode} onValueChange={value => setAuthMode(value as any)}>
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="signin" className="text-xs">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="text-xs">Sign Up</TabsTrigger>
-                <TabsTrigger value="reset" className="text-xs">Reset</TabsTrigger>
+                <TabsTrigger value="signin" className="text-xs sm:text-sm">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="text-xs sm:text-sm">Sign Up</TabsTrigger>
+                <TabsTrigger value="reset" className="text-xs sm:text-sm">Reset</TabsTrigger>
               </TabsList>
               
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -235,7 +235,16 @@ export const AuthPage = ({
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="Enter your email" className="pl-10" disabled={isLoading} />
+                    <Input 
+                      id="email" 
+                      name="email" 
+                      type="email" 
+                      value={formData.email} 
+                      onChange={handleInputChange} 
+                      placeholder="Enter your email" 
+                      className="pl-10 text-sm sm:text-base" 
+                      disabled={isLoading} 
+                    />
                   </div>
                 </div>
                 
@@ -243,7 +252,16 @@ export const AuthPage = ({
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input id="password" name="password" type={showPassword ? 'text' : 'password'} value={formData.password} onChange={handleInputChange} placeholder="Enter your password" className="pl-10 pr-10" disabled={isLoading} />
+                      <Input 
+                        id="password" 
+                        name="password" 
+                        type={showPassword ? 'text' : 'password'} 
+                        value={formData.password} 
+                        onChange={handleInputChange} 
+                        placeholder="Enter your password" 
+                        className="pl-10 pr-10 text-sm sm:text-base" 
+                        disabled={isLoading} 
+                      />
                       <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>

@@ -3,7 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LoadingState } from '@/components/ui/loading-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { useToast } from '@/hooks/use-toast';
+import { useAsyncOperation } from '@/hooks/useAsyncOperation';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { TestInterface } from './TestInterface';
@@ -46,10 +50,13 @@ export const StudentDashboard = () => {
   const [availableTests, setAvailableTests] = useState<ScheduledTest[]>([]);
   const [completedTests, setCompletedTests] = useState<ScheduledTest[]>([]);
   const [currentTest, setCurrentTest] = useState<ScheduledTest | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('tests');
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  const { loading, error, execute: executeAsync } = useAsyncOperation({
+    onError: (error) => console.error('Student dashboard error:', error)
+  });
 
   useEffect(() => {
     if (user) {
@@ -58,9 +65,7 @@ export const StudentDashboard = () => {
   }, [user]);
 
   const fetchTests = async () => {
-    try {
-      setLoading(true);
-      
+    return executeAsync(async () => {
       // Fetch scheduled tests with question paper details
       const { data: scheduledTests, error } = await supabase
         .from('scheduled_tests')
@@ -103,16 +108,7 @@ export const StudentDashboard = () => {
 
       setAvailableTests(available);
       setCompletedTests(completed);
-    } catch (error) {
-      console.error('Error fetching tests:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch tests",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const startTest = (test: ScheduledTest) => {
@@ -148,27 +144,39 @@ export const StudentDashboard = () => {
     return <TestInterface test={currentTest} onComplete={handleTestComplete} />;
   }
 
+  if (error) {
+    return (
+      <ErrorState 
+        error={error}
+        type="generic"
+        onRetry={fetchTests}
+        onGoHome={() => window.location.href = '/'}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="tests" className="flex items-center gap-2">
-            <PlayCircle className="w-4 h-4" />
-            Tests
+        <TabsList className="grid w-full grid-cols-3 gap-1">
+          <TabsTrigger value="tests" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <PlayCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span>Tests</span>
           </TabsTrigger>
-          <TabsTrigger value="results" className="flex items-center gap-2">
-            <Award className="w-4 h-4" />
-            Results
+          <TabsTrigger value="results" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <Award className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span>Results</span>
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Analytics
+          <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Analytics</span>
+            <span className="sm:hidden">Stats</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="tests" className="space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tests Available</CardTitle>
@@ -224,7 +232,7 @@ export const StudentDashboard = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-4">Loading tests...</div>
+            <LoadingState text="Loading tests..." />
           ) : availableTests.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -238,33 +246,39 @@ export const StudentDashboard = () => {
                 const attemptsLeft = test.max_attempts - (test.test_attempts?.length || 0);
                 
                 return (
-                  <div key={test.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{test.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {test.question_papers.subjects.name} • {test.question_papers.total_questions} questions • {test.question_papers.time_limit_minutes} minutes
+                  <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow space-y-3 sm:space-y-0">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate pr-2">{test.title}</h4>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {test.question_papers.subjects.name} • {test.question_papers.total_questions} questions • {test.question_papers.time_limit_minutes} min
                       </p>
-                      <div className="flex items-center mt-2 space-x-4">
-                        <Badge variant={difficulty.variant}>{difficulty.label}</Badge>
+                      <div className="flex flex-wrap items-center mt-2 gap-2">
+                        <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
                         <span className="text-xs text-muted-foreground flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          Due: {formatDateTime(test.end_time)}
+                          <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
+                          <span className="truncate">Due: {formatDateTime(test.end_time)}</span>
                         </span>
                         {attemptsLeft < test.max_attempts && (
-                          <span className="text-xs text-muted-foreground">
-                            Attempts left: {attemptsLeft}
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            Attempts: {attemptsLeft}
                           </span>
                         )}
                       </div>
                     </div>
-                    <Button 
-                      onClick={() => startTest(test)}
-                      disabled={status !== 'active' || attemptsLeft === 0}
-                      className={status === 'active' ? 'bg-quiz hover:bg-quiz/90' : ''}
-                    >
-                      {status === 'active' ? 'Start Test' : 
-                       status === 'scheduled' ? 'Not Available' : 'Expired'}
-                    </Button>
+                    <div className="flex-shrink-0 w-full sm:w-auto">
+                      <Button 
+                        onClick={() => startTest(test)}
+                        disabled={status !== 'active' || attemptsLeft === 0}
+                        className={cn(
+                          'w-full sm:w-auto',
+                          status === 'active' ? 'bg-quiz hover:bg-quiz/90' : ''
+                        )}
+                        size="sm"
+                      >
+                        {status === 'active' ? 'Start Test' : 
+                         status === 'scheduled' ? 'Not Available' : 'Expired'}
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -294,16 +308,16 @@ export const StudentDashboard = () => {
                 const scoreBadge = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs Improvement';
                 
                 return (
-                  <div key={test.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
-                      <h4 className="text-sm font-medium">{test.title}</h4>
-                      <p className="text-xs text-muted-foreground">
+                  <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-muted rounded-lg space-y-2 sm:space-y-0">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-medium truncate pr-2">{test.title}</h4>
+                      <p className="text-xs text-muted-foreground truncate">
                         Completed {lastAttempt?.completed_at ? new Date(lastAttempt.completed_at).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <div className={`text-lg font-bold ${scoreColor}`}>{score}%</div>
-                      <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs">
+                      <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs mt-1">
                         {scoreBadge}
                       </Badge>
                     </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { UserManagement } from './UserManagement';
 import { SystemAnalytics } from './SystemAnalytics';
 import { SystemAPIKeys } from './SystemAPIKeys';
@@ -24,10 +25,11 @@ import {
 
 export const AdminDashboard = () => {
   return (
-    <div className="space-y-6">
+    <ErrorBoundary>
+      <div className="space-y-6">
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
@@ -75,68 +77,90 @@ export const AdminDashboard = () => {
 
       {/* Admin Tools Tabs */}
       <Tabs defaultValue="approvals" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="approvals" className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Approvals
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-1 overflow-x-auto">
+          <TabsTrigger value="approvals" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3 min-w-0 whitespace-nowrap">
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Approvals</span>
+            <span className="sm:hidden">Apps</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Users
+          <TabsTrigger value="users" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3 min-w-0 whitespace-nowrap">
+            <Users className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Users</span>
+            <span className="sm:hidden">Users</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Security
+          <TabsTrigger value="security" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3 min-w-0 whitespace-nowrap">
+            <Shield className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Security</span>
+            <span className="sm:hidden">Sec</span>
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Analytics
+          <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3 min-w-0 whitespace-nowrap">
+            <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Analytics</span>
+            <span className="sm:hidden">Stats</span>
           </TabsTrigger>
-          <TabsTrigger value="moderation" className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            Moderation
+          <TabsTrigger value="moderation" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3 min-w-0 whitespace-nowrap">
+            <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Moderation</span>
+            <span className="sm:hidden">Mod</span>
           </TabsTrigger>
-          <TabsTrigger value="ai-config" className="flex items-center gap-2">
-            <Zap className="w-4 h-4" />
-            AI Config
+          <TabsTrigger value="ai-config" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3 min-w-0 whitespace-nowrap">
+            <Zap className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">AI Config</span>
+            <span className="sm:hidden">AI</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Settings
+          <TabsTrigger value="settings" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3 min-w-0 whitespace-nowrap">
+            <Settings className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Settings</span>
+            <span className="sm:hidden">Set</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="approvals">
-          <ApprovalWorkflow />
+          <ErrorBoundary>
+            <ApprovalWorkflow />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="users">
-          <UserManagement />
+          <ErrorBoundary>
+            <UserManagement />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="security">
-          <SecurityDashboard />
+          <ErrorBoundary>
+            <SecurityDashboard />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="analytics">
-          <SystemAnalytics />
+          <ErrorBoundary>
+            <SystemAnalytics />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="moderation">
-          <ContentModeration />
+          <ErrorBoundary>
+            <ContentModeration />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="ai-config">
-          <AdminAIProviderConfig />
+          <ErrorBoundary>
+            <AdminAIProviderConfig />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="settings">
-          <div className="space-y-6">
-            <SystemSettings />
-            <SystemAPIKeys />
-          </div>
+          <ErrorBoundary>
+            <div className="space-y-6">
+              <SystemSettings />
+              <SystemAPIKeys />
+            </div>
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
     </div>
+    </ErrorBoundary>
   );
 };

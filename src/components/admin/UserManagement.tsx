@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { usePagination } from '@/hooks/usePagination';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Users, 
@@ -22,6 +23,7 @@ import {
   Baby
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationInfo } from '@/components/ui/pagination';
 
 interface UserProfile {
   id: string;
@@ -156,6 +158,23 @@ export const UserManagement = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedUsers,
+    goToPage,
+    nextPage,
+    previousPage,
+    canGoNext,
+    canGoPrevious,
+    startItem,
+    endItem,
+    totalItems,
+  } = usePagination({
+    data: filteredUsers,
+    itemsPerPage: 15,
+  });
+
   if (isLoading) {
     return (
       <Card>
@@ -242,6 +261,89 @@ export const UserManagement = () => {
           </Card>
         </div>
 
+        {/* Pagination Controls */}
+        {filteredUsers.length > 0 && (
+          <div className="flex items-center justify-between">
+            <PaginationInfo startItem={startItem} endItem={endItem} totalItems={totalItems} />
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        previousPage();
+                      }}
+                      className={!canGoPrevious ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            goToPage(pageNumber);
+                          }}
+                          isActive={currentPage === pageNumber}
+                          className="cursor-pointer"
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  {totalPages > 5 && currentPage < totalPages - 2 && (
+                    <>
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            goToPage(totalPages);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        nextPage();
+                      }}
+                      className={!canGoNext ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </div>
+        )}
+
         {/* Users Table */}
         <div className="border rounded-lg">
           <Table>
@@ -255,7 +357,7 @@ export const UserManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
                     <div className="flex items-center space-x-3">
@@ -331,7 +433,7 @@ export const UserManagement = () => {
           </Table>
         </div>
 
-        {filteredUsers.length === 0 && (
+        {paginatedUsers.length === 0 && (
           <div className="text-center py-8">
             <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No users found</h3>

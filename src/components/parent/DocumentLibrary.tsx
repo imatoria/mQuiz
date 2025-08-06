@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { usePagination } from "@/hooks/usePagination";
 import { Search, Filter, Share2, FileText, BookOpen, Clock, FileDown, Eye } from "lucide-react";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationInfo } from "@/components/ui/pagination";
 
 interface Document {
   id: string;
@@ -150,8 +152,25 @@ export const DocumentLibrary = () => {
     return matchesSearch && matchesSubject && matchesClass && matchesStatus;
   });
 
-  // Group documents by subject and class
-  const groupedDocuments = filteredDocuments.reduce((acc, doc) => {
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedDocuments,
+    goToPage,
+    nextPage,
+    previousPage,
+    canGoNext,
+    canGoPrevious,
+    startItem,
+    endItem,
+    totalItems,
+  } = usePagination({
+    data: filteredDocuments,
+    itemsPerPage: 12,
+  });
+
+  // Group paginated documents by subject and class
+  const groupedDocuments = paginatedDocuments.reduce((acc, doc) => {
     const subjectName = getSubjectName(doc.subject_id);
     const key = `${subjectName} - Class ${doc.class_level}`;
     
@@ -270,6 +289,89 @@ export const DocumentLibrary = () => {
           </Card>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {filteredDocuments.length > 0 && (
+        <div className="flex items-center justify-between">
+          <PaginationInfo startItem={startItem} endItem={endItem} totalItems={totalItems} />
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      previousPage();
+                    }}
+                    className={!canGoPrevious ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNumber = totalPages - 4 + i;
+                  } else {
+                    pageNumber = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goToPage(pageNumber);
+                        }}
+                        isActive={currentPage === pageNumber}
+                        className="cursor-pointer"
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                
+                {totalPages > 5 && currentPage < totalPages - 2 && (
+                  <>
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goToPage(totalPages);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </>
+                )}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      nextPage();
+                    }}
+                    className={!canGoNext ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </div>
+      )}
 
       {/* Grouped Documents */}
       <div className="space-y-6">

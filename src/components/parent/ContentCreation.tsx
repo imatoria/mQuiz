@@ -9,6 +9,7 @@ import { TestScheduler } from './TestScheduler';
 import { ChildrenManagement } from './ChildrenManagement';
 import { BookManagement } from './BookManagement';
 import { AIProviderSettings } from './AIProviderSettings';
+import { AIQuestionGenerator } from './AIQuestionGenerator';
 import QuestionBank from './QuestionBank';
 import QuestionAnalytics from './QuestionAnalytics';
 import BulkQuestionOperations from './BulkQuestionOperations';
@@ -104,10 +105,11 @@ export const ContentCreation = () => {
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
           <TabsTrigger value="upload">Upload</TabsTrigger>
           <TabsTrigger value="books">Books</TabsTrigger>
           <TabsTrigger value="generate">Papers</TabsTrigger>
+          <TabsTrigger value="ai-generator">AI Generator</TabsTrigger>
           <TabsTrigger value="questions">Question Bank</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="bulk">Bulk Ops</TabsTrigger>
@@ -236,6 +238,10 @@ export const ContentCreation = () => {
 
         <TabsContent value="questions" className="space-y-6">
           <QuestionBank onQuestionUpdate={handleRefresh} />
+        </TabsContent>
+
+        <TabsContent value="ai-generator" className="space-y-6">
+          <AIQuestionGenerator />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">

@@ -19,7 +19,9 @@ import {
   CheckCircle, 
   AlertCircle,
   Shield,
-  Zap
+  Zap,
+  TestTube,
+  Loader2
 } from 'lucide-react';
 
 interface AIProvider {
@@ -51,6 +53,8 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
   const [showApiKey, setShowApiKey] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; model?: string }>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -183,6 +187,61 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     }
   };
 
+  const handleTestKey = async (userKey: UserAIProviderKey) => {
+    if (!userKey.ai_providers) return;
+
+    setIsTestingKey(true);
+    
+    try {
+      // Get the decrypted API key for testing
+      const keyToTest = userKey.encrypted_api_key; // This should be decrypted on the server
+      
+      const { data, error } = await supabase.functions.invoke('test-api-key', {
+        body: {
+          providerId: userKey.ai_provider_id,
+          apiKey: atob(userKey.encrypted_api_key) // Simple base64 decode for testing
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setTestResults(prev => ({
+          ...prev,
+          [userKey.id]: {
+            success: true,
+            message: `✓ Working with ${data.model}`,
+            model: data.model
+          }
+        }));
+        
+        toast({
+          title: "API Key Valid",
+          description: `${userKey.ai_providers.name} API key is working correctly with ${data.model}.`,
+        });
+      } else {
+        throw new Error(data.error);
+      }
+
+    } catch (error: any) {
+      setTestResults(prev => ({
+        ...prev,
+        [userKey.id]: {
+          success: false,
+          message: `✗ ${error.message}`
+        }
+      }));
+      
+      toast({
+        title: "API Key Invalid",
+        description: `${userKey.ai_providers?.name} API key test failed: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
+
   const hasKey = (providerId: string) => {
     return userKeys.some(key => key.ai_provider_id === providerId);
   };
@@ -227,6 +286,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
           <Shield className="h-4 w-4" />
           <AlertDescription>
             Your API keys are encrypted and stored securely. They are only used to process your documents and generate questions.
+            Test your keys to ensure they're working correctly before generating questions.
           </AlertDescription>
         </Alert>
 
@@ -258,6 +318,27 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Configured
                           </Badge>
+                          {testResults[userKey!.id] && (
+                            <Badge 
+                              variant={testResults[userKey!.id].success ? "default" : "destructive"}
+                              className={testResults[userKey!.id].success ? "bg-blue-100 text-blue-800" : ""}
+                            >
+                              {testResults[userKey!.id].message}
+                            </Badge>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTestKey(userKey!)}
+                            disabled={isTestingKey}
+                          >
+                            {isTestingKey ? (
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            ) : (
+                              <TestTube className="w-4 h-4 mr-1" />
+                            )}
+                            Test
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"

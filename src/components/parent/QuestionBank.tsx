@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search, Edit, Trash2, Plus, Filter, BookOpen, BarChart3 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePagination } from "@/hooks/usePagination";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationInfo } from "@/components/ui/pagination";
 
 interface Question {
   id: string;
@@ -110,6 +112,23 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     const matchesClass = selectedClass === 'all' || question.document?.class_level === selectedClass;
     
     return matchesSearch && matchesSubject && matchesDifficulty && matchesClass;
+  });
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedQuestions,
+    goToPage,
+    nextPage,
+    previousPage,
+    canGoNext,
+    canGoPrevious,
+    startItem,
+    endItem,
+    totalItems,
+  } = usePagination({
+    data: filteredQuestions,
+    itemsPerPage: 20,
   });
 
   const getDifficultyBadgeVariant = (difficulty: string) => {
@@ -332,6 +351,85 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-between mb-4">
+            <PaginationInfo startItem={startItem} endItem={endItem} totalItems={totalItems} />
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        previousPage();
+                      }}
+                      className={!canGoPrevious ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            goToPage(pageNumber);
+                          }}
+                          isActive={currentPage === pageNumber}
+                          className="cursor-pointer"
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  {totalPages > 5 && currentPage < totalPages - 2 && (
+                    <>
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            goToPage(totalPages);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        nextPage();
+                      }}
+                      className={!canGoNext ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </div>
           {isLoading ? (
             <div className="text-center py-8">Loading questions...</div>
           ) : filteredQuestions.length === 0 ? (
@@ -352,7 +450,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredQuestions.map((question) => (
+                  {paginatedQuestions.map((question) => (
                     <TableRow key={question.id}>
                       <TableCell className="max-w-md">
                         <div className="truncate" title={question.question_text}>

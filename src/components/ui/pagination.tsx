@@ -106,6 +106,16 @@ const PaginationEllipsis = ({
 )
 PaginationEllipsis.displayName = "PaginationEllipsis"
 
+const PaginationInfo = ({ startItem, endItem, totalItems }: {
+  startItem: number;
+  endItem: number;
+  totalItems: number;
+}) => (
+  <div className="text-sm text-muted-foreground">
+    Showing {startItem} to {endItem} of {totalItems} results
+  </div>
+);
+
 export {
   Pagination,
   PaginationContent,
@@ -114,4 +124,5 @@ export {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
+  PaginationInfo,
 }
