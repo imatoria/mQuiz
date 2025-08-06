@@ -207,7 +207,7 @@ export const AuthPage = ({
             <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-3 sm:mb-4">
               <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <CardTitle className="text-xl sm:text-2xl">Welcome to QuizMaster</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">Welcome to mQuiz</CardTitle>
             <CardDescription>
               {authMode === 'signin' && 'Sign in to your account'}
               {authMode === 'signup' && 'Create your account'}

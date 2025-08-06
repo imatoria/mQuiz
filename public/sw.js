@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quizmaster-v1';
+const CACHE_NAME = 'mquiz-v1';
 const urlsToCache = [
   '/',
   '/static/css/main.css',

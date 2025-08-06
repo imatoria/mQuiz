@@ -56,7 +56,7 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
             <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
               <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
             </div>
-            <span className="text-lg md:text-xl font-bold text-foreground">QuizMaster</span>
+            <span className="text-lg md:text-xl font-bold text-foreground">mQuiz</span>
           </div>
 
           {/* Desktop Navigation */}

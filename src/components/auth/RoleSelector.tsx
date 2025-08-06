@@ -70,7 +70,7 @@ export const RoleSelector = ({ onRoleSelect }: RoleSelectorProps) => {
             </div>
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            Welcome to QuizMaster
+            Welcome to mQuiz
           </h1>
           <p className="text-lg text-muted-foreground">
             Choose your role to get started with intelligent MCQ creation and testing

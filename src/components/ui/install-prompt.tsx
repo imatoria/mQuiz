@@ -20,7 +20,7 @@ export const InstallPrompt = () => {
               <Download className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-sm">Install QuizMaster</h3>
+              <h3 className="font-semibold text-sm">Install mQuiz</h3>
               <p className="text-xs text-muted-foreground">
                 Install the app for better experience and offline access
               </p>

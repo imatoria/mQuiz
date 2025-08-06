@@ -1,6 +1,6 @@
 {
-  "name": "QuizMaster Knowledge Builder",
-  "short_name": "QuizMaster",
+  "name": "mQuiz",
+  "short_name": "mQuiz",
   "description": "Create, manage and take educational tests with AI-powered question generation",
   "start_url": "/",
   "display": "standalone",
