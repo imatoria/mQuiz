@@ -79,33 +79,54 @@ async function testAnthropic(apiKey: string) {
 
 // Helper function to test Google Gemini API
 async function testGemini(apiKey: string) {
+  console.log('Testing Gemini with API key:', apiKey.substring(0, 10) + '...');
+  
+  const requestBody = {
+    contents: [
+      {
+        parts: [
+          {
+            text: 'Say "API key is working" if you receive this message.'
+          }
+        ]
+      }
+    ]
+  };
+  
+  console.log('Gemini request body:', JSON.stringify(requestBody, null, 2));
+  
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: 'Say "API key is working" if you receive this message.'
-            }
-          ]
-        }
-      ]
-    }),
+    body: JSON.stringify(requestBody),
   });
 
+  console.log('Gemini response status:', response.status);
+  console.log('Gemini response headers:', Object.fromEntries(response.headers.entries()));
+
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Gemini API test failed');
+    const errorText = await response.text();
+    console.error('Gemini API error response:', errorText);
+    
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch (parseError) {
+      throw new Error(`Gemini API test failed with status ${response.status}: ${errorText}`);
+    }
+    
+    const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${errorText}`;
+    throw new Error(errorMessage);
   }
 
   const data = await response.json();
+  console.log('Gemini successful response:', JSON.stringify(data, null, 2));
+  
   return {
     success: true,
-    response: data.candidates[0].content.parts[0].text,
+    response: data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response text found',
     model: 'gemini-2.0-flash-exp'
   };
 }
