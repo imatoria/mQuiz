@@ -194,13 +194,24 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     setIsTestingKey(true);
     
     try {
-      // Get the decrypted API key for testing
-      const keyToTest = userKey.encrypted_api_key; // This should be decrypted on the server
+      // First decrypt the API key
+      const { data: decryptData, error: decryptError } = await supabase.functions.invoke('decrypt-api-key', {
+        body: {
+          providerId: userKey.ai_provider_id
+        }
+      });
+
+      if (decryptError || !decryptData.success) {
+        throw new Error(decryptData?.error || 'Failed to decrypt API key');
+      }
+
+      console.log('Testing API key for provider:', userKey.ai_providers.name);
       
+      // Now test the decrypted API key
       const { data, error } = await supabase.functions.invoke('test-api-key', {
         body: {
           providerId: userKey.ai_provider_id,
-          apiKey: atob(userKey.encrypted_api_key) // Simple base64 decode for testing
+          apiKey: decryptData.apiKey
         }
       });
 
