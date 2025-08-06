@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { AIKeyStatusOverview } from './AIKeyStatusOverview';
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Zap, 
@@ -168,10 +168,7 @@ export const AIQuestionGenerator = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <AIKeyStatusOverview />
-      
-      <Card>
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="w-5 h-5" />
@@ -368,6 +365,5 @@ export const AIQuestionGenerator = () => {
         </div>
       </CardContent>
     </Card>
-    </div>
   );
 };

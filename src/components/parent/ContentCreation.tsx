@@ -105,18 +105,13 @@ export const ContentCreation = () => {
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
           <TabsTrigger value="upload">Upload</TabsTrigger>
           <TabsTrigger value="books">Books</TabsTrigger>
           <TabsTrigger value="generate">Papers</TabsTrigger>
           <TabsTrigger value="ai-generator">AI Generator</TabsTrigger>
-          <TabsTrigger value="questions">Question Bank</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="bulk">Bulk Ops</TabsTrigger>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
-          <TabsTrigger value="children">Children</TabsTrigger>
-          <TabsTrigger value="settings">AI Settings</TabsTrigger>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
         </TabsList>
 
         <TabsContent value="upload" className="space-y-6">
@@ -236,68 +231,12 @@ export const ContentCreation = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="questions" className="space-y-6">
-          <QuestionBank onQuestionUpdate={handleRefresh} />
-        </TabsContent>
-
         <TabsContent value="ai-generator" className="space-y-6">
           <AIQuestionGenerator />
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-6">
-          <QuestionAnalytics />
-        </TabsContent>
-
         <TabsContent value="bulk" className="space-y-6">
           <BulkQuestionOperations />
-        </TabsContent>
-
-        <TabsContent value="children" className="space-y-6">
-          <ChildrenManagement onChildrenUpdate={handleRefresh} />
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-6">
-          <AIProviderSettings onSettingsUpdate={handleRefresh} />
-        </TabsContent>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Documents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">{documents.length}</div>
-                <p className="text-sm text-muted-foreground">
-                  {documents.filter(d => d.processing_status === 'completed').length} processed
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Question Papers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">{questionPapers.length}</div>
-                <p className="text-sm text-muted-foreground">
-                  {questionPapers.reduce((acc, p) => acc + p.total_questions, 0)} total questions
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Scheduled Tests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">{scheduledTests.length}</div>
-                <p className="text-sm text-muted-foreground">
-                  {scheduledTests.filter(t => new Date(t.end_time) > new Date()).length} active
-                </p>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
