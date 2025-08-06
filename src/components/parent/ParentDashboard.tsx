@@ -32,7 +32,7 @@ export const ParentDashboard = () => {
     <ErrorBoundary>
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-1">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-1 h-auto min-h-[2.5rem] bg-muted/50 p-2 rounded-lg">
           <TabsTrigger value="children" className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3">
             <Users className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Children</span>
