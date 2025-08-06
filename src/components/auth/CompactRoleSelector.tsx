@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Badge } from '@/components/ui/badge';
 import { Shield, Users, User, Info } from 'lucide-react';
 interface CompactRoleSelectorProps {
-  selectedRole: 'admin' | 'parent' | 'child';
+  selectedRole: 'admin' | 'parent' | 'child' | null;
   onRoleSelect: (role: 'admin' | 'parent' | 'child') => void;
 }
 const roleInfo = {
@@ -57,7 +57,7 @@ export const CompactRoleSelector = ({
           </Tooltip>
         </div>
         
-        <Tabs value={selectedRole} onValueChange={value => onRoleSelect(value as any)}>
+        <Tabs value={selectedRole || ''} onValueChange={value => onRoleSelect(value as any)}>
           <TabsList className="grid w-full grid-cols-3 h-auto">
             {Object.entries(roleInfo).map(([role, info]) => <Tooltip key={role}>
                 <TooltipTrigger asChild>

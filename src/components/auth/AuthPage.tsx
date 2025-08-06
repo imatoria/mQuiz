@@ -197,7 +197,7 @@ export const AuthPage = ({
   };
   const RoleSelector = () => <div className="space-y-2">
       
-      <CompactRoleSelector selectedRole={selectedRole || 'child'} onRoleSelect={setSelectedRole} />
+      <CompactRoleSelector selectedRole={selectedRole} onRoleSelect={setSelectedRole} />
     </div>;
   return <TooltipProvider>
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-3 sm:p-4">
