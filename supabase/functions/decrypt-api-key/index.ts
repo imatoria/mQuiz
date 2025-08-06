@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -15,12 +16,24 @@ async function decryptAPIKey(encryptedData: string, key: string): Promise<string
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     
-    // Create a key from the provided string
-    const keyData = encoder.encode(key.padEnd(32, '0').slice(0, 32)); // Ensure 32 bytes
-    const cryptoKey = await crypto.subtle.importKey(
+    // Create a consistent key from the provided string using SHA-256
+    const keyMaterial = await crypto.subtle.importKey(
       'raw',
-      keyData,
-      { name: 'AES-GCM' },
+      encoder.encode(key),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    );
+    
+    const cryptoKey = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: encoder.encode('supabase-encryption-salt'),
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
       false,
       ['decrypt']
     );
@@ -87,11 +100,9 @@ Deno.serve(async (req) => {
     }
 
     // Get encryption key
-    let encryptionKey = Deno.env.get('API_KEY_ENCRYPTION_KEY');
+    const encryptionKey = Deno.env.get('API_KEY_ENCRYPTION_KEY');
     if (!encryptionKey) {
-      // Generate a new encryption key if not set
-      encryptionKey = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
-      console.warn('Using generated encryption key. Set API_KEY_ENCRYPTION_KEY in production.');
+      throw new Error('Encryption key not configured. Please contact your administrator.');
     }
 
     // Decrypt the API key

@@ -22,7 +22,8 @@ import {
   Shield,
   Zap,
   TestTube,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 
 interface AIProvider {
@@ -188,6 +189,45 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     }
   };
 
+  const handleFixEncryption = async (userKey: UserAIProviderKey) => {
+    if (!userKey.ai_providers) return;
+
+    if (!confirm(`This will delete your current ${userKey.ai_providers.name} API key due to encryption key changes. You'll need to re-enter it. Continue?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_ai_provider_keys')
+        .delete()
+        .eq('id', userKey.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "API key cleared",
+        description: `Your ${userKey.ai_providers.name} API key has been cleared. Please add it again.`,
+      });
+
+      // Clear test results for this key
+      setTestResults(prev => {
+        const newResults = { ...prev };
+        delete newResults[userKey.id];
+        return newResults;
+      });
+
+      fetchData();
+      onSettingsUpdate?.();
+
+    } catch (error: any) {
+      toast({
+        title: "Failed to clear API key",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTestKey = async (userKey: UserAIProviderKey) => {
     if (!userKey.ai_providers) return;
 
@@ -202,6 +242,23 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
       });
 
       if (decryptError || !decryptData.success) {
+        // If decryption fails, it's likely due to encryption key mismatch
+        if (decryptData?.error?.includes('Failed to decrypt API key')) {
+          setTestResults(prev => ({
+            ...prev,
+            [userKey.id]: {
+              success: false,
+              message: '✗ Encryption key mismatch - click Fix to resolve'
+            }
+          }));
+          
+          toast({
+            title: "Encryption Key Mismatch",
+            description: `Your ${userKey.ai_providers.name} API key was encrypted with a different key. Click the "Fix Encryption" button to resolve this.`,
+            variant: "destructive",
+          });
+          return;
+        }
         throw new Error(decryptData?.error || 'Failed to decrypt API key');
       }
 
@@ -340,6 +397,17 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
                             >
                               {testResults[userKey!.id].message}
                             </Badge>
+                          )}
+                          {testResults[userKey!.id]?.message?.includes('Encryption key mismatch') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleFixEncryption(userKey!)}
+                              className="text-orange-600 hover:text-orange-700"
+                            >
+                              <RefreshCw className="w-4 h-4 mr-1" />
+                              Fix Encryption
+                            </Button>
                           )}
                           <Button
                             variant="outline"

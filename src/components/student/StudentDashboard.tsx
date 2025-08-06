@@ -66,8 +66,8 @@ export const StudentDashboard = () => {
 
   const fetchTests = async () => {
     return executeAsync(async () => {
-      // Fetch scheduled tests with question paper details
-      const { data: scheduledTests, error } = await supabase
+      // Fetch scheduled tests - first get all tests assigned to all users
+      const { data: allUserTests, error: allUserError } = await supabase
         .from('scheduled_tests')
         .select(`
           *,
@@ -84,8 +84,45 @@ export const StudentDashboard = () => {
             completed_at
           )
         `)
-        .or(`assign_to_all.eq.true,test_assignments.assigned_to_user_id.eq.${user?.id}`)
+        .eq('assign_to_all', true)
         .order('start_time', { ascending: true });
+
+      if (allUserError) throw allUserError;
+
+      // Then get tests specifically assigned to this user
+      const { data: assignedTests, error: assignedError } = await supabase
+        .from('scheduled_tests')
+        .select(`
+          *,
+          question_papers (
+            title,
+            total_questions,
+            time_limit_minutes,
+            subjects (name)
+          ),
+          test_attempts (
+            id,
+            attempt_number,
+            score,
+            completed_at
+          ),
+          test_assignments!inner (
+            assigned_to_user_id
+          )
+        `)
+        .eq('test_assignments.assigned_to_user_id', user?.id)
+        .eq('assign_to_all', false)
+        .order('start_time', { ascending: true });
+
+      if (assignedError) throw assignedError;
+
+      // Combine and deduplicate results
+      const allTests = [...(allUserTests || []), ...(assignedTests || [])];
+      const uniqueTests = allTests.filter((test, index, self) => 
+        index === self.findIndex(t => t.id === test.id)
+      );
+      
+      const scheduledTests = uniqueTests;
 
       if (error) throw error;
 
