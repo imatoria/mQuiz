@@ -180,11 +180,30 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in test-api-key function:', error);
     
+    // Provide more specific error messages based on the error type
+    let errorMessage = error.message || 'Failed to test API key';
+    let statusCode = 400;
+    
+    if (errorMessage.includes('quota') || errorMessage.includes('billing')) {
+      errorMessage = 'OpenAI API quota exceeded. Please check your OpenAI billing and usage limits.';
+      statusCode = 402; // Payment Required
+    } else if (errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('authentication')) {
+      errorMessage = 'Invalid API key. Please check your API key is correct and has the necessary permissions.';
+      statusCode = 401; // Unauthorized
+    } else if (errorMessage.includes('rate limit')) {
+      errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+      statusCode = 429; // Too Many Requests
+    } else if (errorMessage.includes('model')) {
+      errorMessage = 'Model not available or access denied. Please check your API key permissions.';
+      statusCode = 403; // Forbidden
+    }
+    
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message || 'Failed to test API key'
+      error: errorMessage,
+      originalError: error.message // Keep original for debugging
     }), {
-      status: 400,
+      status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
