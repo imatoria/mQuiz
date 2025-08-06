@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { SystemAPIKeys } from './SystemAPIKeys';
 import { 
   Settings, 
   Plus, 
@@ -49,6 +50,7 @@ export const AdminAIProviderConfig = () => {
     description: ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -144,6 +146,7 @@ export const AdminAIProviderConfig = () => {
       setNewProvider({ name: '', provider_key: '', description: '' });
       setEditingProvider(null);
       fetchProviders();
+      setRefreshKey(prev => prev + 1);
 
     } catch (error: any) {
       toast({
@@ -168,6 +171,7 @@ export const AdminAIProviderConfig = () => {
       setProviders(providers.map(provider => 
         provider.id === providerId ? { ...provider, is_active: isActive } : provider
       ));
+      setRefreshKey(prev => prev + 1);
 
       toast({
         title: isActive ? "Provider enabled" : "Provider disabled",
@@ -196,6 +200,7 @@ export const AdminAIProviderConfig = () => {
       if (error) throw error;
 
       setProviders(providers.filter(provider => provider.id !== providerId));
+      setRefreshKey(prev => prev + 1);
 
       toast({
         title: "Provider deleted",
@@ -418,6 +423,9 @@ export const AdminAIProviderConfig = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* System API Keys */}
+      <SystemAPIKeys key={refreshKey} />
     </div>
   );
 };

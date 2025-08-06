@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { UserManagement } from './UserManagement';
 import { SystemAnalytics } from './SystemAnalytics';
-import { SystemAPIKeys } from './SystemAPIKeys';
+
 import { ContentModeration } from './ContentModeration';
 import { AdminAIProviderConfig } from './AdminAIProviderConfig';
 import { SystemSettings } from './SystemSettings';
@@ -153,10 +153,7 @@ export const AdminDashboard = () => {
 
         <TabsContent value="settings">
           <ErrorBoundary>
-            <div className="space-y-6">
-              <SystemSettings />
-              <SystemAPIKeys />
-            </div>
+            <SystemSettings />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

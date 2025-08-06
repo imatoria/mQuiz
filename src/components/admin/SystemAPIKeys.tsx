@@ -27,47 +27,62 @@ interface APIKeyConfig {
   envKey: string;
 }
 
-const apiConfigs: APIKeyConfig[] = [
-  {
-    name: 'OpenAI',
-    key: 'OPENAI_API_KEY',
-    description: 'Used for document processing and question generation with GPT models',
-    icon: <Zap className="w-5 h-5" />,
-    envKey: 'OPENAI_API_KEY'
-  },
-  {
-    name: 'Anthropic',
-    key: 'ANTHROPIC_API_KEY', 
-    description: 'Used for document processing with Claude models',
-    icon: <Shield className="w-5 h-5" />,
-    envKey: 'ANTHROPIC_API_KEY'
-  },
-  {
-    name: 'Google Gemini',
-    key: 'GEMINI_API_KEY',
-    description: 'Used for document processing with Gemini models',
-    icon: <Settings className="w-5 h-5" />,
-    envKey: 'GEMINI_API_KEY'
-  }
-];
+interface SystemAPIKeysProps {
+  key?: number;
+}
 
-export const SystemAPIKeys = () => {
+export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
+  const [providers, setProviders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [configuredKeys, setConfiguredKeys] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
-    // In a real implementation, you would check which keys are configured
-    // For now, we'll just show placeholders
-    checkConfiguredKeys();
+    fetchProviders();
   }, []);
+
+  const fetchProviders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ai_providers')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setProviders(data || []);
+      checkConfiguredKeys();
+    } catch (error: any) {
+      toast({
+        title: "Error fetching AI providers",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const checkConfiguredKeys = async () => {
     // This would typically call an edge function to check which environment variables are set
     // For now, we'll assume none are configured
     setConfiguredKeys(new Set());
+  };
+
+  const getProviderIcon = (providerKey: string) => {
+    switch (providerKey.toLowerCase()) {
+      case 'openai':
+        return <Zap className="w-5 h-5" />;
+      case 'anthropic':
+        return <Shield className="w-5 h-5" />;
+      case 'gemini':
+        return <Settings className="w-5 h-5" />;
+      default:
+        return <Key className="w-5 h-5" />;
+    }
   };
 
   const handleKeyChange = (keyName: string, value: string) => {
@@ -142,24 +157,24 @@ export const SystemAPIKeys = () => {
         </Alert>
 
         <div className="space-y-4">
-          {apiConfigs.map((config) => {
-            const isConfigured = configuredKeys.has(config.key);
-            const currentValue = apiKeys[config.key] || '';
-            const isShown = showKeys[config.key] || false;
+          {providers.map((provider) => {
+            const isConfigured = configuredKeys.has(provider.provider_key);
+            const currentValue = apiKeys[provider.provider_key] || '';
+            const isShown = showKeys[provider.provider_key] || false;
 
             return (
-              <Card key={config.key} className="border-2">
+              <Card key={provider.id} className="border-2">
                 <CardContent className="pt-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg">
-                          {config.icon}
+                          {getProviderIcon(provider.provider_key)}
                         </div>
                         <div>
-                          <h3 className="font-medium">{config.name}</h3>
+                          <h3 className="font-medium">{provider.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {config.description}
+                            {provider.description || `Used for document processing with ${provider.name} models`}
                           </p>
                         </div>
                       </div>
@@ -180,16 +195,16 @@ export const SystemAPIKeys = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor={config.key}>
-                        {config.name} API Key
+                      <Label htmlFor={provider.provider_key}>
+                        {provider.name} API Key
                       </Label>
                       <div className="relative">
                         <Input
-                          id={config.key}
+                          id={provider.provider_key}
                           type={isShown ? "text" : "password"}
                           value={currentValue}
-                          onChange={(e) => handleKeyChange(config.key, e.target.value)}
-                          placeholder={isConfigured ? "••••••••••••••••" : `Enter your ${config.name} API key`}
+                          onChange={(e) => handleKeyChange(provider.provider_key, e.target.value)}
+                          placeholder={isConfigured ? "••••••••••••••••" : `Enter your ${provider.name} API key`}
                           className="pr-10"
                         />
                         <Button
@@ -197,7 +212,7 @@ export const SystemAPIKeys = () => {
                           variant="ghost"
                           size="sm"
                           className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => toggleShowKey(config.key)}
+                          onClick={() => toggleShowKey(provider.provider_key)}
                         >
                           {isShown ? (
                             <EyeOff className="h-4 w-4" />
