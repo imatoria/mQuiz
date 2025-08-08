@@ -228,20 +228,97 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     }
   };
 
+  const handleTestSimple = async () => {
+    console.log('Testing simple edge function...');
+    try {
+      const { data, error } = await supabase.functions.invoke('test-simple');
+      console.log('Simple test response:', { data, error });
+
+      if (error) {
+        toast({
+          title: "Simple Test Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Simple Test Success",
+          description: `Function working: ${data.message}`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Simple test error:', error);
+      toast({
+        title: "Simple Test Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDebugTest = async () => {
+    console.log('Testing debug function...');
+    try {
+      const { data, error } = await supabase.functions.invoke('debug-test');
+      console.log('Debug test response:', { data, error });
+
+      if (error) {
+        toast({
+          title: "Debug Test Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Debug Test Success",
+          description: `Environment check completed`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Debug test error:', error);
+      toast({
+        title: "Debug Test Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTestKey = async (userKey: UserAIProviderKey) => {
     if (!userKey.ai_providers) return;
 
     setIsTestingKey(true);
-    
+    console.log('Starting API key test for:', userKey.ai_providers.name);
+
     try {
       // First decrypt the API key
+      console.log('Calling decrypt-api-key function...');
       const { data: decryptData, error: decryptError } = await supabase.functions.invoke('decrypt-api-key', {
         body: {
           providerId: userKey.ai_provider_id
         }
       });
 
-      if (decryptError || !decryptData.success) {
+      console.log('Decrypt response:', { decryptData, decryptError });
+
+      // Log more details about the error
+      if (decryptError) {
+        console.error('Decrypt error details:', {
+          message: decryptError.message,
+          name: decryptError.name,
+          stack: decryptError.stack,
+          details: decryptError.details || 'No details'
+        });
+      }
+
+      if (decryptError || !decryptData?.success) {
+        console.error('Decryption failed:', decryptError, decryptData);
+
+        // Handle edge function errors
+        if (decryptError?.message?.includes('edge function returned a non-2xx status code')) {
+          throw new Error('Failed to decrypt API key. Please contact support.');
+        }
+
         // If decryption fails, it's likely due to encryption key mismatch
         if (decryptData?.error?.includes('Failed to decrypt API key')) {
           setTestResults(prev => ({
@@ -251,7 +328,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
               message: '✗ Encryption key mismatch - click Fix to resolve'
             }
           }));
-          
+
           toast({
             title: "Encryption Key Mismatch",
             description: `Your ${userKey.ai_providers.name} API key was encrypted with a different key. Click the "Fix Encryption" button to resolve this.`,
@@ -259,12 +336,13 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
           });
           return;
         }
-        throw new Error(decryptData?.error || 'Failed to decrypt API key');
+        throw new Error(decryptData?.error || decryptError?.message || 'Failed to decrypt API key');
       }
 
       console.log('Testing API key for provider:', userKey.ai_providers.name);
-      
+
       // Now test the decrypted API key
+      console.log('Calling test-api-key function...');
       const { data, error } = await supabase.functions.invoke('test-api-key', {
         body: {
           providerId: userKey.ai_provider_id,
@@ -272,9 +350,29 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
         }
       });
 
-      if (error) throw error;
+      console.log('Test response:', { data, error });
+
+      // Log more details about the test error
+      if (error) {
+        console.error('Test error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+          details: error.details || 'No details'
+        });
+      }
+
+      if (error) {
+        console.error('Test API key error:', error);
+        // Handle different types of errors from the edge function
+        if (error.message?.includes('edge function returned a non-2xx status code')) {
+          throw new Error('API key test failed. Please check your API key and try again.');
+        }
+        throw error;
+      }
 
       if (data.success) {
+        console.log('API key test successful:', data);
         setTestResults(prev => ({
           ...prev,
           [userKey.id]: {
@@ -283,27 +381,46 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
             model: data.model
           }
         }));
-        
+
         toast({
           title: "API Key Valid",
           description: `${userKey.ai_providers.name} API key is working correctly with ${data.model}.`,
         });
       } else {
-        throw new Error(data.error);
+        console.error('API key test failed:', data);
+        throw new Error(data.error || 'API key test failed');
       }
 
     } catch (error: any) {
+      console.error('handleTestKey error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+
+      let errorMessage = error.message;
+
+      // Provide more user-friendly error messages
+      if (errorMessage.includes('edge function returned a non-2xx status code')) {
+        errorMessage = 'API key test failed. Please check your API key and try again.';
+      } else if (errorMessage.includes('Failed to decrypt')) {
+        errorMessage = 'Unable to decrypt API key. Please re-enter your API key.';
+      } else if (errorMessage.includes('Unauthorized')) {
+        errorMessage = 'Authentication failed. Please refresh the page and try again.';
+      }
+
       setTestResults(prev => ({
         ...prev,
         [userKey.id]: {
           success: false,
-          message: `✗ ${error.message}`
+          message: `✗ ${errorMessage}`
         }
       }));
-      
+
       toast({
-        title: "API Key Invalid",
-        description: `${userKey.ai_providers?.name} API key test failed: ${error.message}`,
+        title: "API Key Test Failed",
+        description: `${userKey.ai_providers?.name} API key test failed: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -351,6 +468,26 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
           <CardDescription>
             Configure your own API keys for AI providers to generate questions from your documents.
           </CardDescription>
+          <div className="mt-4 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestSimple}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              <TestTube className="w-4 h-4 mr-1" />
+              Test Edge Functions
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDebugTest}
+              className="text-purple-600 hover:text-purple-700"
+            >
+              <TestTube className="w-4 h-4 mr-1" />
+              Debug Test
+            </Button>
+          </div>
         </CardHeader>
       
       <CardContent className="space-y-6">
