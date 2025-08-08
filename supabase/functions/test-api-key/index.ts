@@ -61,6 +61,20 @@ async function testOpenAI(apiKey: string) {
 // Helper function to test Anthropic API
 async function testAnthropic(apiKey: string) {
   console.log('Testing Anthropic API...');
+  console.log('API key format check:', apiKey.startsWith('sk-ant-') ? 'Valid format' : 'Invalid format - should start with sk-ant-');
+
+  const requestBody = {
+    model: 'claude-3-haiku-20240307',
+    max_tokens: 10,
+    messages: [
+      {
+        role: 'user',
+        content: 'Say "API key is working" if you receive this message.'
+      }
+    ]
+  };
+
+  console.log('Anthropic request body:', JSON.stringify(requestBody, null, 2));
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -69,19 +83,11 @@ async function testAnthropic(apiKey: string) {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01'
     },
-    body: JSON.stringify({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 10,
-      messages: [
-        {
-          role: 'user',
-          content: 'Say "API key is working" if you receive this message.'
-        }
-      ]
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   console.log('Anthropic response status:', response.status);
+  console.log('Anthropic response headers:', Object.fromEntries(response.headers.entries()));
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -210,25 +216,41 @@ Deno.serve(async (req) => {
       .eq('id', providerId)
       .single();
 
+    console.log('Provider lookup result:', { provider, providerError });
+
     if (providerError || !provider) {
-      throw new Error('Provider not found');
+      console.error('Provider lookup failed:', providerError);
+      throw new Error(`Provider not found: ${providerError?.message || 'Unknown error'}`);
     }
 
     console.log(`Testing ${provider.name} API key for user ${user.id}`);
+    console.log('Provider details:', {
+      id: provider.id,
+      name: provider.name,
+      provider_key: provider.provider_key,
+      is_active: provider.is_active
+    });
 
     // Test the API key based on provider
+    console.log('Determining test function for provider_key:', provider.provider_key);
+    console.log('Provider key lowercase:', provider.provider_key.toLowerCase());
+
     let testResult;
     switch (provider.provider_key.toLowerCase()) {
       case 'openai':
+        console.log('Calling testOpenAI function...');
         testResult = await testOpenAI(apiKey);
         break;
       case 'anthropic':
+        console.log('Calling testAnthropic function...');
         testResult = await testAnthropic(apiKey);
         break;
       case 'gemini':
+        console.log('Calling testGemini function...');
         testResult = await testGemini(apiKey);
         break;
       default:
+        console.error('Unsupported provider key:', provider.provider_key);
         throw new Error(`Unsupported provider: ${provider.provider_key}`);
     }
 

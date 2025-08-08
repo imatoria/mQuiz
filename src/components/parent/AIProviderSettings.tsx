@@ -284,6 +284,75 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     }
   };
 
+  const handleTestAnthropicDirect = async () => {
+    console.log('Testing Anthropic directly from browser...');
+
+    // Get the Anthropic API key from user input
+    const apiKey = prompt('Enter your Anthropic API key for direct testing:');
+    if (!apiKey) return;
+
+    try {
+      console.log('Testing Anthropic API directly from browser...');
+      console.log('API key format:', apiKey.startsWith('sk-ant-') ? 'Valid format' : 'Invalid format');
+
+      const requestBody = {
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 10,
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello'
+          }
+        ]
+      };
+
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('Response body:', responseText);
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (parseError) {
+          throw new Error(`Anthropic API error (${response.status}): ${responseText}`);
+        }
+
+        const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${responseText}`;
+        throw new Error(`Anthropic API error: ${errorMessage}`);
+      }
+
+      const data = JSON.parse(responseText);
+
+      toast({
+        title: "Direct Browser Test Success",
+        description: `Anthropic API working: ${data.content[0].text}`,
+      });
+
+    } catch (error: any) {
+      console.error('Direct browser test error:', error);
+      toast({
+        title: "Direct Browser Test Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTestKey = async (userKey: UserAIProviderKey) => {
     if (!userKey.ai_providers) return;
 
@@ -468,7 +537,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
           <CardDescription>
             Configure your own API keys for AI providers to generate questions from your documents.
           </CardDescription>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
@@ -486,6 +555,15 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
             >
               <TestTube className="w-4 h-4 mr-1" />
               Debug Test
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestAnthropicDirect}
+              className="text-orange-600 hover:text-orange-700"
+            >
+              <TestTube className="w-4 h-4 mr-1" />
+              Test Anthropic Direct
             </Button>
           </div>
         </CardHeader>
