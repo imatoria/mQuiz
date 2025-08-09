@@ -30,26 +30,22 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
   
   const totalPages = availablePages.length;
   const totalViews = Math.ceil(totalPages / pagesPerView);
-  const startIndex = currentPageIndex * pagesPerView;
-  const endIndex = Math.min(startIndex + pagesPerView, totalPages);
-  const currentViewPages = availablePages.slice(startIndex, endIndex);
+  const startIndex = Math.max(0, currentPageIndex) * pagesPerView;
+  let currentViewPages: number[] = [];
+  if (startIndex < totalPages) {
+    const endIndex = Math.min(startIndex + pagesPerView, totalPages);
+    currentViewPages = availablePages.slice(startIndex, endIndex);
+  } else {
+    const lastPage = availablePages.length > 0 ? availablePages[availablePages.length - 1] : 0;
+    const overflow = startIndex - totalPages;
+    const baseStart = lastPage + 1 + overflow;
+    currentViewPages = Array.from({ length: pagesPerView }, (_, i) => baseStart + i);
+  }
   
   const allSelected = availablePages.length > 0 && selectedPages.length === availablePages.length;
-  const currentViewAllSelected = currentViewPages.length > 0 && 
-    currentViewPages.every(page => selectedPages.includes(page));
 
   const toggleAll = (checked: boolean) => {
     onChange(checked ? [...availablePages] : []);
-  };
-
-  const toggleCurrentView = (checked: boolean) => {
-    if (checked) {
-      const newSelected = [...new Set([...selectedPages, ...currentViewPages])];
-      onChange(newSelected);
-    } else {
-      const newSelected = selectedPages.filter(page => !currentViewPages.includes(page));
-      onChange(newSelected);
-    }
   };
 
   const togglePage = (page: number, checked: boolean) => {
@@ -62,7 +58,7 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
   };
 
   const goToNext = () => {
-    setCurrentPageIndex((prev) => Math.min(totalViews - 1, prev + 1));
+    setCurrentPageIndex((prev) => prev + 1);
   };
   const display = selectedPages.length > 0
     ? `${selectedPages.length} page${selectedPages.length > 1 ? 's' : ''} selected`
@@ -106,51 +102,8 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
             />
             <label htmlFor="select-all-pages" className="text-sm">Select All ({totalPages})</label>
           </div>
-          {totalViews > 1 && (
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={goToPrevious}
-                onMouseDown={(e) => e.preventDefault()}
-                disabled={currentPageIndex === 0}
-                className="h-6 w-6 p-0"
-                aria-label="Previous pages"
-              >
-                <ChevronLeft className="h-3 w-3" />
-              </Button>
-              <span className="text-xs text-muted-foreground px-2">
-                {currentPageIndex + 1}/{totalViews}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={goToNext}
-                onMouseDown={(e) => e.preventDefault()}
-                disabled={currentPageIndex === totalViews - 1}
-                className="h-6 w-6 p-0"
-                aria-label="Next pages"
-              >
-                <ChevronRight className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
         </div>
         
-        {totalViews > 1 && (
-          <div className="border-b px-3 py-2 flex items-center gap-2">
-            <Checkbox 
-              id="select-current-view" 
-              checked={currentViewAllSelected} 
-              onCheckedChange={(v) => toggleCurrentView(!!v)} 
-            />
-            <label htmlFor="select-current-view" className="text-sm">
-              Select Current View ({startIndex + 1}-{endIndex})
-            </label>
-          </div>
-        )}
         
         <ScrollArea className="max-h-64">
           <div className="grid grid-cols-3 gap-2 p-3">
@@ -167,7 +120,7 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
           </div>
         </ScrollArea>
 
-          <div className="border-t px-3 py-2 flex items-center justify-center gap-2">
+          <div className="border-t px-3 py-2 flex items-center justify-between">
             <Button
               type="button"
               variant="ghost"
@@ -180,19 +133,24 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>
+            <span className="text-xs text-muted-foreground">View {currentPageIndex + 1}</span>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={goToNext}
               onMouseDown={(e) => e.preventDefault()}
-              disabled={currentPageIndex === totalViews - 1}
               aria-label="Next pages"
             >
               Next
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
+        {totalPages > 0 && selectedPages.length === totalPages && (
+          <div className="px-3 pt-2 text-xs text-destructive">
+            You have selected all pages of the document. Please select only the required pages.
+          </div>
+        )}
         <div className="px-3 pb-3 text-xs text-muted-foreground">
           <span className="font-medium">Selected:</span> {selectedSummary}
         </div>
