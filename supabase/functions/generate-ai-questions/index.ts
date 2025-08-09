@@ -6,9 +6,8 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Fallback API keys (admin-configured)
-const fallbackOpenAIKey = Deno.env.get('OPENAI_API_KEY');
-const fallbackAnthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
 const fallbackGeminiKey = Deno.env.get('GEMINI_API_KEY');
+const fallbackGroqKey = Deno.env.get('GROQ_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,7 +24,7 @@ async function getUserApiKey(supabase: any, userId: string, providerKey: string)
     `)
     .eq('user_id', userId)
     .eq('ai_providers.provider_key', providerKey)
-    .single();
+    .maybeSingle();
 
   if (userKey?.encrypted_api_key) {
     // Simple decryption (base64 decode)
@@ -35,69 +34,7 @@ async function getUserApiKey(supabase: any, userId: string, providerKey: string)
   return null;
 }
 
-// Helper function to call OpenAI API
-async function callOpenAI(apiKey: string, prompt: string) {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4.1-2025-04-14',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert educator that creates high-quality educational questions. Always return valid JSON format.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      max_tokens: 4000,
-      temperature: 0.7,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'OpenAI API error');
-  }
-
-  const data = await response.json();
-  return data.choices[0].message.content;
-}
-
-// Helper function to call Anthropic API
-async function callAnthropic(apiKey: string, prompt: string) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-opus-4-20250514',
-      max_tokens: 4000,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Anthropic API error');
-  }
-
-  const data = await response.json();
-  return data.content[0].text;
-}
+//
 
 // Helper function to call Google Gemini API
 async function callGemini(apiKey: string, prompt: string) {
@@ -126,6 +63,35 @@ async function callGemini(apiKey: string, prompt: string) {
 
   const data = await response.json();
   return data.candidates[0].content.parts[0].text;
+}
+
+// Helper function to call Groq API
+async function callGroq(apiKey: string, prompt: string) {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant that strictly returns valid JSON arrays of questions as requested. Do not include any prose or markdown.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.3
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error?.message || 'Groq API error');
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Groq returned empty response');
+  return text;
 }
 
 serve(async (req) => {
@@ -162,64 +128,57 @@ serve(async (req) => {
       .from('subjects')
       .select('name')
       .eq('id', config.subject_id)
-      .single();
+      .maybeSingle();
 
     const subjectName = subjectData?.name || 'General';
 
     // Get document information if provided
     let documentContext = '';
     if (config.document_id) {
-      const { data: documentData } = await supabase
+      // Fetch document title
+      const { data: docMeta } = await supabase
         .from('documents')
-        .select('title, content')
+        .select('title')
         .eq('id', config.document_id)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (documentData) {
-        documentContext = `\nDocument Context: "${documentData.title}"`;
-        if (documentData.content) {
-          documentContext += `\nContent: ${documentData.content.substring(0, 1000)}...`;
+      // Fetch first pages' content to use as context
+      const { data: pages } = await supabase
+        .from('document_pages')
+        .select('content, page_number')
+        .eq('document_id', config.document_id)
+        .order('page_number', { ascending: true })
+        .limit(20);
+
+      const combined = (pages || [])
+        .map(p => p.content || '')
+        .filter(Boolean)
+        .join('\n')
+        .slice(0, 4000);
+
+      if (docMeta || combined) {
+        documentContext = `\nDocument Context: "${docMeta?.title || 'Selected Document'}"`;
+        if (combined) {
+          documentContext += `\nContent: ${combined}...`;
         }
       }
     }
 
-    // Try to get user's API keys in order of preference
-    let apiKey = null;
-    let providerType = null;
+    // Build list of provider candidates in order of preference (Gemini, then Groq)
+    const candidates: Array<{ type: 'gemini' | 'groq'; key: string }> = [];
 
-    // Try OpenAI first
-    apiKey = await getUserApiKey(supabase, user.id, 'openai');
-    if (apiKey) {
-      providerType = 'openai';
-    } else {
-      // Try Anthropic
-      apiKey = await getUserApiKey(supabase, user.id, 'anthropic');
-      if (apiKey) {
-        providerType = 'anthropic';
-      } else {
-        // Try Gemini
-        apiKey = await getUserApiKey(supabase, user.id, 'gemini');
-        if (apiKey) {
-          providerType = 'gemini';
-        }
-      }
-    }
+    const userGeminiKey = await getUserApiKey(supabase, user.id, 'gemini');
+    if (userGeminiKey) candidates.push({ type: 'gemini', key: userGeminiKey });
 
-    // Fall back to admin keys if user doesn't have any configured
-    if (!apiKey) {
-      if (fallbackOpenAIKey) {
-        apiKey = fallbackOpenAIKey;
-        providerType = 'openai';
-      } else if (fallbackAnthropicKey) {
-        apiKey = fallbackAnthropicKey;
-        providerType = 'anthropic';
-      } else if (fallbackGeminiKey) {
-        apiKey = fallbackGeminiKey;
-        providerType = 'gemini';
-      } else {
-        throw new Error('No AI provider API key available. Please configure your API keys in settings.');
-      }
+    const userGroqKey = await getUserApiKey(supabase, user.id, 'groq');
+    if (userGroqKey) candidates.push({ type: 'groq', key: userGroqKey });
+
+    if (fallbackGeminiKey) candidates.push({ type: 'gemini', key: fallbackGeminiKey });
+    if (fallbackGroqKey) candidates.push({ type: 'groq', key: fallbackGroqKey });
+
+    if (candidates.length === 0) {
+      throw new Error('No AI provider API key available. Please configure your Gemini or Groq API key in settings.');
     }
 
     // Build the difficulty instruction
@@ -281,27 +240,34 @@ Return ONLY valid JSON in this exact format:
 
 Note: For true/false questions, use only option_a and option_b. For fill-in-the-blank, put the answer in option_a and leave other options empty.`;
 
-    console.log(`Using ${providerType} provider for question generation`);
+    console.log(`Attempting providers in order: ${candidates.map(c => c.type).join(', ')}`);
 
-    // Call the appropriate AI provider
-    let generatedText;
-    try {
-      switch (providerType) {
-        case 'openai':
-          generatedText = await callOpenAI(apiKey, prompt);
-          break;
-        case 'anthropic':
-          generatedText = await callAnthropic(apiKey, prompt);
-          break;
-        case 'gemini':
-          generatedText = await callGemini(apiKey, prompt);
-          break;
-        default:
-          throw new Error('Unsupported AI provider');
+    // Try providers in order until one succeeds
+    let generatedText: string | undefined;
+    let providerTypeUsed: 'gemini' | 'groq' | undefined;
+    let lastError: any;
+
+    // Try providers in order until one succeeds
+    for (const candidate of candidates) {
+      try {
+        console.log(`Trying provider: ${candidate.type}`);
+        if (candidate.type === 'gemini') {
+          generatedText = await callGemini(candidate.key, prompt);
+        } else if (candidate.type === 'groq') {
+          generatedText = await callGroq(candidate.key, prompt);
+        }
+        providerTypeUsed = candidate.type;
+        console.log(`Provider ${candidate.type} succeeded`);
+        break;
+      } catch (aiError: any) {
+        console.error(`${candidate.type} API error:`, aiError);
+        lastError = aiError;
+        continue;
       }
-    } catch (aiError) {
-      console.error(`${providerType} API error:`, aiError);
-      throw new Error(`AI provider error: ${aiError.message}`);
+    }
+
+    if (!generatedText || !providerTypeUsed) {
+      throw new Error(`AI provider error: ${lastError?.message || 'All providers failed'}`);
     }
 
     // Parse the JSON response
@@ -382,7 +348,7 @@ Note: For true/false questions, use only option_a and option_b. For fill-in-the-
     return new Response(JSON.stringify({ 
       success: true, 
       questionsGenerated: questions.length,
-      provider: providerType
+      provider: providerTypeUsed
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

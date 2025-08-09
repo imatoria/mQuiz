@@ -33,6 +33,7 @@ export const DocumentLibrary = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [pageSelections, setPageSelections] = useState<Record<string, number[]>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,6 +64,24 @@ export const DocumentLibrary = () => {
 
       setDocuments(documentsData || []);
       setSubjects(subjectsData || []);
+
+      // Fetch selected pages per document (ordered desc)
+      const docIds = (documentsData || []).map((d: any) => d.id);
+      if (docIds.length > 0) {
+        const { data: selections } = await supabase
+          .from('document_page_selections')
+          .select('document_id, page_number')
+          .in('document_id', docIds)
+          .order('page_number', { ascending: false });
+        const map: Record<string, number[]> = {};
+        (selections || []).forEach((row: any) => {
+          if (!map[row.document_id]) map[row.document_id] = [];
+          map[row.document_id].push(row.page_number);
+        });
+        setPageSelections(map);
+      } else {
+        setPageSelections({});
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -446,6 +465,11 @@ export const DocumentLibrary = () => {
                       <div className="text-xs text-muted-foreground">
                         Created {new Date(document.created_at).toLocaleDateString()}
                       </div>
+                      {pageSelections[document.id]?.length ? (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Pages:</span> {pageSelections[document.id].join(', ')}
+                        </div>
+                      ) : null}
                     </div>
                   </CardContent>
                 </Card>

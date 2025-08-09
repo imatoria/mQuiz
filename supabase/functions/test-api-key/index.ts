@@ -9,110 +9,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to test OpenAI API
-async function testOpenAI(apiKey: string) {
-  console.log('Testing OpenAI API...');
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'user',
-          content: 'Say "API key is working" if you receive this message.'
-        }
-      ],
-      max_tokens: 10,
-    }),
-  });
-
-  console.log('OpenAI response status:', response.status);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('OpenAI API error response:', errorText);
-
-    let errorData;
-    try {
-      errorData = JSON.parse(errorText);
-    } catch (parseError) {
-      throw new Error(`OpenAI API test failed with status ${response.status}: ${errorText}`);
-    }
-
-    const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${errorText}`;
-    throw new Error(errorMessage);
-  }
-
-  const data = await response.json();
-  console.log('OpenAI successful response:', JSON.stringify(data, null, 2));
-
-  return {
-    success: true,
-    response: data.choices[0].message.content,
-    model: 'gpt-4o-mini'
-  };
-}
-
-// Helper function to test Anthropic API
-async function testAnthropic(apiKey: string) {
-  console.log('Testing Anthropic API...');
-  console.log('API key format check:', apiKey.startsWith('sk-ant-') ? 'Valid format' : 'Invalid format - should start with sk-ant-');
-
-  const requestBody = {
-    model: 'claude-3-haiku-20240307',
-    max_tokens: 10,
-    messages: [
-      {
-        role: 'user',
-        content: 'Say "API key is working" if you receive this message.'
-      }
-    ]
-  };
-
-  console.log('Anthropic request body:', JSON.stringify(requestBody, null, 2));
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  console.log('Anthropic response status:', response.status);
-  console.log('Anthropic response headers:', Object.fromEntries(response.headers.entries()));
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Anthropic API error response:', errorText);
-
-    let errorData;
-    try {
-      errorData = JSON.parse(errorText);
-    } catch (parseError) {
-      throw new Error(`Anthropic API test failed with status ${response.status}: ${errorText}`);
-    }
-
-    const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${errorText}`;
-    throw new Error(errorMessage);
-  }
-
-  const data = await response.json();
-  console.log('Anthropic successful response:', JSON.stringify(data, null, 2));
-
-  return {
-    success: true,
-    response: data.content[0].text,
-    model: 'claude-3-haiku-20240307'
-  };
-}
+// Supported providers: Gemini, Groq
 
 // Helper function to test Google Gemini API
 async function testGemini(apiKey: string) {
@@ -169,6 +66,98 @@ async function testGemini(apiKey: string) {
     success: true,
     response: data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response text found',
     model: 'gemini-1.5-flash-latest'
+  };
+}
+
+// Helper function to test Groq API
+async function testGroq(apiKey: string) {
+  console.log('Testing Groq API...');
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        { role: 'user', content: 'Say "API key is working" if you receive this message.' }
+      ],
+      max_tokens: 10,
+    }),
+  });
+
+  console.log('Groq response status:', response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Groq API error response:', errorText);
+
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch (parseError) {
+      throw new Error(`Groq API test failed with status ${response.status}: ${errorText}`);
+    }
+
+    const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${errorText}`;
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  console.log('Groq successful response:', JSON.stringify(data, null, 2));
+
+  return {
+    success: true,
+    response: data.choices?.[0]?.message?.content ?? 'No response text found',
+    model: 'llama-3.1-8b-instant'
+  };
+}
+
+// Helper function to test DeepSeek API
+async function testDeepSeek(apiKey: string) {
+  console.log('Testing DeepSeek API...');
+
+  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'user', content: 'Say "API key is working" if you receive this message.' }
+      ],
+      max_tokens: 10,
+    }),
+  });
+
+  console.log('DeepSeek response status:', response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('DeepSeek API error response:', errorText);
+
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch (parseError) {
+      throw new Error(`DeepSeek API test failed with status ${response.status}: ${errorText}`);
+    }
+
+    const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${errorText}`;
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  console.log('DeepSeek successful response:', JSON.stringify(data, null, 2));
+
+  return {
+    success: true,
+    response: data.choices?.[0]?.message?.content ?? 'No response text found',
+    model: 'deepseek-chat'
   };
 }
 
@@ -236,18 +225,18 @@ Deno.serve(async (req) => {
     console.log('Provider key lowercase:', provider.provider_key.toLowerCase());
 
     let testResult;
-    switch (provider.provider_key.toLowerCase()) {
-      case 'openai':
-        console.log('Calling testOpenAI function...');
-        testResult = await testOpenAI(apiKey);
-        break;
-      case 'anthropic':
-        console.log('Calling testAnthropic function...');
-        testResult = await testAnthropic(apiKey);
-        break;
+switch (provider.provider_key.toLowerCase()) {
       case 'gemini':
         console.log('Calling testGemini function...');
         testResult = await testGemini(apiKey);
+        break;
+      case 'groq':
+        console.log('Calling testGroq function...');
+        testResult = await testGroq(apiKey);
+        break;
+      case 'deepseek':
+        console.log('Calling testDeepSeek function...');
+        testResult = await testDeepSeek(apiKey);
         break;
       default:
         console.error('Unsupported provider key:', provider.provider_key);

@@ -292,6 +292,83 @@ export type Database = {
         }
         Relationships: []
       }
+      document_page_selections: {
+        Row: {
+          class_level: Database["public"]["Enums"]["class_level"]
+          created_at: string
+          document_id: string
+          id: string
+          page_number: number
+          subject_id: string
+          user_id: string
+        }
+        Insert: {
+          class_level: Database["public"]["Enums"]["class_level"]
+          created_at?: string
+          document_id: string
+          id?: string
+          page_number: number
+          subject_id: string
+          user_id: string
+        }
+        Update: {
+          class_level?: Database["public"]["Enums"]["class_level"]
+          created_at?: string
+          document_id?: string
+          id?: string
+          page_number?: number
+          subject_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_page_selections_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_page_selections_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_pages: {
+        Row: {
+          content: string | null
+          created_at: string
+          document_id: string
+          id: string
+          page_number: number
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          document_id: string
+          id?: string
+          page_number: number
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          document_id?: string
+          id?: string
+          page_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_pages_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_shares: {
         Row: {
           created_at: string
@@ -1105,6 +1182,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_subjects: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

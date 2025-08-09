@@ -53,7 +53,7 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
         .order('name');
 
       if (error) throw error;
-      setProviders(data || []);
+      setProviders((data || []).filter(p => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
       checkConfiguredKeys();
     } catch (error: any) {
       toast({
@@ -74,10 +74,6 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
 
   const getProviderIcon = (providerKey: string) => {
     switch (providerKey.toLowerCase()) {
-      case 'openai':
-        return <Zap className="w-5 h-5" />;
-      case 'anthropic':
-        return <Shield className="w-5 h-5" />;
       case 'gemini':
         return <Settings className="w-5 h-5" />;
       default:

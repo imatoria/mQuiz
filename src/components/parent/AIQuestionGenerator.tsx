@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import PageMultiSelect from '@/components/ui/page-multi-select';
 
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -45,6 +46,7 @@ interface GenerationConfig {
   question_type: string;
   custom_instructions: string;
   document_id?: string;
+  selected_pages?: number[];
 }
 
 export const AIQuestionGenerator = () => {
@@ -62,6 +64,8 @@ export const AIQuestionGenerator = () => {
     document_id: ''
   });
   const { toast } = useToast();
+  const [availablePages, setAvailablePages] = useState<number[]>([]);
+  const [selectedPages, setSelectedPages] = useState<number[]>([]);
 
   const classLevels = [
     'grade_1', 'grade_2', 'grade_3', 'grade_4', 'grade_5', 'grade_6',
@@ -117,6 +121,29 @@ export const AIQuestionGenerator = () => {
     }
   };
 
+  const fetchAvailablePages = async () => {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user || !config.subject_id || !config.class_level) {
+      setAvailablePages([]);
+      setSelectedPages([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('document_page_selections')
+      .select('page_number')
+      .eq('user_id', user.user.id)
+      .eq('subject_id', config.subject_id)
+      .eq('class_level', config.class_level as any)
+      .order('page_number', { ascending: false });
+    const pages = Array.from(new Set((data || []).map((r: any) => r.page_number)));
+    setAvailablePages(pages);
+    setSelectedPages([]);
+  };
+
+  useEffect(() => {
+    fetchAvailablePages();
+  }, [config.subject_id, config.class_level]);
+
   const handleGenerateQuestions = async () => {
     if (!config.topic.trim() || !config.subject_id || !config.class_level) {
       toast({
@@ -133,7 +160,7 @@ export const AIQuestionGenerator = () => {
       // Call the AI question generation edge function
       const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
         body: {
-          config: config
+          config: { ...config, selected_pages: selectedPages }
         }
       });
 
@@ -305,14 +332,14 @@ export const AIQuestionGenerator = () => {
           <div className="space-y-2">
             <Label>Base on Document (Optional)</Label>
             <Select 
-              value={config.document_id} 
-              onValueChange={(value) => setConfig({ ...config, document_id: value })}
+              value={config.document_id || 'none'} 
+              onValueChange={(value) => setConfig({ ...config, document_id: value === 'none' ? '' : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a document (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No document - topic only</SelectItem>
+                <SelectItem value="none">No document - topic only</SelectItem>
                 {documents.map((doc) => (
                   <SelectItem key={doc.id} value={doc.id}>
                     <div className="flex items-center gap-2">
@@ -326,6 +353,19 @@ export const AIQuestionGenerator = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        )}
+
+        {(config.subject_id && config.class_level) && (
+          <div className="space-y-2">
+            <Label>Pages to Include</Label>
+            <PageMultiSelect
+              label="Select Pages"
+              availablePages={availablePages}
+              selectedPages={selectedPages}
+              onChange={setSelectedPages}
+              className="w-full"
+            />
           </div>
         )}
 

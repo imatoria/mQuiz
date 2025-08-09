@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileQuestion, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import PageMultiSelect from '@/components/ui/page-multi-select';
 import { supabase } from '@/integrations/supabase/client';
 
 interface QuestionPaperGeneratorProps {
@@ -18,13 +19,15 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   const [subject, setSubject] = useState('');
   const [classLevel, setClassLevel] = useState('');
   const [totalQuestions, setTotalQuestions] = useState('');
-  const [timeLimit, setTimeLimit] = useState('');
+  
   const [minQuestionsPerPage, setMinQuestionsPerPage] = useState('1');
   const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState('10');
   const [difficulties, setDifficulties] = useState<('easy' | 'medium' | 'difficult')[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [availableQuestions, setAvailableQuestions] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [availablePages, setAvailablePages] = useState<number[]>([]);
+  const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,24 +38,53 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
     if (subject && classLevel && difficulties.length > 0) {
       checkAvailableQuestions();
     }
-  }, [subject, classLevel, difficulties]);
+  }, [subject, classLevel, difficulties, selectedPages]);
+
+  useEffect(() => {
+    fetchAvailablePages();
+  }, [subject, classLevel]);
 
   const fetchSubjects = async () => {
     const { data } = await supabase.from('subjects').select('*').order('name');
     setSubjects(data || []);
   };
 
+  const fetchAvailablePages = async () => {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user || !subject || !classLevel) {
+      setAvailablePages([]);
+      setSelectedPages([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('document_page_selections')
+      .select('page_number')
+      .eq('user_id', user.user.id)
+      .eq('subject_id', subject)
+      .eq('class_level', classLevel as any)
+      .order('page_number', { ascending: false });
+    const pages = Array.from(new Set((data || []).map((r: any) => r.page_number)));
+    setAvailablePages(pages);
+    setSelectedPages([]);
+  };
+
   const checkAvailableQuestions = async () => {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return;
 
-    const { count } = await supabase
+    let query = supabase
       .from('questions')
       .select('*', { count: 'exact', head: true })
       .in('difficulty', difficulties)
       .eq('documents.subject_id', subject)
       .eq('documents.class_level', classLevel as any)
       .eq('documents.user_id', user.user.id);
+
+    if (selectedPages.length > 0) {
+      query = query.in('page_number', selectedPages);
+    }
+
+    const { count } = await query;
 
     setAvailableQuestions(count || 0);
   };
@@ -67,7 +99,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   };
 
   const handleGenerate = async () => {
-    if (!title || !subject || !classLevel || !totalQuestions || !timeLimit || !minQuestionsPerPage || !maxQuestionsPerPage || difficulties.length === 0) {
+    if (!title || !subject || !classLevel || !totalQuestions || !minQuestionsPerPage || !maxQuestionsPerPage || difficulties.length === 0) {
       toast({
         title: "Missing information",
         description: "Please fill in all fields.",
@@ -106,16 +138,14 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
 
       // Create question paper
       const { data: paperData, error: paperError } = await supabase
-        .from('question_papers')
+      .from('question_papers')
         .insert({
           user_id: user.user.id,
           title,
           subject_id: subject,
           class_level: classLevel as any,
           total_questions: questionsNeeded,
-          time_limit_minutes: parseInt(timeLimit),
-          min_questions_per_page: minPerPage,
-          max_questions_per_page: maxPerPage,
+          time_limit_minutes: 0,
           difficulty_filter: difficulties
         })
         .select()
@@ -124,7 +154,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       if (paperError) throw paperError;
 
       // Get questions from user's documents
-      const { data: questions, error: questionsError } = await supabase
+      let query2: any = supabase
         .from('questions')
         .select(`
           *,
@@ -133,7 +163,13 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
         .eq('documents.user_id', user.user.id)
         .eq('documents.subject_id', subject)
         .eq('documents.class_level', classLevel as any)
-        .in('difficulty', difficulties)
+        .in('difficulty', difficulties);
+
+      if (selectedPages.length > 0) {
+        query2 = query2.in('page_number', selectedPages);
+      }
+
+      const { data: questions, error: questionsError } = await query2
         .limit(questionsNeeded);
 
       if (questionsError) throw questionsError;
@@ -161,7 +197,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       setSubject('');
       setClassLevel('');
       setTotalQuestions('');
-      setTimeLimit('');
+      
       setMinQuestionsPerPage('1');
       setMaxQuestionsPerPage('10');
       setDifficulties([]);
@@ -245,14 +281,13 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
           </div>
 
           <div>
-            <Label htmlFor="time">Time Limit (minutes)</Label>
-            <Input
-              id="time"
-              type="number"
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(e.target.value)}
-              placeholder="e.g., 60"
-              min="1"
+            <Label>Pages to Include</Label>
+            <PageMultiSelect
+              label="Select Pages"
+              availablePages={availablePages}
+              selectedPages={selectedPages}
+              onChange={setSelectedPages}
+              className="w-full"
             />
           </div>
         </div>
@@ -309,7 +344,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
 
         <Button
           onClick={handleGenerate}
-          disabled={!title || !subject || !classLevel || !totalQuestions || !timeLimit || !minQuestionsPerPage || !maxQuestionsPerPage || difficulties.length === 0 || isGenerating}
+          disabled={!title || !subject || !classLevel || !totalQuestions || !minQuestionsPerPage || !maxQuestionsPerPage || difficulties.length === 0 || isGenerating}
           className="w-full"
         >
           {isGenerating ? (

@@ -177,7 +177,7 @@ export const ContentCreation = () => {
                       <div>
                         <p className="font-medium text-sm">{paper.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          {paper.subjects?.name} - Class {paper.class_level} • {paper.total_questions} questions • {paper.time_limit_minutes} mins
+                          {paper.subjects?.name} - Class {paper.class_level} • {paper.total_questions} questions
                         </p>
                       </div>
                       <Badge variant="outline">Ready</Badge>

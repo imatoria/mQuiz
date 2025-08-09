@@ -67,7 +67,7 @@ export const AIKeyStatusOverview = () => {
 
       if (keysError) throw keysError;
 
-      setProviders(providersData || []);
+      setProviders((providersData || []).filter(p => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
       setUserKeys(keysData || []);
     } catch (error: any) {
       toast({
@@ -86,10 +86,6 @@ export const AIKeyStatusOverview = () => {
 
   const getProviderIcon = (providerKey: string) => {
     switch (providerKey.toLowerCase()) {
-      case 'openai':
-        return <Zap className="w-4 h-4" />;
-      case 'anthropic':
-        return <Shield className="w-4 h-4" />;
       case 'gemini':
         return <Settings className="w-4 h-4" />;
       default:

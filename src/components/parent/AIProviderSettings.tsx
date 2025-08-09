@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,13 +15,11 @@ import {
   Settings, 
   Eye, 
   EyeOff, 
-  Plus, 
   Edit, 
   Trash2, 
   CheckCircle, 
   AlertCircle,
   Shield,
-  Zap,
   TestTube,
   Loader2,
   RefreshCw
@@ -68,7 +67,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      // Fetch available AI providers
+      // Fetch active AI providers configured by admin
       const { data: providersData, error: providersError } = await supabase
         .from('ai_providers')
         .select('*')
@@ -88,7 +87,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
       if (keysError) throw keysError;
 
-      setProviders(providersData || []);
+      setProviders((providersData || []).filter(p => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
       setUserKeys(keysData || []);
     } catch (error: any) {
       toast({
@@ -284,75 +283,6 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     }
   };
 
-  const handleTestAnthropicDirect = async () => {
-    console.log('Testing Anthropic directly from browser...');
-
-    // Get the Anthropic API key from user input
-    const apiKey = prompt('Enter your Anthropic API key for direct testing:');
-    if (!apiKey) return;
-
-    try {
-      console.log('Testing Anthropic API directly from browser...');
-      console.log('API key format:', apiKey.startsWith('sk-ant-') ? 'Valid format' : 'Invalid format');
-
-      const requestBody = {
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 10,
-        messages: [
-          {
-            role: 'user',
-            content: 'Hello'
-          }
-        ]
-      };
-
-      console.log('Request body:', JSON.stringify(requestBody, null, 2));
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      const responseText = await response.text();
-      console.log('Response body:', responseText);
-
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (parseError) {
-          throw new Error(`Anthropic API error (${response.status}): ${responseText}`);
-        }
-
-        const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${responseText}`;
-        throw new Error(`Anthropic API error: ${errorMessage}`);
-      }
-
-      const data = JSON.parse(responseText);
-
-      toast({
-        title: "Direct Browser Test Success",
-        description: `Anthropic API working: ${data.content[0].text}`,
-      });
-
-    } catch (error: any) {
-      console.error('Direct browser test error:', error);
-      toast({
-        title: "Direct Browser Test Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleTestKey = async (userKey: UserAIProviderKey) => {
     if (!userKey.ai_providers) return;
 
@@ -370,25 +300,9 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
       console.log('Decrypt response:', { decryptData, decryptError });
 
-      // Log more details about the error
-      if (decryptError) {
-        console.error('Decrypt error details:', {
-          message: decryptError.message,
-          name: decryptError.name,
-          stack: decryptError.stack,
-          details: decryptError.details || 'No details'
-        });
-      }
-
       if (decryptError || !decryptData?.success) {
         console.error('Decryption failed:', decryptError, decryptData);
 
-        // Handle edge function errors
-        if (decryptError?.message?.includes('edge function returned a non-2xx status code')) {
-          throw new Error('Failed to decrypt API key. Please contact support.');
-        }
-
-        // If decryption fails, it's likely due to encryption key mismatch
         if (decryptData?.error?.includes('Failed to decrypt API key')) {
           setTestResults(prev => ({
             ...prev,
@@ -421,24 +335,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
       console.log('Test response:', { data, error });
 
-      // Log more details about the test error
-      if (error) {
-        console.error('Test error details:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack,
-          details: error.details || 'No details'
-        });
-      }
-
-      if (error) {
-        console.error('Test API key error:', error);
-        // Handle different types of errors from the edge function
-        if (error.message?.includes('edge function returned a non-2xx status code')) {
-          throw new Error('API key test failed. Please check your API key and try again.');
-        }
-        throw error;
-      }
+      if (error) throw error;
 
       if (data.success) {
         console.log('API key test successful:', data);
@@ -462,34 +359,18 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
     } catch (error: any) {
       console.error('handleTestKey error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-
-      let errorMessage = error.message;
-
-      // Provide more user-friendly error messages
-      if (errorMessage.includes('edge function returned a non-2xx status code')) {
-        errorMessage = 'API key test failed. Please check your API key and try again.';
-      } else if (errorMessage.includes('Failed to decrypt')) {
-        errorMessage = 'Unable to decrypt API key. Please re-enter your API key.';
-      } else if (errorMessage.includes('Unauthorized')) {
-        errorMessage = 'Authentication failed. Please refresh the page and try again.';
-      }
 
       setTestResults(prev => ({
         ...prev,
         [userKey.id]: {
           success: false,
-          message: `✗ ${errorMessage}`
+          message: `✗ ${error.message}`
         }
       }));
 
       toast({
         title: "API Key Test Failed",
-        description: `${userKey.ai_providers?.name} API key test failed: ${errorMessage}`,
+        description: `${userKey.ai_providers?.name} API key test failed: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -503,10 +384,6 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
   const getProviderIcon = (providerKey: string) => {
     switch (providerKey.toLowerCase()) {
-      case 'openai':
-        return <Zap className="w-5 h-5" />;
-      case 'anthropic':
-        return <Shield className="w-5 h-5" />;
       case 'gemini':
         return <Settings className="w-5 h-5" />;
       default:
@@ -535,7 +412,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
             AI Provider Settings
           </CardTitle>
           <CardDescription>
-            Configure your own API keys for AI providers to generate questions from your documents.
+            Configure your API keys for the AI providers set up by your administrator.
           </CardDescription>
           <div className="mt-4 flex gap-2 flex-wrap">
             <Button
@@ -555,15 +432,6 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
             >
               <TestTube className="w-4 h-4 mr-1" />
               Debug Test
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleTestAnthropicDirect}
-              className="text-orange-600 hover:text-orange-700"
-            >
-              <TestTube className="w-4 h-4 mr-1" />
-              Test Anthropic Direct
             </Button>
           </div>
         </CardHeader>
@@ -665,7 +533,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
                             size="sm"
                             onClick={() => handleAddKey(provider)}
                           >
-                            <Plus className="w-4 h-4 mr-1" />
+                            <Key className="w-4 h-4 mr-1" />
                             Add Key
                           </Button>
                         </>

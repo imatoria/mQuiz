@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,17 +10,12 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { SystemAPIKeys } from './SystemAPIKeys';
 import { 
   Settings, 
   Plus, 
   Edit, 
   Trash2, 
-  Zap, 
-  Shield, 
   Key,
-  Eye,
-  EyeOff,
   CheckCircle,
   XCircle
 } from 'lucide-react';
@@ -50,7 +46,6 @@ export const AdminAIProviderConfig = () => {
     description: ''
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -65,7 +60,7 @@ export const AdminAIProviderConfig = () => {
         .order('name');
 
       if (error) throw error;
-      setProviders(data || []);
+      setProviders((data || []).filter(p => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
     } catch (error: any) {
       toast({
         title: "Error fetching AI providers",
@@ -146,7 +141,6 @@ export const AdminAIProviderConfig = () => {
       setNewProvider({ name: '', provider_key: '', description: '' });
       setEditingProvider(null);
       fetchProviders();
-      setRefreshKey(prev => prev + 1);
 
     } catch (error: any) {
       toast({
@@ -171,7 +165,6 @@ export const AdminAIProviderConfig = () => {
       setProviders(providers.map(provider => 
         provider.id === providerId ? { ...provider, is_active: isActive } : provider
       ));
-      setRefreshKey(prev => prev + 1);
 
       toast({
         title: isActive ? "Provider enabled" : "Provider disabled",
@@ -200,7 +193,6 @@ export const AdminAIProviderConfig = () => {
       if (error) throw error;
 
       setProviders(providers.filter(provider => provider.id !== providerId));
-      setRefreshKey(prev => prev + 1);
 
       toast({
         title: "Provider deleted",
@@ -217,10 +209,6 @@ export const AdminAIProviderConfig = () => {
 
   const getProviderIcon = (providerKey: string) => {
     switch (providerKey.toLowerCase()) {
-      case 'openai':
-        return <Zap className="w-5 h-5" />;
-      case 'anthropic':
-        return <Shield className="w-5 h-5" />;
       case 'gemini':
         return <Settings className="w-5 h-5" />;
       default:
@@ -249,7 +237,7 @@ export const AdminAIProviderConfig = () => {
                 AI Provider Configuration
               </CardTitle>
               <CardDescription>
-                Manage available AI providers for the system
+                Manage available AI providers for the system. Parents will configure their own API keys for these providers.
               </CardDescription>
             </div>
             <Button onClick={handleAddProvider}>
@@ -340,7 +328,7 @@ export const AdminAIProviderConfig = () => {
               <Settings className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No AI providers configured</h3>
               <p className="text-muted-foreground mb-4">
-                Add AI providers to enable content generation features.
+                Add AI providers to enable content generation features for parents.
               </p>
               <Button onClick={handleAddProvider}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -361,7 +349,7 @@ export const AdminAIProviderConfig = () => {
             <DialogDescription>
               {editingProvider 
                 ? 'Update the AI provider configuration'
-                : 'Configure a new AI provider for the system'
+                : 'Configure a new AI provider for the system. Parents will set their own API keys for this provider.'
               }
             </DialogDescription>
           </DialogHeader>
@@ -373,7 +361,7 @@ export const AdminAIProviderConfig = () => {
                 id="name"
                 value={newProvider.name}
                 onChange={(e) => setNewProvider({ ...newProvider, name: e.target.value })}
-                placeholder="e.g., OpenAI, Anthropic"
+                placeholder="e.g., Gemini"
               />
             </div>
 
@@ -383,7 +371,7 @@ export const AdminAIProviderConfig = () => {
                 id="provider_key"
                 value={newProvider.provider_key}
                 onChange={(e) => setNewProvider({ ...newProvider, provider_key: e.target.value })}
-                placeholder="e.g., openai, anthropic, gemini"
+                placeholder="e.g., gemini"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Unique identifier for this provider (lowercase, no spaces)
@@ -423,9 +411,6 @@ export const AdminAIProviderConfig = () => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* System API Keys */}
-      <SystemAPIKeys key={refreshKey} />
     </div>
   );
 };
