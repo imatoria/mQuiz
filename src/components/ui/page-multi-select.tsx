@@ -24,8 +24,29 @@ export const PageMultiSelect: React.FC<PageMultiSelectProps> = ({
 }) => {
   const allSelected = availablePages.length > 0 && selectedPages.length === availablePages.length;
 
+  // Pagination/windowing state
+  const windowSize = 30;
+  const minPage = availablePages.length ? Math.min(...availablePages) : 1;
+  const maxPage = availablePages.length ? Math.max(...availablePages) : 0;
+  const [start, setStart] = React.useState<number>(minPage);
+  React.useEffect(() => {
+    setStart(minPage);
+  }, [minPage]);
+  const end = Math.min(start + windowSize - 1, maxPage || start);
+  const canPrev = start > minPage;
+  const canNext = end < maxPage;
+
+  const currentWindowPages = availablePages.filter((p) => p >= start && p <= end);
+  const allWindowSelected = currentWindowPages.length > 0 && currentWindowPages.every((p) => selectedPages.includes(p));
+
   const toggleAll = (checked: boolean) => {
-    onChange(checked ? [...availablePages] : []);
+    // Toggle only within current window
+    if (checked) {
+      const merged = new Set([...selectedPages, ...currentWindowPages]);
+      onChange(Array.from(merged).sort((a, b) => a - b));
+    } else {
+      onChange(selectedPages.filter((p) => !currentWindowPages.includes(p)));
+    }
   };
 
   const togglePage = (page: number, checked: boolean) => {
@@ -45,14 +66,23 @@ export const PageMultiSelect: React.FC<PageMultiSelectProps> = ({
           <span className="ml-2 text-muted-foreground">{display}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="z-50 bg-background border shadow-md w-64 p-0">
-        <div className="border-b px-3 py-2 flex items-center gap-2">
-          <Checkbox id="select-all-pages" checked={allSelected} onCheckedChange={(v) => toggleAll(!!v)} />
-          <label htmlFor="select-all-pages" className="text-sm">Select All</label>
+      <PopoverContent align="start" className="z-50 bg-background border shadow-md w-72 p-0">
+        <div className="border-b px-3 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Checkbox id="select-all-pages" checked={allWindowSelected} onCheckedChange={(v) => toggleAll(!!v)} />
+            <label htmlFor="select-all-pages" className="text-sm">Select Window</label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => setStart(Math.max(minPage, start - windowSize))} disabled={!canPrev}>Prev</Button>
+            <div className="text-xs text-muted-foreground">
+              {availablePages.length ? `Pages ${start}–${end}` : 'No pages'}
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => setStart(Math.min(Math.max(minPage, maxPage - windowSize + 1), start + windowSize))} disabled={!canNext}>Next</Button>
+          </div>
         </div>
         <ScrollArea className="max-h-64">
           <div className="grid grid-cols-3 gap-2 p-3">
-            {availablePages.map((page) => (
+            {currentWindowPages.map((page) => (
               <label key={page} className="flex items-center gap-2 text-sm">
                 <Checkbox
                   id={`page-${page}`}

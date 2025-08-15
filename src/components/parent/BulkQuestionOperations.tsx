@@ -78,7 +78,7 @@ export default function BulkQuestionOperations() {
     if (!selectedDocumentId) {
       toast({
         title: "Error", 
-        description: "Please select a document to associate with the questions.",
+        description: "Please select pages to associate with the questions.",
         variant: "destructive",
       });
       return;
@@ -329,7 +329,7 @@ export default function BulkQuestionOperations() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Target Document</Label>
+                  <Label>Target Pages</Label>
                   <Input
                     placeholder="Document ID (required)"
                     value={selectedDocumentId}
@@ -472,7 +472,7 @@ export default function BulkQuestionOperations() {
                 <h4 className="font-medium mb-2">Export Information:</h4>
                 <ul className="text-sm space-y-1 text-muted-foreground">
                   <li>• All your questions will be included in the export</li>
-                  <li>• Document titles will be included for reference</li>
+                  <li>• Page titles will be included for reference</li>
                   <li>• File will be automatically downloaded to your device</li>
                   <li>• CSV format is good for spreadsheet applications</li>
                   <li>• JSON format is good for technical integrations</li>

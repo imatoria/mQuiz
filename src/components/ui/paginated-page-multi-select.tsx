@@ -15,6 +15,9 @@ interface PaginatedPageMultiSelectProps {
   disabled?: boolean;
   className?: string;
   pagesPerView?: number;
+  disabledPages?: number[]; // pages that should be disabled (already used)
+  maxSelectable?: number; // maximum number of pages that can be selected
+  onLimitExceeded?: () => void; // callback when selection exceeds maxSelectable
 }
 
 export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> = ({
@@ -25,44 +28,61 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
   disabled,
   className,
   pagesPerView = 15,
+  disabledPages = [],
+  maxSelectable,
+  onLimitExceeded,
 }) => {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   
   const totalPages = availablePages.length;
-  const totalViews = Math.ceil(totalPages / pagesPerView);
+  const lastPageIndex = Math.max(0, Math.ceil(totalPages / pagesPerView) - 1);
   const startIndex = Math.max(0, currentPageIndex) * pagesPerView;
-  let currentViewPages: number[] = [];
-  if (startIndex < totalPages) {
-    const endIndex = Math.min(startIndex + pagesPerView, totalPages);
-    currentViewPages = availablePages.slice(startIndex, endIndex);
-  } else {
-    const lastPage = availablePages.length > 0 ? availablePages[availablePages.length - 1] : 0;
-    const overflow = startIndex - totalPages;
-    const baseStart = lastPage + 1 + overflow;
-    currentViewPages = Array.from({ length: pagesPerView }, (_, i) => baseStart + i);
-  }
+  const currentViewPages: number[] = availablePages.slice(startIndex, startIndex + pagesPerView);
   
-  const allSelected = availablePages.length > 0 && selectedPages.length === availablePages.length;
+  const disabledSet = new Set(disabledPages);
+  const enabledPages = availablePages.filter((p) => !disabledSet.has(p));
+  const allSelected = enabledPages.length > 0 && enabledPages.every((p) => selectedPages.includes(p));
 
-  const toggleAll = (checked: boolean) => {
-    onChange(checked ? [...availablePages] : []);
-  };
+const toggleAll = (checked: boolean) => {
+  if (!checked) {
+    onChange([]);
+    return;
+  }
+  const toAdd = enabledPages;
+  if (maxSelectable !== undefined) {
+    const union = Array.from(new Set([...selectedPages, ...toAdd]));
+    if (union.length > maxSelectable) {
+      onLimitExceeded?.();
+      return;
+    }
+    onChange(union);
+  } else {
+    onChange([...toAdd]);
+  }
+};
 
-  const togglePage = (page: number, checked: boolean) => {
-    if (checked) onChange([...new Set([...selectedPages, page])]);
-    else onChange(selectedPages.filter((p) => p !== page));
-  };
-
+const togglePage = (page: number, checked: boolean) => {
+  if (disabledSet.has(page)) return;
+  if (checked) {
+    if (maxSelectable !== undefined && !selectedPages.includes(page) && selectedPages.length >= maxSelectable) {
+      onLimitExceeded?.();
+      return;
+    }
+    onChange([...new Set([...selectedPages, page])]);
+  } else {
+    onChange(selectedPages.filter((p) => p !== page));
+  }
+};
   const goToPrevious = () => {
     setCurrentPageIndex((prev) => Math.max(0, prev - 1));
   };
 
   const goToNext = () => {
-    setCurrentPageIndex((prev) => prev + 1);
+    setCurrentPageIndex((prev) => Math.min(lastPageIndex, prev + 1));
   };
-  const display = selectedPages.length > 0
-    ? `${selectedPages.length} page${selectedPages.length > 1 ? 's' : ''} selected`
-    : 'Choose pages';
+const display = selectedPages.length > 0
+  ? `${selectedPages.length}${maxSelectable ? `/${maxSelectable}` : ''} selected`
+  : 'Choose pages';
 
   const formatPageRanges = (pages: number[]) => {
     if (!pages || pages.length === 0) return 'None';
@@ -93,30 +113,26 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="z-50 bg-background border shadow-md w-80 p-0">
-        <div className="border-b px-3 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Checkbox 
-              id="select-all-pages" 
-              checked={allSelected} 
-              onCheckedChange={(v) => toggleAll(!!v)} 
-            />
-            <label htmlFor="select-all-pages" className="text-sm">Select All ({totalPages})</label>
-          </div>
+        <div className="border-b px-3 py-2 text-xs text-muted-foreground">
+          <span className="font-medium">Selected:</span> {selectedSummary}
         </div>
-        
-        
         <ScrollArea className="max-h-64">
           <div className="grid grid-cols-3 gap-2 p-3">
-            {currentViewPages.map((page) => (
-              <label key={page} className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  id={`page-${page}`}
-                  checked={selectedPages.includes(page)}
-                  onCheckedChange={(v) => togglePage(page, !!v)}
-                />
-                <span>Page {page}</span>
-              </label>
-            ))}
+            {currentViewPages.map((page) => {
+              const isDisabled = disabledSet.has(page);
+              return (
+                <label key={page} className={cn('flex items-center gap-2 text-sm', isDisabled && 'opacity-50 cursor-not-allowed')}>
+                  <Checkbox
+                    id={`page-${page}`}
+                    checked={selectedPages.includes(page)}
+                    onCheckedChange={(v) => togglePage(page, !!v)}
+                    disabled={isDisabled}
+                    aria-disabled={isDisabled}
+                  />
+                  <span>Page {page}</span>
+                </label>
+              );
+            })}
           </div>
         </ScrollArea>
 
@@ -133,13 +149,14 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>
-            <span className="text-xs text-muted-foreground">View {currentPageIndex + 1}</span>
+            
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={goToNext}
               onMouseDown={(e) => e.preventDefault()}
+              disabled={currentPageIndex >= lastPageIndex}
               aria-label="Next pages"
             >
               Next
@@ -148,12 +165,9 @@ export const PaginatedPageMultiSelect: React.FC<PaginatedPageMultiSelectProps> =
           </div>
         {totalPages > 0 && selectedPages.length === totalPages && (
           <div className="px-3 pt-2 text-xs text-destructive">
-            You have selected all pages of the document. Please select only the required pages.
+            You have selected all available pages. Please select only the required pages.
           </div>
         )}
-        <div className="px-3 pb-3 text-xs text-muted-foreground">
-          <span className="font-medium">Selected:</span> {selectedSummary}
-        </div>
       </PopoverContent>
     </Popover>
   );

@@ -13,8 +13,23 @@ import {
   Upload,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
+import PdfViewerModal from '@/components/ui/pdf-viewer-modal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { LoadingState } from '@/components/ui/loading-state';
+
 
 interface Document {
   id: string;
@@ -23,6 +38,7 @@ interface Document {
   class_level: string;
   processing_status: string | null;
   created_at: string;
+  file_path: string;
   subjects?: { name: string };
 }
 
@@ -36,6 +52,9 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerDoc, setViewerDoc] = useState<{ id: string; file_path: string; title: string } | null>(null);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -74,6 +93,28 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const openDocument = (doc: Document) => {
+    setViewerDoc({ id: doc.id, file_path: doc.file_path, title: doc.title });
+    setViewerOpen(true);
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    setDeletingDocId(docId);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-document', {
+        body: { document_id: docId },
+      });
+      if (error) throw error;
+      toast({ title: 'Pages deleted', description: 'The pages and their content were processed for deletion.' });
+      await fetchData();
+      onBooksUpdate?.();
+    } catch (e: any) {
+      toast({ title: 'Delete failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setDeletingDocId(null);
     }
   };
 
@@ -131,7 +172,7 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="text-center">Loading documents...</div>
+          <div className="text-center">Loading pages...</div>
         </CardContent>
       </Card>
     );
@@ -147,10 +188,10 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
             <div>
               <CardTitle className="flex items-center">
                 <BookOpen className="w-5 h-5 mr-2" />
-                Document Library
+                Pages Library
               </CardTitle>
               <CardDescription>
-                Organize and manage your educational documents by subject and class
+                Organize and manage your pages by subject and class
               </CardDescription>
             </div>
           </div>
@@ -197,9 +238,9 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
           {documents.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No documents uploaded yet</h3>
+              <h3 className="text-lg font-medium mb-2">No pages uploaded yet</h3>
               <p className="text-muted-foreground mb-4">
-                Upload your first document to start organizing your educational content.
+                Upload your first pages to start organizing your educational content.
               </p>
             </div>
           ) : (
@@ -208,20 +249,46 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
               {(selectedSubject || selectedClass) ? (
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">
-                    Filtered Documents ({getFilteredDocuments().length})
+                    Filtered Pages ({getFilteredDocuments().length})
                   </h3>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {getFilteredDocuments().map((doc) => (
-                      <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                      <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openDocument(doc)}>
                         <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
+                          <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
                               <CardTitle className="text-lg">{doc.title}</CardTitle>
                               <CardDescription className="mt-1">
                                 {doc.subjects?.name} • Class {doc.class_level}
                               </CardDescription>
                             </div>
-                            {getStatusIcon(doc.processing_status)}
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(doc.processing_status)}
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={(e) => { e.stopPropagation(); }}
+                                    aria-label="Delete pages"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                  <AlertDialogHeader>
+                                     <AlertDialogTitle>Delete these pages?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                       This will delete the page records and their content from the database. Questions used in assessments will be soft-deleted.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteDocument(doc.id); }}>Delete</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </div>
                         </CardHeader>
                         <CardContent className="pt-0">
@@ -246,16 +313,42 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
                         <h4 className="text-md font-medium text-muted-foreground mb-3">{classLevel}</h4>
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {docs.map((doc) => (
-                            <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                            <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openDocument(doc)}>
                               <CardHeader className="pb-3">
-                                <div className="flex items-start justify-between">
+                                <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1">
                                     <CardTitle className="text-lg">{doc.title}</CardTitle>
                                     <CardDescription className="mt-1">
                                       Added {new Date(doc.created_at).toLocaleDateString()}
                                     </CardDescription>
                                   </div>
-                                  {getStatusIcon(doc.processing_status)}
+                                  <div className="flex items-center gap-2">
+                                    {getStatusIcon(doc.processing_status)}
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          variant="destructive"
+                                          size="icon"
+                                          onClick={(e) => { e.stopPropagation(); }}
+                                          aria-label="Delete pages"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete these pages?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                             This will delete the page records and their content from the database. Questions used in assessments will be soft-deleted.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteDocument(doc.id); }}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
                                 </div>
                               </CardHeader>
                               <CardContent className="pt-0">
@@ -275,6 +368,25 @@ export const BookManagement = ({ onBooksUpdate }: BookManagementProps) => {
           )}
         </CardContent>
       </Card>
+  <PdfViewerModal
+        open={viewerOpen}
+        onOpenChange={setViewerOpen}
+        filePath={viewerDoc?.file_path}
+        title={viewerDoc?.title}
+        documentId={viewerDoc?.id}
+      />
+      {deletingDocId && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+          <Card className="w-[280px]">
+            <CardHeader>
+              <CardTitle>Deleting pages...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LoadingState text="Please wait while we delete the pages." />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

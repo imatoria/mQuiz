@@ -440,7 +440,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
         <Alert>
           <Shield className="h-4 w-4" />
           <AlertDescription>
-            Your API keys are encrypted and stored securely. They are only used to process your documents and generate questions.
+            Your API keys are encrypted and stored securely. They are only used to process your pages and generate questions.
             Test your keys to ensure they're working correctly before generating questions.
           </AlertDescription>
         </Alert>

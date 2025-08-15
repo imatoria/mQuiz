@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import PageMultiSelect from '@/components/ui/page-multi-select';
+import { PaginatedPageMultiSelect } from '@/components/ui/paginated-page-multi-select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -66,11 +67,11 @@ export const AIQuestionGenerator = () => {
   const { toast } = useToast();
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
+  const [mode, setMode] = useState<'book' | 'independent'>('independent');
+  const [minQuestionsPerPage, setMinQuestionsPerPage] = useState(1);
+  const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState(10);
 
-  const classLevels = [
-    'grade_1', 'grade_2', 'grade_3', 'grade_4', 'grade_5', 'grade_6',
-    'grade_7', 'grade_8', 'grade_9', 'grade_10', 'grade_11', 'grade_12'
-  ];
+  const classLevels = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
 
   const difficulties = [
     { value: 'easy', label: 'Easy', description: 'Basic recall and understanding' },
@@ -123,71 +124,125 @@ export const AIQuestionGenerator = () => {
 
   const fetchAvailablePages = async () => {
     const { data: user } = await supabase.auth.getUser();
-    if (!user.user || !config.subject_id || !config.class_level) {
+    if (!user.user || !config.subject_id || !config.class_level || mode !== 'book') {
       setAvailablePages([]);
       setSelectedPages([]);
       return;
     }
-    const { data } = await supabase
-      .from('document_page_selections')
-      .select('page_number')
+
+    // Find the most recent completed document for this subject + class
+    const { data: doc, error: docError } = await supabase
+      .from('documents')
+      .select('id, total_pages')
       .eq('user_id', user.user.id)
       .eq('subject_id', config.subject_id)
       .eq('class_level', config.class_level as any)
-      .order('page_number', { ascending: false });
-    const pages = Array.from(new Set((data || []).map((r: any) => r.page_number)));
+      .eq('processing_status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (docError || !doc) {
+      setAvailablePages([]);
+      setSelectedPages([]);
+      if (config.document_id) setConfig((prev) => ({ ...prev, document_id: '' }));
+      return;
+    }
+
+    // Fetch actual existing page numbers for this document
+    const { data: pagesData, error: pagesError } = await supabase
+      .from('document_pages')
+      .select('page_number')
+      .eq('document_id', doc.id)
+      .order('page_number', { ascending: true });
+
+    let pages = Array.from(new Set((pagesData || []).map((p: any) => p.page_number as number)));
+
+    // Fallback to total_pages if no individual pages were found
+    if (pages.length === 0) {
+      const total = Math.max(0, doc.total_pages || 0);
+      pages = total > 0 ? Array.from({ length: total }, (_, i) => i + 1) : [];
+    }
+
     setAvailablePages(pages);
     setSelectedPages([]);
+
+    if (config.document_id !== doc.id) {
+      setConfig((prev) => ({ ...prev, document_id: doc.id }));
+    }
   };
 
   useEffect(() => {
     fetchAvailablePages();
-  }, [config.subject_id, config.class_level]);
+  }, [config.subject_id, config.class_level, mode]);
 
   const handleGenerateQuestions = async () => {
-    if (!config.topic.trim() || !config.subject_id || !config.class_level) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in topic, subject, and class level.",
-        variant: "destructive",
-      });
-      return;
+    if (mode === 'independent') {
+      if (!config.topic.trim() || !config.subject_id || !config.class_level) {
+        toast({
+          title: 'Missing Information',
+          description: 'Please fill in topic, subject, and class level.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (!config.document_id || !config.subject_id || !config.class_level || selectedPages.length === 0) {
+        toast({
+          title: 'Missing Information',
+          description: 'Please select a book and page(s) along with subject and class.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (minQuestionsPerPage > maxQuestionsPerPage) {
+        toast({
+          title: 'Invalid pagination settings',
+          description: 'Minimum questions per page cannot be greater than maximum.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsGenerating(true);
 
     try {
-      // Call the AI question generation edge function
-      const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
-        body: {
-          config: { ...config, selected_pages: selectedPages }
-        }
-      });
+      const questionCount = mode === 'book'
+        ? Math.max(1, minQuestionsPerPage) * selectedPages.length
+        : config.question_count;
 
+      const payload = {
+        config: { ...config, selected_pages: selectedPages, question_count: questionCount, ...(mode === 'book' ? { topic: config.topic || '' } : {}) },
+        mode,
+      };
+
+      const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
+        body: payload,
+      });
       if (error) throw error;
 
       if (data.success) {
         toast({
-          title: "Questions Generated!",
+          title: 'Questions Generated!',
           description: `Successfully generated ${data.questionsGenerated} questions.`,
         });
 
-        // Reset form
+        setSelectedPages([]);
         setConfig({
           ...config,
-          topic: '',
+          topic: mode === 'independent' ? '' : config.topic,
           custom_instructions: '',
-          document_id: ''
+          document_id: mode === 'book' ? config.document_id : '',
         });
       } else {
         throw new Error(data.error || 'Failed to generate questions');
       }
-
     } catch (error: any) {
       toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate questions. Please try again.",
-        variant: "destructive",
+        title: 'Generation Failed',
+        description: error.message || 'Failed to generate questions. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsGenerating(false);
@@ -202,7 +257,7 @@ export const AIQuestionGenerator = () => {
           AI Question Generator
         </CardTitle>
         <CardDescription>
-          Generate custom questions using AI for any topic or based on your uploaded documents.
+          Generate custom questions using AI for any topic or based on your uploaded pages.
         </CardDescription>
       </CardHeader>
       
@@ -210,21 +265,34 @@ export const AIQuestionGenerator = () => {
         <Alert>
           <Sparkles className="h-4 w-4" />
           <AlertDescription>
-            Create questions on any topic or enhance your uploaded documents with additional questions.
+            Create questions on any topic or enhance your uploaded pages with additional questions.
             Configure your AI providers in settings for best results.
           </AlertDescription>
         </Alert>
 
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={mode==='book'} onCheckedChange={(v) => setMode(v ? 'book' : 'independent')} />
+            Book based
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={mode==='independent'} onCheckedChange={(v) => setMode(v ? 'independent' : 'book')} />
+            Independent
+          </label>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="topic">Topic/Theme</Label>
-            <Input
-              id="topic"
-              placeholder="e.g., Photosynthesis, World War II, Algebra basics..."
-              value={config.topic}
-              onChange={(e) => setConfig({ ...config, topic: e.target.value })}
-            />
-          </div>
+          {mode === 'independent' && (
+            <div className="space-y-2">
+              <Label htmlFor="topic">Topic/Theme</Label>
+              <Input
+                id="topic"
+                placeholder="e.g., Photosynthesis, World War II, Algebra basics..."
+                value={config.topic}
+                onChange={(e) => setConfig({ ...config, topic: e.target.value })}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Subject</Label>
@@ -257,7 +325,7 @@ export const AIQuestionGenerator = () => {
               <SelectContent>
                 {classLevels.map((level) => (
                   <SelectItem key={level} value={level}>
-                    {level.replace('grade_', 'Grade ')}
+                    Class {level}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -308,66 +376,65 @@ export const AIQuestionGenerator = () => {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="count">Number of Questions</Label>
-            <Select 
-              value={config.question_count.toString()} 
-              onValueChange={(value) => setConfig({ ...config, question_count: parseInt(value) })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[3, 5, 10, 15, 20, 25].map((count) => (
-                  <SelectItem key={count} value={count.toString()}>
-                    {count} questions
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {mode === 'independent' && (
+            <div className="space-y-2">
+              <Label htmlFor="count">Number of Questions</Label>
+              <Select 
+                value={config.question_count.toString()} 
+                onValueChange={(value) => setConfig({ ...config, question_count: parseInt(value) })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[3, 5, 10, 15, 20, 25].map((count) => (
+                    <SelectItem key={count} value={count.toString()}>
+                      {count} questions
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {mode === 'book' && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="minPerPage">Minimum Questions per Page</Label>
+                <Input
+                  id="minPerPage"
+                  type="number"
+                  min={1}
+                  value={minQuestionsPerPage}
+                  onChange={(e) => setMinQuestionsPerPage(Math.max(1, parseInt(e.target.value || '1')))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maxPerPage">Maximum Questions per Page</Label>
+                <Input
+                  id="maxPerPage"
+                  type="number"
+                  min={1}
+                  value={maxQuestionsPerPage}
+                  onChange={(e) => setMaxQuestionsPerPage(Math.max(1, parseInt(e.target.value || '1')))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Select Pages</Label>
+                <PaginatedPageMultiSelect
+                  label="Select Pages"
+                  availablePages={availablePages}
+                  selectedPages={selectedPages}
+                  onChange={setSelectedPages}
+                  className="w-full"
+                  disabled={!config.subject_id || !config.class_level}
+                  disabledPages={[]}
+                />
+              </div>
+            </>
+          )}
         </div>
 
-        {documents.length > 0 && (
-          <div className="space-y-2">
-            <Label>Base on Document (Optional)</Label>
-            <Select 
-              value={config.document_id || 'none'} 
-              onValueChange={(value) => setConfig({ ...config, document_id: value === 'none' ? '' : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a document (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No document - topic only</SelectItem>
-                {documents.map((doc) => (
-                  <SelectItem key={doc.id} value={doc.id}>
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      <span>{doc.title}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {doc.subjects?.name}
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {(config.subject_id && config.class_level) && (
-          <div className="space-y-2">
-            <Label>Pages to Include</Label>
-            <PageMultiSelect
-              label="Select Pages"
-              availablePages={availablePages}
-              selectedPages={selectedPages}
-              onChange={setSelectedPages}
-              className="w-full"
-            />
-          </div>
-        )}
 
         <div className="space-y-2">
           <Label htmlFor="instructions">Custom Instructions (Optional)</Label>
@@ -387,7 +454,13 @@ export const AIQuestionGenerator = () => {
           
           <Button 
             onClick={handleGenerateQuestions}
-            disabled={isGenerating || !config.topic.trim() || !config.subject_id || !config.class_level}
+            disabled={
+              isGenerating ||
+              (mode === 'independent'
+                ? (!config.topic.trim() || !config.subject_id || !config.class_level)
+                : (!config.document_id || !config.subject_id || !config.class_level || selectedPages.length === 0 || minQuestionsPerPage > maxQuestionsPerPage)
+              )
+            }
             className="min-w-32"
           >
             {isGenerating ? (

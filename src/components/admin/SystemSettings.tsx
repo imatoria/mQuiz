@@ -254,12 +254,12 @@ export const SystemSettings = () => {
                     onChange={(e) => handleConfigChange('maxFileSize', parseInt(e.target.value))}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Maximum file size for document uploads
+                    Maximum file size for page uploads
                   </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="maxDocumentPages">Max Document Pages</Label>
+                  <Label htmlFor="maxDocumentPages">Max Pages</Label>
                   <Input
                     id="maxDocumentPages"
                     type="number"
@@ -267,7 +267,7 @@ export const SystemSettings = () => {
                     onChange={(e) => handleConfigChange('maxDocumentPages', parseInt(e.target.value))}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Maximum pages per document for processing
+                    Maximum pages per upload for processing
                   </p>
                 </div>
               </div>
@@ -280,7 +280,7 @@ export const SystemSettings = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
                           <FileText className="w-4 h-4 text-muted-foreground mr-2" />
-                          <span className="text-sm">Documents</span>
+                          <span className="text-sm">Pages</span>
                         </div>
                         <Badge variant="secondary">45/1000</Badge>
                       </div>

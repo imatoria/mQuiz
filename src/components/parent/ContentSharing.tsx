@@ -138,7 +138,7 @@ export const ContentSharing = () => {
     if (!selectedDocument || !shareEmail) {
       toast({
         title: "Error",
-        description: "Please select a document and enter an email address",
+        description: "Please select pages and enter an email address",
         variant: "destructive"
       });
       return;
@@ -150,7 +150,7 @@ export const ContentSharing = () => {
       
       toast({
         title: "Success",
-        description: `Document "${document?.title}" shared with ${shareEmail}`,
+        description: `Pages "${document?.title}" shared with ${shareEmail}`,
       });
 
       // Reset form
@@ -163,10 +163,10 @@ export const ContentSharing = () => {
       // Refresh data
       fetchData();
     } catch (error) {
-      console.error('Error sharing document:', error);
+      console.error('Error sharing pages:', error);
       toast({
         title: "Error",
-        description: "Failed to share document",
+        description: "Failed to share pages",
         variant: "destructive"
       });
     }
@@ -229,19 +229,19 @@ export const ContentSharing = () => {
           <DialogTrigger asChild>
             <Button>
               <Share2 className="h-4 w-4 mr-2" />
-              Share Document
+              Share Pages
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Share Document</DialogTitle>
+              <DialogTitle>Share Pages</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="document">Document</Label>
+                <Label htmlFor="document">Pages</Label>
                 <Select value={selectedDocument} onValueChange={setSelectedDocument}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select document to share" />
+                    <SelectValue placeholder="Select pages to share" />
                   </SelectTrigger>
                   <SelectContent>
                     {documents.map(doc => (
@@ -290,7 +290,7 @@ export const ContentSharing = () => {
               </div>
 
               <Button onClick={shareDocument} className="w-full">
-                Share Document
+                Share Pages
               </Button>
             </div>
           </DialogContent>
@@ -304,7 +304,7 @@ export const ContentSharing = () => {
             <div className="text-2xl font-bold text-primary">
               {documents.length}
             </div>
-            <div className="text-sm text-muted-foreground">My Documents</div>
+            <div className="text-sm text-muted-foreground">My Pages</div>
           </CardContent>
         </Card>
         <Card>
@@ -338,7 +338,7 @@ export const ContentSharing = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
-            Documents I've Shared ({myShares.length})
+            Pages I've Shared ({myShares.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -386,9 +386,9 @@ export const ContentSharing = () => {
           ) : (
             <div className="text-center py-8">
               <Share2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No shared documents</h3>
+              <h3 className="text-lg font-medium mb-2">No shared pages</h3>
               <p className="text-muted-foreground">
-                Documents you share with others will appear here
+                Pages you share with others will appear here
               </p>
             </div>
           )}
@@ -400,7 +400,7 @@ export const ContentSharing = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Documents Shared with Me ({sharedWithMe.length})
+            Pages Shared with Me ({sharedWithMe.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -437,9 +437,9 @@ export const ContentSharing = () => {
           ) : (
             <div className="text-center py-8">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No shared documents</h3>
+              <h3 className="text-lg font-medium mb-2">No shared pages</h3>
               <p className="text-muted-foreground">
-                Documents shared with you will appear here
+                Pages shared with you will appear here
               </p>
             </div>
           )}

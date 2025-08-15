@@ -16,7 +16,7 @@ const roleInfo = {
     bgColor: 'bg-purple-50',
     borderColor: 'border-purple-200',
     note: 'Admin accounts require manual approval',
-    features: ['Manage all users and roles', 'Configure AI question generators', 'System-wide analytics', 'Content moderation']
+     features: ['Manage all users and roles', 'Configure AI question generators', 'System-wide analytics', 'Content moderation']
   },
   parent: {
     title: 'Parent/Teacher',
@@ -26,7 +26,7 @@ const roleInfo = {
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
     note: 'Start creating content immediately',
-    features: ['Upload course documents', 'Generate MCQ papers', 'Set test schedules & time limits', 'Review child results']
+    features: ['Upload pages', 'Generate MCQ papers', 'Set test schedules & time limits', 'Review child results']
   },
   child: {
     title: 'Student',

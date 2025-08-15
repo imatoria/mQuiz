@@ -26,10 +26,10 @@ export const DocumentProcessingError = ({
       <CardHeader>
         <CardTitle className="flex items-center text-destructive">
           <AlertCircle className="w-5 h-5 mr-2" />
-          Document Processing Failed
+          Pages Processing Failed
         </CardTitle>
         <CardDescription>
-          There was an issue processing your document. Please review the error and try again.
+          There was an issue processing your pages. Please review the error and try again.
         </CardDescription>
       </CardHeader>
       
@@ -85,9 +85,9 @@ export const DocumentProcessingError = ({
           <h4 className="font-medium text-foreground">Common Solutions:</h4>
           <ul className="list-disc list-inside space-y-1">
             <li>Ensure your AI provider API key is valid and has sufficient credits</li>
-            <li>Check that the document is a valid PDF format</li>
+            <li>Check that the file is a valid PDF format</li>
             <li>Verify your internet connection is stable</li>
-            <li>Try uploading a smaller document if the file is very large</li>
+            <li>Try uploading a smaller file if the file is very large</li>
           </ul>
         </div>
       </CardContent>

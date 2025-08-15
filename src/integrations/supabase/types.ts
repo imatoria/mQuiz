@@ -862,9 +862,11 @@ export type Database = {
         Row: {
           correct_answer: string
           created_at: string
+          deleted_at: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"]
           document_id: string
           id: string
+          is_deleted: boolean
           option_a: string
           option_b: string
           option_c: string
@@ -875,9 +877,11 @@ export type Database = {
         Insert: {
           correct_answer: string
           created_at?: string
+          deleted_at?: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"]
           document_id: string
           id?: string
+          is_deleted?: boolean
           option_a: string
           option_b: string
           option_c: string
@@ -888,9 +892,11 @@ export type Database = {
         Update: {
           correct_answer?: string
           created_at?: string
+          deleted_at?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           document_id?: string
           id?: string
+          is_deleted?: boolean
           option_a?: string
           option_b?: string
           option_c?: string

@@ -123,12 +123,12 @@ export const ContentModeration = () => {
       ));
 
       toast({
-        title: "Document status updated",
-        description: `Document has been ${status}.`,
+        title: "Pages status updated",
+        description: `Pages have been ${status}.`,
       });
     } catch (error: any) {
       toast({
-        title: "Error updating document status",
+        title: "Error updating pages status",
         description: error.message,
         variant: "destructive",
       });
@@ -182,7 +182,7 @@ export const ContentModeration = () => {
             Content Moderation
           </CardTitle>
           <CardDescription>
-            Review and moderate user-generated content including documents and question papers
+            Review and moderate user-generated content including pages and question papers
           </CardDescription>
         </CardHeader>
       </Card>
@@ -197,7 +197,7 @@ export const ContentModeration = () => {
                 onClick={() => setActiveTab('documents')}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Documents ({documents.length})
+                Pages ({documents.length})
               </Button>
               <Button
                 variant={activeTab === 'questions' ? 'default' : 'outline'}
@@ -295,14 +295,14 @@ export const ContentModeration = () => {
                               </DialogTrigger>
                               <DialogContent className="max-w-2xl">
                                 <DialogHeader>
-                                  <DialogTitle>Review Document</DialogTitle>
+                                  <DialogTitle>Review Pages</DialogTitle>
                                   <DialogDescription>
-                                    Review and moderate this document
+                                    Review and moderate these pages
                                   </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4">
                                   <div>
-                                    <h4 className="font-medium mb-2">Document Details</h4>
+                                    <h4 className="font-medium mb-2">Pages Details</h4>
                                     <div className="text-sm space-y-1">
                                       <p><strong>Title:</strong> {document.title}</p>
                                       <p><strong>Pages:</strong> {document.total_pages}</p>

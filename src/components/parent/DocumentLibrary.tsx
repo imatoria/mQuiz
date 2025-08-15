@@ -86,7 +86,7 @@ export const DocumentLibrary = () => {
       console.error('Error fetching data:', error);
       toast({
         title: "Error",
-        description: "Failed to load documents",
+        description: "Failed to load pages",
         variant: "destructive"
       });
     } finally {
@@ -146,7 +146,7 @@ export const DocumentLibrary = () => {
 
       toast({
         title: "Success",
-        description: "Questions are being regenerated for this document.",
+        description: "Questions are being regenerated for these pages.",
       });
 
       // Refresh the documents list
@@ -208,10 +208,10 @@ export const DocumentLibrary = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Document Library</h2>
+          <h2 className="text-2xl font-bold">Pages Library</h2>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <FileText className="h-4 w-4" />
-            {documents.length} documents
+            {documents.length} pages
           </div>
         </div>
 
@@ -221,7 +221,7 @@ export const DocumentLibrary = () => {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search documents..."
+                placeholder="Search pages..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -397,7 +397,7 @@ export const DocumentLibrary = () => {
         {Object.entries(groupedDocuments).map(([groupKey, docs]) => (
           <div key={groupKey} className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground border-b pb-2">
-              {groupKey} ({docs.length} documents)
+              {groupKey} ({docs.length} pages)
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -482,11 +482,11 @@ export const DocumentLibrary = () => {
       {filteredDocuments.length === 0 && (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No documents found</h3>
+          <h3 className="text-lg font-medium mb-2">No pages found</h3>
           <p className="text-muted-foreground">
             {searchTerm || selectedSubject || selectedClass || selectedStatus
               ? "Try adjusting your filters" 
-              : "Upload your first document to get started"}
+              : "Upload your first pages to get started"}
           </p>
         </div>
       )}

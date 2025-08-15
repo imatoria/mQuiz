@@ -62,7 +62,7 @@ export const VersionHistory = ({ documentId }: VersionHistoryProps) => {
       console.error('Error fetching documents:', error);
       toast({
         title: "Error",
-        description: "Failed to load documents",
+        description: "Failed to load pages",
         variant: "destructive"
       });
     } finally {
@@ -185,7 +185,7 @@ export const VersionHistory = ({ documentId }: VersionHistoryProps) => {
       {!documentId && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Select Document</CardTitle>
+            <CardTitle className="text-lg">Select Pages</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -287,7 +287,7 @@ export const VersionHistory = ({ documentId }: VersionHistoryProps) => {
                 <GitBranch className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">No version history</h3>
                 <p className="text-muted-foreground">
-                  Version history will appear here when you make changes to your documents
+                  Version history will appear here when you make changes to your pages
                 </p>
               </div>
             )}
@@ -298,9 +298,9 @@ export const VersionHistory = ({ documentId }: VersionHistoryProps) => {
       {documents.length === 0 && (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No documents found</h3>
+          <h3 className="text-lg font-medium mb-2">No pages found</h3>
           <p className="text-muted-foreground">
-            Upload documents to track their version history
+            Upload pages to track their version history
           </p>
         </div>
       )}

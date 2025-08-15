@@ -108,7 +108,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button type="button" variant="outline" size="icon">
+            <Button type="button" variant="outline" size="icon" className="h-10 w-10">
               <Plus className="h-4 w-4" />
             </Button>
           </DialogTrigger>

@@ -87,7 +87,7 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
       console.error('Error fetching documents:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch document status",
+        description: "Failed to fetch pages status",
         variant: "destructive"
       });
     } finally {
@@ -122,7 +122,7 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
 
       toast({
         title: "Processing Started",
-        description: "Document processing has been restarted. Please wait...",
+        description: "Pages processing has been restarted. Please wait...",
       });
 
       // Trigger callback if provided
@@ -135,7 +135,7 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
       console.error('Error retrying document processing:', error);
       toast({
         title: "Retry Failed",
-        description: error.message || "Failed to retry document processing",
+        description: error.message || "Failed to retry pages processing",
         variant: "destructive"
       });
     } finally {
@@ -190,7 +190,7 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="text-center">Loading document status...</div>
+          <div className="text-center">Loading pages status...</div>
         </CardContent>
       </Card>
     );
@@ -259,7 +259,7 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {failedDocs.length} document{failedDocs.length > 1 ? 's' : ''} failed to process. 
+            {failedDocs.length} page{failedDocs.length > 1 ? 's' : ''} failed to process. 
             Make sure your AI provider API keys are configured in settings.
           </AlertDescription>
         </Alert>
@@ -270,19 +270,19 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
         <CardHeader>
           <CardTitle className="flex items-center">
             <FileText className="w-5 h-5 mr-2" />
-            Document Processing Status
+            Pages Processing Status
           </CardTitle>
           <CardDescription>
-            Monitor your document processing progress and retry failed processes
+            Monitor your pages processing progress and retry failed processes
           </CardDescription>
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Documents</h3>
+              <h3 className="text-lg font-semibold mb-2">No Pages</h3>
               <p className="text-muted-foreground">
-                Upload a document to start generating questions.
+                Upload pages to start generating questions.
               </p>
             </div>
           ) : (

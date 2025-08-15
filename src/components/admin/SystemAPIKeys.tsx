@@ -108,7 +108,7 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
       
       toast({
         title: "API Keys Saved",
-        description: "System API keys have been configured successfully. Document processing will now work as fallback.",
+        description: "System API keys have been configured successfully. Pages processing will now work as fallback.",
       });
 
       // Update configured keys
@@ -170,7 +170,7 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
                         <div>
                           <h3 className="font-medium">{provider.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {provider.description || `Used for document processing with ${provider.name} models`}
+                            {provider.description || `Used for page processing with ${provider.name} models`}
                           </p>
                         </div>
                       </div>
@@ -246,7 +246,7 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <strong>Note:</strong> For this demo, API keys need to be configured manually. 
-            To enable document processing, either:
+            To enable page processing, either:
             <br />
             1. Users can configure their own API keys in the Parent Dashboard → AI Settings
             <br />

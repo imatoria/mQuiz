@@ -35,7 +35,7 @@ export const RoleSelector = ({ onRoleSelect }: RoleSelectorProps) => {
       description: 'Create and manage question papers',
       icon: Users,
       features: [
-        'Upload course documents',
+        'Upload pages',
         'Generate MCQ papers',
         'Set test schedules & time limits',
         'Review child results'

@@ -280,7 +280,7 @@ export const BookCreation = () => {
             {/* Available Documents */}
             {selectedSubject && selectedClass && (
               <div>
-                <Label>Available Documents</Label>
+                <Label>Available Pages</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
                   {availableDocuments.map(doc => (
                     <Card key={doc.id} className="p-3 cursor-pointer hover:bg-accent" onClick={() => addDocumentToBook(doc)}>
@@ -293,7 +293,7 @@ export const BookCreation = () => {
                 </div>
                 {availableDocuments.length === 0 && (
                   <p className="text-sm text-muted-foreground mt-2">
-                    No available documents for selected subject and class
+                    No available pages for selected subject and class
                   </p>
                 )}
               </div>
@@ -420,7 +420,7 @@ export const BookCreation = () => {
           <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No books created yet</h3>
           <p className="text-muted-foreground mb-4">
-            Create your first book by combining multiple documents into chapters
+            Create your first book by combining multiple pages into chapters
           </p>
           <Button onClick={() => setIsCreating(true)}>
             <BookOpen className="h-4 w-4 mr-2" />
