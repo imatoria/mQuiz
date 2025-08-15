@@ -31,7 +31,7 @@ export const ScheduleManager = () => {
   const handleRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
-    <div className="grid md:grid-cols-2 gap-6">
+    <div className="grid lg:grid-cols-2 gap-6">
       <TestScheduler onTestScheduled={handleRefresh} />
 
       <Card>

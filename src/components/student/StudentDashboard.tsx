@@ -208,8 +208,8 @@ export const StudentDashboard = () => {
           <SidebarContent>
             <SidebarHeader className="group-data-[collapsible=icon]:hidden">
               <SiteLogo />
+              <SidebarSeparator />
             </SidebarHeader>
-            <SidebarSeparator />
             <SidebarGroup>
               <SidebarGroupLabel>Student</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -233,7 +233,7 @@ export const StudentDashboard = () => {
         </Sidebar>
 
         <SidebarInset>
-          <header className="h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4">
+          <header className="h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-6">
             <SidebarTrigger />
             <div className="ml-2 flex items-center">
               <div className="flex md:hidden">
