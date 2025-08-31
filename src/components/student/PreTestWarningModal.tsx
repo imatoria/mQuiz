@@ -93,7 +93,7 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
               {/* Test Information */}
               <Card>
                 <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4 items-center">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-primary">{test.question_papers.total_questions}</div>
                       <div className="text-sm text-muted-foreground">Questions</div>
@@ -233,7 +233,7 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="gap-y-2">
               <Button variant="outline" onClick={resetAndClose}>
                 Cancel
               </Button>
@@ -281,7 +281,7 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="gap-y-2">
               <Button variant="outline" onClick={handleBack}>
                 Go Back
               </Button>

@@ -49,7 +49,7 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
 
   return (
     <nav className="bg-card border-b shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-4">
         <div className="flex justify-between items-center h-14 md:h-16">
           {/* Logo */}
           <div className="flex items-center space-x-1 md:space-x-2">
@@ -100,10 +100,8 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t space-y-3">
-            <div className="flex justify-center">
-              <NotificationCenter />
-            </div>
+          <div className="flex justify-between items-center md:hidden py-2 border-t">
+            <NotificationCenter />
             
             {profile && (
               <div className="flex items-center space-x-2">
@@ -125,7 +123,6 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
                 signOut();
                 setIsMenuOpen(false);
               }}
-              className="w-full"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out

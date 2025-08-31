@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger, SidebarHeader, SidebarSeparator } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { useToast } from '@/hooks/use-toast';
@@ -353,12 +353,7 @@ export const StudentDashboard = () => {
       <div className="min-h-screen flex w-full bg-gradient-subtle">
         <Sidebar collapsible="icon">
           <SidebarContent>
-            <SidebarHeader className="group-data-[collapsible=icon]:hidden">
-              <SiteLogo />
-            </SidebarHeader>
-            <SidebarSeparator />
             <SidebarGroup>
-              <SidebarGroupLabel>Student</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {menuItems.map((item) => (
@@ -628,7 +623,7 @@ export const StudentDashboard = () => {
                       const scoreBadge = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs Improvement';
                       
                       return (
-                        <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-muted rounded-lg space-y-2 sm:space-y-0">
+                        <div key={test.id} className="flex flex-row justify-between p-3 bg-muted rounded-lg gap-2">
                           <div className="min-w-0 flex-1">
                             <h4 className="text-sm font-medium truncate pr-2">{test.title}</h4>
                             <p className="text-xs text-muted-foreground truncate">
@@ -636,8 +631,8 @@ export const StudentDashboard = () => {
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <div className={`text-lg font-bold ${scoreColor}`}>{score}%</div>
-                            <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs mt-1">
+                            <div className={`text-base leading-none font-bold ${scoreColor}`}>{score}%</div>
+                            <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs p-0">
                               {scoreBadge}
                             </Badge>
                           </div>

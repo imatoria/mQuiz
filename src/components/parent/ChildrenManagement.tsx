@@ -204,9 +204,9 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-2 justify-between">
           <div>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex">
               <Users className="w-5 h-5 mr-2" />
               Children Management
             </CardTitle>
@@ -297,9 +297,9 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="break-all space-y-3">
             {children.map((child) => (
-              <div key={child.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div key={child.id} className="flex flex-col md:flex-row gap-2 md:items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium">
                     {child.full_name?.charAt(0) || child.email?.charAt(0) || '?'}
@@ -313,7 +313,7 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex place-content-end items-center gap-2">
                   {getStatusBadge(child)}
                   <Button
                     variant="outline"

@@ -26,8 +26,7 @@ import {
 } from 'lucide-react';
 
 import { PapersManager } from './PapersManager';
-import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger, SidebarHeader, SidebarSeparator } from '@/components/ui/sidebar';
-import { SiteLogo } from '@/components/ui/site-logo';
+import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 export const ParentDashboard = () => {
 const [activeTab, setActiveTab] = useState('children');
 
@@ -53,10 +52,6 @@ const [activeTab, setActiveTab] = useState('children');
         <div className="min-h-screen flex w-full bg-gradient-subtle">
           <Sidebar collapsible="icon">
             <SidebarContent>
-              <SidebarHeader className="group-data-[collapsible=icon]:hidden">
-                <SiteLogo />
-              </SidebarHeader>
-              <SidebarSeparator />
               <SidebarGroup>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -81,15 +76,6 @@ const [activeTab, setActiveTab] = useState('children');
           <SidebarInset>
             <header className="h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4">
               <SidebarTrigger />
-              <div className="ml-2 flex items-center">
-                {/* Show logo in header on mobile always, and on desktop when sidebar is collapsed */}
-                <div className="flex md:hidden">
-                  <SiteLogo size="sm" />
-                </div>
-                <div className="hidden md:peer-data-[state=collapsed]:flex">
-                  <SiteLogo size="sm" />
-                </div>
-              </div>
               {activeItem && (
                 <h1 className="ml-3 flex items-center gap-2 text-base md:text-lg font-semibold text-foreground">
                   <activeItem.icon className="w-5 h-5 text-primary" />
