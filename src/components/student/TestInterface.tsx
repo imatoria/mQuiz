@@ -167,11 +167,12 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      if (saveQueue.length > 0) {
+      // Use a timeout to allow state to update before processing queue
+      setTimeout(() => {
         processSaveQueue();
-      }
+      }, 100);
     };
-    
+
     const handleOffline = () => {
       setIsOnline(false);
       toast({
@@ -188,7 +189,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [saveQueue]);
+  }, []); // Removed saveQueue dependency to prevent re-registering listeners
 
   // Initialize test and check time limits
   useEffect(() => {
@@ -346,7 +347,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         const newTime = prev - 1;
-        
+
         // Grace period warnings with enhanced messaging
         if (newTime === 300) { // 5 minutes
           toast({
@@ -376,7 +377,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
             variant: "destructive"
           });
         }
-        
+
         if (newTime <= 0) {
           handleAutoSubmit();
           return 0;
@@ -386,7 +387,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [debouncedSave]);
+  }, []); // Removed debouncedSave from dependencies - timer should run independently
 
   // Enhanced server time sync with reduced frequency during test
   useEffect(() => {
@@ -583,7 +584,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [answers, flaggedQuestions, currentQuestionIndex, debouncedSave]);
+  }, [answers, flaggedQuestions, currentQuestionIndex]); // Removed debouncedSave from dependencies
 
   const handleAnswer = (questionId: string, answer: string) => {
     setAnswers(prev => ({
