@@ -467,42 +467,45 @@ export const StudentDashboard = () => {
                       
                       return (
                         <div key={test.id} className="p-4 bg-quiz/5 border border-quiz/20 rounded-lg">
-                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {test.question_papers.subjects?.name} • Question {currentQuestion} of {totalQuestions}
-                              </p>
+                          <div className="flex flex-col space-y-3 sm:space-y-0">
+                            <div className="flex flex-row gap-2 min-w-0">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {test.question_papers.subjects?.name} • Question {currentQuestion} of {totalQuestions}
+                                </p>
+                              </div>
                               
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span>Progress</span>
-                                  <span>{progress}%</span>
-                                </div>
-                                <Progress value={progress} className="h-2" />
-                                
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                  <span className="flex items-center">
-                                    <Timer className="w-3 h-3 mr-1" />
-                                    {timeRemaining}
-                                  </span>
-                                  <span className="flex items-center">
-                                    <User className="w-3 h-3 mr-1" />
-                                    Attempt {activeAttempt.attempt_number}
-                                  </span>
-                                </div>
+                              <div className="flex-shrink-0 w-auto">
+                                <Button 
+                                  onClick={() => resumeTest(test)}
+                                  className="w-full sm:w-auto bg-quiz hover:bg-quiz/90"
+                                  size="sm"
+                                >
+                                  Resume Test
+                                </Button>
                               </div>
                             </div>
                             
-                            <div className="flex-shrink-0 w-full sm:w-auto">
-                              <Button 
-                                onClick={() => resumeTest(test)}
-                                className="w-full sm:w-auto bg-quiz hover:bg-quiz/90"
-                                size="sm"
-                              >
-                                Resume Test
-                              </Button>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span>Progress</span>
+                                <span>{progress}%</span>
+                              </div>
+                              <Progress value={progress} className="h-2" />
+                              
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span className="flex items-center">
+                                  <Timer className="w-3 h-3 mr-1" />
+                                  {timeRemaining}
+                                </span>
+                                <span className="flex items-center">
+                                  <User className="w-3 h-3 mr-1" />
+                                  Attempt {activeAttempt.attempt_number}
+                                </span>
+                              </div>
                             </div>
+                            
                           </div>
                         </div>
                       );
