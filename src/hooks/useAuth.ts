@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,41 +20,10 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer profile loading to prevent auth state deadlock
-          setTimeout(() => {
-            loadUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = useCallback(async (userId: string) => {
+    // Prevent loading if already loading or if we already have the profile for this user
+    if (loading && profile?.user_id === userId) return;
+    
     try {
       console.log('Loading profile for user:', userId);
       const { data, error } = await supabase
@@ -79,7 +48,56 @@ export const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, profile?.user_id]);
+
+  useEffect(() => {
+    let isSubscribed = true;
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isSubscribed) return;
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isSubscribed) return;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Only load profile if we don't already have it or user changed
+          if (!profile || profile.user_id !== session.user.id) {
+            setTimeout(() => {
+              if (isSubscribed) {
+                loadUserProfile(session.user.id);
+              }
+            }, 0);
+          } else {
+            setLoading(false);
+          }
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    return () => {
+      isSubscribed = false;
+      subscription.unsubscribe();
+    };
+  }, [loadUserProfile]);
 
   const signOut = async () => {
     try {

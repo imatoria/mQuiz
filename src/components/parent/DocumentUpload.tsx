@@ -434,13 +434,13 @@ export const DocumentUpload = ({
           <Label htmlFor="class">Class</Label>
           <div className="flex gap-2">
             <Select value={classLevel} onValueChange={setClassLevel}>
-              <SelectTrigger className="flex-1">
+              <SelectTrigger>
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
               <SelectContent>
                 {Array.from({
-                  length: 12
-                }, (_, i) => i + 1).map(num => <SelectItem key={num} value={num.toString()}>
+                length: 12
+              }, (_, i) => i + 1).map(num => <SelectItem key={num} value={num.toString()}>
                     Class {num}
                   </SelectItem>)}
                 {customClasses.map(c => <SelectItem key={c} value={c}>

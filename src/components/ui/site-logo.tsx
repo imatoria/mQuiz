@@ -12,7 +12,7 @@ export const SiteLogo: React.FC<SiteLogoProps> = ({ showText = true, size = "md"
   const textSize = size === "sm" ? "text-base" : size === "lg" ? "text-2xl" : "text-xl";
 
   return (
-    <div className="flex items-center gap-2 select-none mb-3">
+    <div className="flex items-center gap-2 select-none">
       <div className={`${boxSize} bg-gradient-primary rounded-lg flex items-center justify-center shadow-glow`}>
         <BookOpen className={`${iconSize} text-primary-foreground`} />
       </div>

@@ -49,8 +49,8 @@ export const Navigation = ({ currentRole, onRoleChange }: NavigationProps) => {
 
   return (
     <nav className="bg-card border-b shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pl-6 md:pl-8">
-        <div className="flex justify-between items-center h-14 md:h-16 md:pl-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-14 md:h-16">
           {/* Logo */}
           <div className="flex items-center space-x-1 md:space-x-2">
             <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-primary rounded-lg flex items-center justify-center">

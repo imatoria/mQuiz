@@ -4,11 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 import { 
   Users, 
   Calendar,
@@ -18,7 +22,9 @@ import {
   Plus,
   Trash2,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react';
 
 interface Child {
@@ -54,6 +60,7 @@ export const TestAssignmentManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTest, setSelectedTest] = useState<string>('');
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
+  const [isChildrenDropdownOpen, setIsChildrenDropdownOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -230,6 +237,20 @@ export const TestAssignmentManager = () => {
     return child?.full_name || child?.email || 'Unknown Child';
   };
 
+  const handleChildToggle = (childId: string) => {
+    setSelectedChildren(prev => 
+      prev.includes(childId) 
+        ? prev.filter(id => id !== childId)
+        : [...prev, childId]
+    );
+  };
+
+  const getSelectedChildrenText = () => {
+    if (selectedChildren.length === 0) return "Select children...";
+    if (selectedChildren.length === 1) return getChildName(selectedChildren[0]);
+    return `${selectedChildren.length} children selected`;
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -290,28 +311,67 @@ export const TestAssignmentManager = () => {
 
                   <div>
                     <Label>Select Children</Label>
-                    <div className="space-y-2 mt-2 max-h-40 overflow-y-auto">
-                      {children.map((child) => (
-                        <div key={child.user_id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id={child.user_id}
-                            checked={selectedChildren.includes(child.user_id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedChildren([...selectedChildren, child.user_id]);
-                              } else {
-                                setSelectedChildren(selectedChildren.filter(id => id !== child.user_id));
-                              }
-                            }}
-                            className="rounded border-gray-300"
-                          />
-                          <Label htmlFor={child.user_id} className="text-sm">
-                            {child.full_name || child.email}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
+                    <Popover open={isChildrenDropdownOpen} onOpenChange={setIsChildrenDropdownOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={isChildrenDropdownOpen}
+                          className="w-full justify-between bg-background hover:bg-accent/50"
+                        >
+                          {getSelectedChildrenText()}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 bg-background border shadow-md z-50">
+                        <Command className="w-full">
+                          <CommandInput placeholder="Search children..." className="h-9" />
+                          <CommandEmpty>No children found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                              {children.map((child) => (
+                                <CommandItem
+                                  key={child.user_id}
+                                  value={child.full_name || child.email || ''}
+                                  onSelect={() => handleChildToggle(child.user_id)}
+                                  className="cursor-pointer hover:bg-accent"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedChildren.includes(child.user_id) ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {child.full_name || child.email}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    {selectedChildren.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {selectedChildren.map((childId) => (
+                          <Badge 
+                            key={childId} 
+                            variant="secondary" 
+                            className="text-xs"
+                          >
+                            {getChildName(childId)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-1 h-auto p-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleChildToggle(childId)}
+                            >
+                              ×
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 pt-4">

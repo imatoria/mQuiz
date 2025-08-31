@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -860,11 +860,12 @@ export type Database = {
       }
       questions: {
         Row: {
+          class_level: string | null
           correct_answer: string
           created_at: string
           deleted_at: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"]
-          document_id: string
+          document_id: string | null
           id: string
           is_deleted: boolean
           option_a: string
@@ -873,13 +874,17 @@ export type Database = {
           option_d: string
           page_number: number | null
           question_text: string
+          subject_id: string | null
+          topic: string | null
+          user_id: string | null
         }
         Insert: {
+          class_level?: string | null
           correct_answer: string
           created_at?: string
           deleted_at?: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"]
-          document_id: string
+          document_id?: string | null
           id?: string
           is_deleted?: boolean
           option_a: string
@@ -888,13 +893,17 @@ export type Database = {
           option_d: string
           page_number?: number | null
           question_text: string
+          subject_id?: string | null
+          topic?: string | null
+          user_id?: string | null
         }
         Update: {
+          class_level?: string | null
           correct_answer?: string
           created_at?: string
           deleted_at?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
-          document_id?: string
+          document_id?: string | null
           id?: string
           is_deleted?: boolean
           option_a?: string
@@ -903,6 +912,9 @@ export type Database = {
           option_d?: string
           page_number?: number | null
           question_text?: string
+          subject_id?: string | null
+          topic?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -960,6 +972,8 @@ export type Database = {
           max_attempts: number
           question_paper_id: string
           start_time: string
+          time_limit_hours: number | null
+          time_limit_minutes: number | null
           title: string
           updated_at: string
         }
@@ -972,6 +986,8 @@ export type Database = {
           max_attempts?: number
           question_paper_id: string
           start_time: string
+          time_limit_hours?: number | null
+          time_limit_minutes?: number | null
           title: string
           updated_at?: string
         }
@@ -984,6 +1000,8 @@ export type Database = {
           max_attempts?: number
           question_paper_id?: string
           start_time?: string
+          time_limit_hours?: number | null
+          time_limit_minutes?: number | null
           title?: string
           updated_at?: string
         }
@@ -1106,11 +1124,16 @@ export type Database = {
           approved_by: string | null
           attempt_number: number
           completed_at: string | null
+          current_question_index: number | null
           feedback: string | null
           id: string
+          is_paused: boolean | null
+          last_activity_at: string | null
+          progress_percentage: number | null
           scheduled_test_id: string
           score: number | null
           started_at: string
+          time_remaining: number | null
           total_questions: number | null
           user_id: string
         }
@@ -1121,11 +1144,16 @@ export type Database = {
           approved_by?: string | null
           attempt_number?: number
           completed_at?: string | null
+          current_question_index?: number | null
           feedback?: string | null
           id?: string
+          is_paused?: boolean | null
+          last_activity_at?: string | null
+          progress_percentage?: number | null
           scheduled_test_id: string
           score?: number | null
           started_at?: string
+          time_remaining?: number | null
           total_questions?: number | null
           user_id: string
         }
@@ -1136,11 +1164,16 @@ export type Database = {
           approved_by?: string | null
           attempt_number?: number
           completed_at?: string | null
+          current_question_index?: number | null
           feedback?: string | null
           id?: string
+          is_paused?: boolean | null
+          last_activity_at?: string | null
+          progress_percentage?: number | null
           scheduled_test_id?: string
           score?: number | null
           started_at?: string
+          time_remaining?: number | null
           total_questions?: number | null
           user_id?: string
         }
@@ -1150,6 +1183,91 @@ export type Database = {
             columns: ["scheduled_test_id"]
             isOneToOne: false
             referencedRelation: "scheduled_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          last_ping: string
+          started_at: string
+          test_attempt_id: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_ping?: string
+          started_at?: string
+          test_attempt_id: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_ping?: string
+          started_at?: string
+          test_attempt_id?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_sessions_test_attempt_id_fkey"
+            columns: ["test_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "test_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_violations: {
+        Row: {
+          auto_resolved: boolean | null
+          created_at: string
+          details: Json | null
+          id: string
+          occurred_at: string
+          severity: string
+          test_attempt_id: string
+          violation_type: string
+        }
+        Insert: {
+          auto_resolved?: boolean | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          occurred_at?: string
+          severity?: string
+          test_attempt_id: string
+          violation_type: string
+        }
+        Update: {
+          auto_resolved?: boolean | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          occurred_at?: string
+          severity?: string
+          test_attempt_id?: string
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_violations_test_attempt_id_fkey"
+            columns: ["test_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "test_attempts"
             referencedColumns: ["id"]
           },
         ]
@@ -1218,20 +1336,60 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_manage_scheduled_test: {
-        Args: { test_id: string; user_id: string }
-        Returns: boolean
+      can_attempt_test: {
+        Args: { test_id_param: string; user_id_param: string }
+        Returns: Json
       }
       can_view_scheduled_test: {
-        Args: { test_id: string; user_id: string }
+        Args: { test_id: string; user_id_param: string }
         Returns: boolean
+      }
+      cleanup_old_test_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      create_scheduled_test: {
+        Args: {
+          p_assign_to_all: boolean
+          p_end_time: string
+          p_max_attempts: number
+          p_question_paper_id: string
+          p_start_time: string
+          p_title: string
+        }
+        Returns: string
+      }
+      debug_auth_context: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      debug_scheduled_test_insert: {
+        Args: { creator_id_param: string }
+        Returns: Json
+      }
+      detect_multiple_sessions: {
+        Args: { test_attempt_id_param: string }
+        Returns: Json
+      }
+      get_active_test_attempt: {
+        Args: { test_id_param: string; user_id_param: string }
+        Returns: Json
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      log_test_violation: {
+        Args: {
+          details_param?: Json
+          severity_param?: string
+          test_attempt_id_param: string
+          violation_type_param: string
+        }
+        Returns: string
+      }
       validate_role_change: {
-        Args: { target_user_id: string; new_role: string }
+        Args: { new_role: string; target_user_id: string }
         Returns: boolean
       }
     }

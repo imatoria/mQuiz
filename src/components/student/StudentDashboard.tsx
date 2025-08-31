@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger, SidebarHeader, SidebarSeparator } from '@/components/ui/sidebar';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
@@ -14,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { TestInterface } from './TestInterface';
 import { TestResults } from '@/components/results/TestResults';
 import { PerformanceAnalytics } from '@/components/results/PerformanceAnalytics';
+import { PreTestWarningModal } from './PreTestWarningModal';
 import { SiteLogo } from '@/components/ui/site-logo';
 import { 
   PlayCircle, 
@@ -23,7 +25,10 @@ import {
   AlertCircle,
   Calendar,
   BarChart3,
-  Award
+  Award,
+  Pause,
+  Timer,
+  User
 } from 'lucide-react';
 
 interface ScheduledTest {
@@ -32,12 +37,16 @@ interface ScheduledTest {
   start_time: string;
   end_time: string;
   max_attempts: number;
+  question_paper_id: string;
+  time_limit_hours?: number;
+  time_limit_minutes?: number;
   question_papers: {
+    id?: string;
     title: string;
     total_questions: number;
     time_limit_minutes: number;
     subjects: { name: string };
-  };
+  } | null;
   test_attempts: TestAttempt[];
 }
 
@@ -46,13 +55,24 @@ interface TestAttempt {
   attempt_number: number;
   score: number | null;
   completed_at: string | null;
+  started_at: string;
+  current_question_index?: number;
+  total_questions?: number;
+  time_remaining?: number;
+  answers?: any;
+  progress_percentage?: number;
 }
 
 export const StudentDashboard = () => {
   const [availableTests, setAvailableTests] = useState<ScheduledTest[]>([]);
   const [completedTests, setCompletedTests] = useState<ScheduledTest[]>([]);
+  const [activeTests, setActiveTests] = useState<ScheduledTest[]>([]);
   const [currentTest, setCurrentTest] = useState<ScheduledTest | null>(null);
   const [activeTab, setActiveTab] = useState('tests');
+  const [showPreTestModal, setShowPreTestModal] = useState(false);
+  const [selectedTest, setSelectedTest] = useState<ScheduledTest | null>(null);
+  const [testDisplayMode, setTestDisplayMode] = useState<'single' | 'all'>('single');
+  const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -73,92 +93,189 @@ export const StudentDashboard = () => {
     }
   }, [user]);
 
+  // Update current time every second for countdown timers
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const fetchTests = async () => {
     return executeAsync(async () => {
-      // Fetch scheduled tests - first get all tests assigned to all users
-      const { data: allUserTests, error: allUserError } = await supabase
-        .from('scheduled_tests')
-        .select(`
-          *,
-          question_papers (
-            title,
-            total_questions,
-            time_limit_minutes,
-            subjects (name)
-          ),
-          test_attempts (
-            id,
-            attempt_number,
-            score,
-            completed_at
-          )
-        `)
-        .eq('assign_to_all', true)
-        .order('start_time', { ascending: true });
-
-      if (allUserError) throw allUserError;
-
-      // Then get tests specifically assigned to this user
-      const { data: assignedTests, error: assignedError } = await supabase
-        .from('scheduled_tests')
-        .select(`
-          *,
-          question_papers (
-            title,
-            total_questions,
-            time_limit_minutes,
-            subjects (name)
-          ),
-          test_attempts (
-            id,
-            attempt_number,
-            score,
-            completed_at
-          ),
-          test_assignments!inner (
-            assigned_to_user_id
-          )
-        `)
-        .eq('test_assignments.assigned_to_user_id', user?.id)
-        .eq('assign_to_all', false)
-        .order('start_time', { ascending: true });
-
-      if (assignedError) throw assignedError;
-
-      // Combine and deduplicate results
-      const allTests = [...(allUserTests || []), ...(assignedTests || [])];
-      const uniqueTests = allTests.filter((test, index, self) => 
-        index === self.findIndex(t => t.id === test.id)
-      );
+      console.log('Fetching tests for user:', user?.id);
       
-      const scheduledTests = uniqueTests;
+      // Get current user info
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        throw new Error('User not authenticated');
+      }
 
-      if (error) throw error;
+      // Fetch all scheduled tests that the current user can view
+      const { data: scheduledTests, error } = await supabase
+        .from('scheduled_tests')
+        .select(`
+          *,
+          question_papers!inner (
+            id,
+            title,
+            total_questions,
+            time_limit_minutes,
+            subjects!inner (name)
+          ),
+          test_attempts (
+            id,
+            attempt_number,
+            score,
+            completed_at,
+            started_at,
+            user_id
+          )
+        `)
+        .order('start_time', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching tests:', error);
+        throw error;
+      }
+
+      console.log('Raw scheduled tests:', scheduledTests);
+
+      // Filter test attempts to only include current user's attempts
+      const testsWithUserAttempts = scheduledTests?.map(test => ({
+        ...test,
+        test_attempts: test.test_attempts?.filter(attempt => attempt.user_id === authUser.id) || []
+      })) || [];
+
+      console.log('Filtered tests with user attempts:', testsWithUserAttempts);
 
       const now = new Date();
       const available: ScheduledTest[] = [];
       const completed: ScheduledTest[] = [];
+      const active: ScheduledTest[] = [];
 
-      scheduledTests?.forEach((test) => {
+      // Function to check if a test attempt has exceeded its time limit
+      const isAttemptTimeExpired = (attempt: TestAttempt, timeLimitMinutes: number) => {
+        const attemptStart = new Date(attempt.started_at);
+        const timeLimitMs = timeLimitMinutes * 60 * 1000;
+        const attemptEndTime = new Date(attemptStart.getTime() + timeLimitMs);
+        return now > attemptEndTime;
+      };
+
+      // Process tests and handle expired attempts
+      const expiredAttemptData: Array<{ attemptId: string; scheduledTestId: string }> = [];
+
+      testsWithUserAttempts.forEach((test) => {
         const testStart = new Date(test.start_time);
         const testEnd = new Date(test.end_time);
-        const hasAttempted = test.test_attempts?.length > 0;
-        const hasCompletedAttempt = test.test_attempts?.some(attempt => attempt.completed_at);
+        const timeLimitMinutes = test.question_papers?.time_limit_minutes || 60;
         
-        if (hasCompletedAttempt || testEnd < now) {
+        // Check for in-progress attempts and validate time limits
+        const inProgressAttempts = test.test_attempts?.filter(attempt => !attempt.completed_at) || [];
+        const validActiveAttempts = inProgressAttempts.filter(attempt => {
+          const isExpired = isAttemptTimeExpired(attempt, timeLimitMinutes);
+          if (isExpired) {
+            expiredAttemptData.push({ attemptId: attempt.id, scheduledTestId: test.id });
+            console.log(`Test attempt ${attempt.id} has exceeded time limit and will be auto-submitted`);
+          }
+          return !isExpired;
+        });
+
+        const hasValidInProgressAttempt = validActiveAttempts.length > 0;
+        const completedAttempts = test.test_attempts?.filter(attempt => attempt.completed_at) || [];
+        const hasCompletedAttempt = completedAttempts.length > 0;
+        const totalAttempts = test.test_attempts?.length || 0;
+        const hasRemainingAttempts = totalAttempts < test.max_attempts;
+        
+        if (hasValidInProgressAttempt) {
+          active.push(test);
+        } else if (testEnd < now || (hasCompletedAttempt && !hasRemainingAttempts)) {
+          // Test expired OR all attempts used (and at least one completed)
           completed.push(test);
-        } else if (testStart <= now && testEnd >= now && (!hasAttempted || test.test_attempts.length < test.max_attempts)) {
+        } else if (testStart <= now && testEnd >= now && hasRemainingAttempts) {
+          // Test is currently active and student has remaining attempts
+          available.push(test);
+        } else if (testStart > now) {
+          // Future tests go to available with appropriate status
           available.push(test);
         }
       });
 
+      // Auto-submit expired attempts
+      if (expiredAttemptData.length > 0) {
+        console.log('Auto-submitting expired attempts:', expiredAttemptData);
+        
+        for (const { attemptId, scheduledTestId } of expiredAttemptData) {
+          try {
+            const { error: submitError } = await supabase.functions.invoke('complete-test', {
+              body: {
+                testAttemptId: attemptId,
+                completionType: 'auto',
+                completionReason: 'time_expired',
+                answers: {},
+                flaggedQuestions: [],
+                currentQuestionIndex: 0,
+                progressPercentage: 0,
+                timeRemaining: 0,
+                scheduledTestId: scheduledTestId
+              }
+            });
+            
+            if (submitError) {
+              console.error(`Failed to auto-submit attempt ${attemptId}:`, submitError);
+            } else {
+              console.log(`Successfully auto-submitted expired attempt ${attemptId}`);
+            }
+          } catch (error) {
+            console.error(`Error auto-submitting attempt ${attemptId}:`, error);
+          }
+        }
+
+        // Show notification to user about expired attempts
+        if (expiredAttemptData.length > 0) {
+          toast({
+            title: "Test Attempts Expired",
+            description: `${expiredAttemptData.length} test attempt(s) have been automatically submitted due to time limit expiration.`,
+            variant: "destructive"
+          });
+        }
+
+        // Re-fetch tests to get updated state after auto-submission
+        // Use a flag to prevent multiple concurrent fetches
+        setTimeout(() => {
+          if (document.hasFocus()) {
+            fetchTests();
+          }
+        }, 1000);
+        
+        return; // Exit early to avoid setting stale data
+      }
+
       setAvailableTests(available);
       setCompletedTests(completed);
+      setActiveTests(active);
     });
   };
 
   const startTest = (test: ScheduledTest) => {
+    setSelectedTest(test);
+    setShowPreTestModal(true);
+  };
+
+  const resumeTest = (test: ScheduledTest) => {
     setCurrentTest(test);
+  };
+
+  const handlePreTestProceed = (displayMode: 'single' | 'all') => {
+    setTestDisplayMode(displayMode);
+    setCurrentTest(selectedTest);
+    setShowPreTestModal(false);
+    setSelectedTest(null);
+  };
+
+  const handlePreTestCancel = () => {
+    setShowPreTestModal(false);
+    setSelectedTest(null);
   };
 
   const handleTestComplete = () => {
@@ -186,8 +303,38 @@ export const StudentDashboard = () => {
     return { variant: "destructive" as const, label: "Hard" };
   };
 
+  const formatTimeRemaining = (endTime: string) => {
+    const end = new Date(endTime);
+    const diff = end.getTime() - currentTime.getTime();
+    
+    if (diff <= 0) return "Expired";
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const formatTimeUntilStart = (startTime: string) => {
+    const start = new Date(startTime);
+    const diff = start.getTime() - currentTime.getTime();
+    
+    if (diff <= 0) return null;
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) return `Starts in ${days}d ${hours}h`;
+    if (hours > 0) return `Starts in ${hours}h ${minutes}m`;
+    return `Starts in ${minutes}m`;
+  };
+
   if (currentTest) {
-    return <TestInterface test={currentTest} onComplete={handleTestComplete} />;
+    return <TestInterface test={currentTest} onComplete={handleTestComplete} displayMode={testDisplayMode} />;
   }
 
   if (error) {
@@ -208,8 +355,8 @@ export const StudentDashboard = () => {
           <SidebarContent>
             <SidebarHeader className="group-data-[collapsible=icon]:hidden">
               <SiteLogo />
-              <SidebarSeparator />
             </SidebarHeader>
+            <SidebarSeparator />
             <SidebarGroup>
               <SidebarGroupLabel>Student</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -233,7 +380,7 @@ export const StudentDashboard = () => {
         </Sidebar>
 
         <SidebarInset>
-          <header className="h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-6">
+          <header className="h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4">
             <SidebarTrigger />
             <div className="ml-2 flex items-center">
               <div className="flex md:hidden">
@@ -297,6 +444,79 @@ export const StudentDashboard = () => {
               </Card>
             </div>
 
+            {/* Active Tests */}
+            {activeTests.length > 0 && (
+              <Card className="border-l-4 border-l-quiz">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Pause className="w-5 h-5 mr-2 text-quiz" />
+                    Active Tests
+                  </CardTitle>
+                  <CardDescription>
+                    Tests you have started and can resume
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {activeTests.map((test) => {
+                      if (!test.question_papers) return null;
+                      
+                      const activeAttempt = test.test_attempts.find(attempt => !attempt.completed_at);
+                      if (!activeAttempt) return null;
+
+                      // For now use placeholder values until database columns are added
+                      const progress = 0; // activeAttempt.progress_percentage || 0;
+                      const currentQuestion = 1; // (activeAttempt.current_question_index || 0) + 1;
+                      const totalQuestions = test.question_papers.total_questions;
+                      const timeRemaining = formatTimeRemaining(test.end_time);
+                      
+                      return (
+                        <div key={test.id} className="p-4 bg-quiz/5 border border-quiz/20 rounded-lg">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {test.question_papers.subjects?.name} • Question {currentQuestion} of {totalQuestions}
+                              </p>
+                              
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span>Progress</span>
+                                  <span>{progress}%</span>
+                                </div>
+                                <Progress value={progress} className="h-2" />
+                                
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                  <span className="flex items-center">
+                                    <Timer className="w-3 h-3 mr-1" />
+                                    {timeRemaining}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <User className="w-3 h-3 mr-1" />
+                                    Attempt {activeAttempt.attempt_number}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex-shrink-0 w-full sm:w-auto">
+                              <Button 
+                                onClick={() => resumeTest(test)}
+                                className="w-full sm:w-auto bg-quiz hover:bg-quiz/90"
+                                size="sm"
+                              >
+                                Resume Test
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Available Tests */}
             <Card>
               <CardHeader>
@@ -319,26 +539,48 @@ export const StudentDashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {availableTests.map((test) => {
+                      if (!test.question_papers) {
+                        console.warn('Test missing question_papers:', test.id);
+                        return null;
+                      }
+                      
                       const difficulty = getDifficultyBadge(test.question_papers.total_questions);
                       const status = getTestStatus(test);
                       const attemptsLeft = test.max_attempts - (test.test_attempts?.length || 0);
+                      const timeUntilStart = formatTimeUntilStart(test.start_time);
+                      const timeRemaining = formatTimeRemaining(test.end_time);
                       
                       return (
                         <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow space-y-3 sm:space-y-0">
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium truncate pr-2">{test.title}</h4>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {test.question_papers.subjects.name} • {test.question_papers.total_questions} questions • {test.question_papers.time_limit_minutes} min
-                            </p>
+                             <p className="text-sm text-muted-foreground truncate">
+                               {test.question_papers.subjects?.name || 'No subject'} • {test.question_papers.total_questions} questions • {(test.time_limit_hours || 1)}h {(test.time_limit_minutes || 0)}m
+                             </p>
                             <div className="flex flex-wrap items-center mt-2 gap-2">
                               <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
-                              <span className="text-xs text-muted-foreground flex items-center">
-                                <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
-                                <span className="truncate">Due: {formatDateTime(test.end_time)}</span>
-                              </span>
+                              
+                              {status === 'scheduled' && timeUntilStart && (
+                                <Badge variant="outline" className="text-xs">
+                                  {timeUntilStart}
+                                </Badge>
+                              )}
+                              
+                              {status === 'active' && (
+                                <Badge variant="default" className="text-xs bg-quiz">
+                                  {timeRemaining} remaining
+                                </Badge>
+                              )}
+                              
+                              {status === 'expired' && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Expired
+                                </Badge>
+                              )}
+                              
                               {attemptsLeft < test.max_attempts && (
                                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  Attempts: {attemptsLeft}
+                                  {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} left
                                 </span>
                               )}
                             </div>
@@ -359,7 +601,7 @@ export const StudentDashboard = () => {
                           </div>
                         </div>
                       );
-                    })}
+                    }).filter(Boolean)}
                   </div>
                 )}
               </CardContent>
@@ -418,6 +660,16 @@ export const StudentDashboard = () => {
             </Tabs>
           </div>
         </SidebarInset>
+        
+        {/* Pre-Test Warning Modal */}
+        {selectedTest && (
+          <PreTestWarningModal
+            open={showPreTestModal}
+            onClose={handlePreTestCancel}
+            onProceed={handlePreTestProceed}
+            test={selectedTest}
+          />
+        )}
       </div>
     </SidebarProvider>
   );

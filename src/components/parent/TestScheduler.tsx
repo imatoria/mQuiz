@@ -22,6 +22,8 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
   const [maxAttempts, setMaxAttempts] = useState('1');
   const [assignToAll, setAssignToAll] = useState(true);
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
+  const [timeLimitHours, setTimeLimitHours] = useState('1');
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState('0');
   const [questionPapers, setQuestionPapers] = useState<any[]>([]);
   const [children, setChildren] = useState<any[]>([]);
   const [isScheduling, setIsScheduling] = useState(false);
@@ -96,7 +98,7 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
   };
 
   const handleSchedule = async () => {
-    if (!selectedPaper || !title || !startTime || !endTime || !maxAttempts) {
+    if (!selectedPaper || !title || !startTime || !endTime || !maxAttempts || !timeLimitHours) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields.",
@@ -151,7 +153,9 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
           start_time: startDate.toISOString(),
           end_time: endDate.toISOString(),
           max_attempts: parseInt(maxAttempts),
-          assign_to_all: assignToAll
+          assign_to_all: assignToAll,
+          time_limit_hours: parseInt(timeLimitHours),
+          time_limit_minutes: parseInt(timeLimitMinutes)
         })
         .select()
         .single();
@@ -183,6 +187,8 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
       setStartTime('');
       setEndTime('');
       setMaxAttempts('1');
+      setTimeLimitHours('1');
+      setTimeLimitMinutes('0');
       setAssignToAll(true);
       setSelectedChildren([]);
       onTestScheduled();
@@ -269,20 +275,58 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="attempts">Maximum Attempts</Label>
-          <Select value={maxAttempts} onValueChange={setMaxAttempts}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[1, 2, 3, 5, 10].map((num) => (
-                <SelectItem key={num} value={num.toString()}>
-                  {num} attempt{num > 1 ? 's' : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="attempts">Maximum Attempts</Label>
+            <Select value={maxAttempts} onValueChange={setMaxAttempts}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 5, 10].map((num) => (
+                  <SelectItem key={num} value={num.toString()}>
+                    {num} attempt{num > 1 ? 's' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Test Duration</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Label htmlFor="timeLimitHours" className="text-xs text-muted-foreground">Hours</Label>
+                <Select value={timeLimitHours} onValueChange={setTimeLimitHours}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 13 }, (_, i) => (
+                      <SelectItem key={i} value={i.toString()}>
+                        {i} hour{i !== 1 ? 's' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Label htmlFor="timeLimitMinutes" className="text-xs text-muted-foreground">Minutes</Label>
+                <Select value={timeLimitMinutes} onValueChange={setTimeLimitMinutes}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => i * 5).map((minutes) => (
+                      <SelectItem key={minutes} value={minutes.toString()}>
+                        {minutes} min{minutes !== 1 ? 's' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -321,7 +365,7 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
 
         <Button 
           onClick={handleSchedule} 
-          disabled={!selectedPaper || !title || !startTime || !endTime || !maxAttempts || isScheduling}
+          disabled={!selectedPaper || !title || !startTime || !endTime || !maxAttempts || !timeLimitHours || isScheduling}
           className="w-full"
         >
           {isScheduling ? (

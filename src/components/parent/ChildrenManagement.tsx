@@ -49,7 +49,12 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
   const fetchChildren = async () => {
     try {
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      if (!user.user) {
+        console.log('ChildrenManagement: No authenticated user');
+        return;
+      }
+
+      console.log('ChildrenManagement: Fetching children for parent:', user.user.id);
 
       // Get children associated with this parent
       const { data: relationships, error: relError } = await supabase
@@ -59,22 +64,32 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
         `)
         .eq('parent_id', user.user.id);
 
+      console.log('ChildrenManagement: Relationships query result:', { relationships, relError });
+
       if (relError) throw relError;
 
       if (relationships && relationships.length > 0) {
         const childIds = relationships.map(rel => rel.child_id);
+        console.log('ChildrenManagement: Found child IDs:', childIds);
+        
+        console.log('ChildrenManagement: About to query profiles with childIds:', childIds);
         
         const { data: childrenData, error: childrenError } = await supabase
           .from('profiles')
           .select('*')
           .in('user_id', childIds);
 
+        console.log('ChildrenManagement: Children profiles query result:', { childrenData, childrenError });
+        console.log('ChildrenManagement: Current user ID:', user.user.id);
+
         if (childrenError) throw childrenError;
         setChildren(childrenData || []);
       } else {
+        console.log('ChildrenManagement: No relationships found');
         setChildren([]);
       }
     } catch (error: any) {
+      console.error('ChildrenManagement: Error fetching children:', error);
       toast({
         title: "Error fetching children",
         description: error.message,
@@ -98,53 +113,18 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
     setIsAddingChild(true);
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      // Check if user already exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', newChildEmail)
-        .maybeSingle();
-
-      let childUserId: string;
-
-      if (existingProfile) {
-        // User exists, check if they're already a child
-        if (existingProfile.role !== 'child') {
-          throw new Error('This user is not registered as a child account.');
-        }
-        childUserId = existingProfile.user_id;
-      } else {
-        // Create invitation for new child account
-        // In a real implementation, you'd send an invitation email
-        // For now, we'll create a placeholder profile that needs to be activated
-        const tempPassword = Math.random().toString(36).slice(-8);
-        
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      const { data, error } = await supabase.functions.invoke('create-child-account', {
+        body: {
           email: newChildEmail,
-          password: tempPassword,
-          email_confirm: true,
-          user_metadata: {
-            full_name: newChildName,
-            role: 'child'
-          }
-        });
+          fullName: newChildName
+        }
+      });
 
-        if (authError) throw authError;
-        childUserId = authData.user.id;
-      }
-
-      // Create parent-child relationship
-      const { error: relationshipError } = await supabase
-        .from('parent_child_relationships')
-        .insert({
-          parent_id: user.user.id,
-          child_id: childUserId
-        });
-
-      if (relationshipError) throw relationshipError;
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
       toast({
         title: "Child added successfully",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTestSecurity } from '@/hooks/useTestSecurity';
+import { SecurityWarningModal } from './SecurityWarningModal';
 import { 
   Clock, 
   AlertTriangle, 
@@ -15,7 +17,13 @@ import {
   ArrowRight,
   Flag,
   Eye,
-  EyeOff
+  EyeOff,
+  Wifi,
+  WifiOff,
+  Save,
+  Check,
+  Shield,
+  Maximize
 } from 'lucide-react';
 
 interface Question {
@@ -36,7 +44,11 @@ interface TestInterfaceProps {
     start_time: string;
     end_time: string;
     max_attempts: number;
+    question_paper_id: string;
+    time_limit_hours?: number;
+    time_limit_minutes?: number;
     question_papers: {
+      id?: string;
       title: string;
       total_questions: number;
       time_limit_minutes: number;
@@ -45,77 +57,469 @@ interface TestInterfaceProps {
     test_attempts: Array<{ attempt_number: number; completed_at: string | null }>;
   };
   onComplete: () => void;
+  displayMode?: 'single' | 'all';
 }
 
-export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
+export const TestInterface = ({ test, onComplete, displayMode = 'single' }: TestInterfaceProps) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
-  const [timeLeft, setTimeLeft] = useState(test.question_papers.time_limit_minutes * 60);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const hours = test.time_limit_hours || Math.floor((test.question_papers?.time_limit_minutes || 60) / 60);
+    const minutes = test.time_limit_minutes || ((test.question_papers?.time_limit_minutes || 60) % 60);
+    return (hours * 60 + minutes) * 60;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [showFinalConfirmDialog, setShowFinalConfirmDialog] = useState(false);
+  const [submissionType, setSubmissionType] = useState<'manual' | 'auto' | 'force' | 'partial'>('manual');
+  const [unansweredQuestions, setUnansweredQuestions] = useState<number[]>([]);
+  const [submissionReason, setSubmissionReason] = useState<string>('');
   const [testAttemptId, setTestAttemptId] = useState<string | null>(null);
-  const [tabSwitchWarnings, setTabSwitchWarnings] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [preventCheating, setPreventCheating] = useState(true);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const [testExpired, setTestExpired] = useState(false);
+  
+  // Auto-save states
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [saveQueue, setSaveQueue] = useState<any[]>([]);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [serverTime, setServerTime] = useState<Date>(new Date());
+  
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Initialize test attempt and load questions
-  useEffect(() => {
-    initializeTest();
-    enableFullscreen();
-    
-    // Prevent right-click, copy, paste, etc.
-    if (preventCheating) {
-      document.addEventListener('contextmenu', preventContextMenu);
-      document.addEventListener('keydown', preventKeyboardShortcuts);
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('blur', handleWindowBlur);
-    }
-
-    return () => {
-      document.removeEventListener('contextmenu', preventContextMenu);
-      document.removeEventListener('keydown', preventKeyboardShortcuts);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      exitFullscreen();
-    };
+  // Define handleForceSubmit first
+  const handleForceSubmit = useCallback(async (reason: string) => {
+    setSubmissionType('force');
+    setSubmissionReason(reason);
+    deactivateSecurity();
+    await handleFinalSubmit();
   }, []);
 
-  // Timer countdown
+  // Enhanced security system with simplified fullscreen approach
+  const {
+    violations,
+    violationCount,
+    isFullscreen,
+    isSecurityActive,
+    activateSecurity,
+    deactivateSecurity,
+    enableFullscreen,
+    addViolation
+  } = useTestSecurity({
+    testAttemptId,
+    enabled: true,
+    onAutoSubmit: handleForceSubmit,
+    maxViolations: 3
+  });
+
+  // Check if test attempt is within time limits
+  const validateTestTimeLimit = useCallback(async (attemptData: any) => {
+    const now = new Date();
+    const testEndTime = new Date(test.end_time);
+    const attemptStartTime = new Date(attemptData.started_at);
+    
+    // Calculate individual attempt time limit
+    const totalMinutes = test.question_papers?.time_limit_minutes || 
+                        (test.time_limit_hours || 1) * 60 + (test.time_limit_minutes || 0);
+    const timeLimitMs = totalMinutes * 60000;
+    const attemptEndTime = new Date(attemptStartTime.getTime() + timeLimitMs);
+    
+    // Check if test window has expired
+    if (now > testEndTime) {
+      toast({
+        title: "Test Expired",
+        description: "The test window has closed. You can no longer continue this test.",
+        variant: "destructive"
+      });
+      onComplete();
+      return false;
+    }
+    
+    // Check if individual attempt time has expired
+    if (now > attemptEndTime) {
+      toast({
+        title: "Attempt Time Expired",
+        description: "Your individual attempt time has expired. The test will be auto-submitted.",
+        variant: "destructive"
+      });
+      // Auto-submit the expired attempt
+      setSubmissionType('auto');
+      setSubmissionReason('Individual attempt time limit exceeded');
+      await handleFinalSubmit();
+      return false;
+    }
+    
+    // Update time left based on remaining attempt time
+    const remainingMs = attemptEndTime.getTime() - now.getTime();
+    const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+    setTimeLeft(remainingSeconds);
+    
+    return true;
+  }, [test, onComplete, toast]);
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (saveQueue.length > 0) {
+        processSaveQueue();
+      }
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast({
+        title: "Connection Lost",
+        description: "Your progress will be saved when connection is restored",
+        variant: "destructive"
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [saveQueue]);
+
+  // Initialize test and check time limits
+  useEffect(() => {
+    initializeTest();
+    
+    return () => {
+      // Cleanup will be handled by useTestSecurity hook itself
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []); // Remove deactivateSecurity dependency
+
+  // Simplified security activation - just start monitoring, no fullscreen requirement
+  useEffect(() => {
+    if (testAttemptId && !isSecurityActive && !testExpired) {
+      // Start security monitoring immediately
+      activateSecurity();
+      
+      // Prompt user to go fullscreen but don't block test
+      setShowFullscreenPrompt(true);
+    }
+  }, [testAttemptId, isSecurityActive, testExpired, activateSecurity]);
+
+  // Monitor fullscreen status and handle exits
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isSecurityActive) {
+        // User exited fullscreen during test
+        addViolation({
+          type: 'fullscreen_exit',
+          severity: 'high',
+          details: {
+            timestamp: new Date().toISOString(),
+            reason: 'User exited fullscreen mode during test'
+          },
+          timestamp: new Date()
+        });
+
+        toast({
+          title: "⚠️ Fullscreen Exit Detected",
+          description: "You exited fullscreen mode. This has been recorded as a security violation.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [isSecurityActive, addViolation, toast]);
+
+  // Enhanced auto-save functionality with grace period handling
+  const debouncedSave = useCallback(async (forceSync = false, isGracePeriod = false) => {
+    if (!testAttemptId || (isSubmitting && !isGracePeriod)) return;
+
+    const progressData = {
+      testAttemptId,
+      answers,
+      currentQuestionIndex,
+      progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
+      timeRemaining: Math.max(0, timeLeft), // Ensure non-negative
+      flaggedQuestions: Array.from(flaggedQuestions),
+      scheduledTestId: test.id
+    };
+
+    if (!isOnline && !forceSync && !isGracePeriod) {
+      // Queue the save for when we're back online (except during grace period)
+      setSaveQueue(prev => [...prev, progressData]);
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      const saveStartTime = Date.now();
+      const { data, error } = await supabase.functions.invoke('save-test-progress', {
+        body: progressData
+      });
+
+      const saveResponseTime = Date.now() - saveStartTime;
+
+      if (error) {
+        // Enhanced error handling based on error type
+        if (error.message?.includes('time expired') || error.message?.includes('completed')) {
+          toast({
+            title: "Test Time Expired",
+            description: "Your test has been automatically submitted.",
+            variant: "destructive"
+          });
+          onComplete();
+          return;
+        }
+        throw error;
+      }
+
+      if (data?.autoSubmitted) {
+        toast({
+          title: "Test Auto-Submitted",
+          description: data.message + (data.score !== undefined ? ` Final Score: ${data.score}%` : ''),
+          variant: "destructive"
+        });
+        onComplete();
+        return;
+      }
+
+      setLastSaved(new Date());
+      if (data?.serverTime) {
+        setServerTime(new Date(data.serverTime));
+      }
+
+      // Monitor save performance for grace period warnings
+      if (saveResponseTime > 10000 && timeLeft <= 60) {
+        toast({
+          title: "Save Delay Warning",
+          description: "Saves are taking longer than usual. Consider submitting soon.",
+          variant: "destructive"
+        });
+      }
+
+      // Clear the save queue if this was a successful save
+      setSaveQueue([]);
+
+    } catch (error) {
+      console.error('Save failed:', error);
+      
+      // Enhanced error handling with retry logic
+      const isNetworkError = error.message?.includes('fetch') || error.message?.includes('network');
+      const isTimeoutError = error.message?.includes('timeout');
+      
+      if (isOnline || isGracePeriod) {
+        const errorMessage = isNetworkError ? 
+          "Network error during save. Your progress may be lost." :
+          isTimeoutError ? 
+          "Save timeout. Your connection may be unstable." :
+          "Your progress couldn't be saved. Please check your connection.";
+          
+        toast({
+          title: "Save Failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
+      
+      // Always queue for retry during grace period or if online
+      if (isGracePeriod || isOnline) {
+        setSaveQueue(prev => [...prev, progressData]);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [testAttemptId, answers, currentQuestionIndex, timeLeft, flaggedQuestions, questions.length, test.id, isOnline, isSubmitting]);
+
+  // Enhanced timer countdown with grace period and warnings
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
+        const newTime = prev - 1;
+        
+        // Grace period warnings with enhanced messaging
+        if (newTime === 300) { // 5 minutes
+          toast({
+            title: "⚠️ 5 Minutes Remaining",
+            description: "Ensure all answers are complete. Auto-save in progress...",
+            variant: "destructive"
+          });
+          debouncedSave(true, true);
+        } else if (newTime === 60) { // 1 minute
+          toast({
+            title: "⚠️ FINAL WARNING: 1 Minute Left",
+            description: "Test will auto-submit in 1 minute! Complete remaining questions now.",
+            variant: "destructive"
+          });
+          debouncedSave(true, true);
+        } else if (newTime === 30) { // 30 seconds
+          toast({
+            title: "🚨 30 SECONDS - AUTO-SUBMIT IMMINENT",
+            description: "Test submitting automatically in 30 seconds. This cannot be stopped!",
+            variant: "destructive"
+          });
+          debouncedSave(true, true);
+        } else if (newTime === 10) { // 10 seconds
+          toast({
+            title: "🚨 10 SECONDS REMAINING",
+            description: "Auto-submitting now...",
+            variant: "destructive"
+          });
+        }
+        
+        if (newTime <= 0) {
           handleAutoSubmit();
           return 0;
         }
-        return prev - 1;
+        return newTime;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [debouncedSave]);
+
+  // Enhanced server time sync with reduced frequency during test
+  useEffect(() => {
+    if (!testAttemptId) return; // Only sync when test is active
+
+    const syncServerTime = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('save-test-progress', {
+          body: {
+            testAttemptId: 'sync-time',
+            answers: {},
+            currentQuestionIndex: 0,
+            progressPercentage: 0,
+            timeRemaining: 0,
+            flaggedQuestions: [],
+            scheduledTestId: test.id
+          }
+        });
+        
+        if (data?.serverTime) {
+          setServerTime(new Date(data.serverTime));
+        }
+      } catch (error) {
+        console.log('Time sync failed:', error);
+      }
+    };
+
+    // Reduce sync frequency to every 2 minutes during test to minimize API calls
+    const interval = setInterval(syncServerTime, 120000);
+    syncServerTime(); // Initial sync
+
+    return () => clearInterval(interval);
+  }, [testAttemptId, test.id]);
 
   const initializeTest = async () => {
     try {
-      // Create test attempt
-      const attemptNumber = (test.test_attempts?.length || 0) + 1;
-      const { data: attemptData, error: attemptError } = await supabase
-        .from('test_attempts')
-        .insert({
-          scheduled_test_id: test.id,
-          user_id: user?.id,
-          attempt_number: attemptNumber,
-          started_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        throw new Error('User not authenticated');
+      }
 
-      if (attemptError) throw attemptError;
-      setTestAttemptId(attemptData.id);
+      // Check for existing active attempt first
+      const { data: existingAttempt, error: existingError } = await supabase
+        .from('test_attempts')
+        .select('*')
+        .eq('scheduled_test_id', test.id)
+        .eq('user_id', authUser.id)
+        .is('completed_at', null)
+        .order('started_at', { ascending: false })
+        .limit(1);
+
+      if (existingError) throw existingError;
+
+      let attemptData;
+      
+      if (existingAttempt && existingAttempt.length > 0) {
+        // Resume existing attempt
+        attemptData = existingAttempt[0];
+        
+        // Validate time limits for existing attempt
+        const isValid = await validateTestTimeLimit(attemptData);
+        if (!isValid) {
+          return; // Function will handle navigation
+        }
+        
+        // Restore state from existing attempt
+        setTestAttemptId(attemptData.id);
+        setCurrentQuestionIndex(attemptData.current_question_index || 0);
+        
+        if (attemptData.answers && attemptData.answers.encrypted) {
+          try {
+            const decryptedAnswers = JSON.parse(atob(attemptData.answers.encrypted));
+            setAnswers(decryptedAnswers);
+          } catch (error) {
+            console.error('Error decrypting answers:', error);
+          }
+        }
+        
+        if (attemptData.answers && attemptData.answers.flagged) {
+          try {
+            const flaggedArray = JSON.parse(atob(attemptData.answers.flagged));
+            setFlaggedQuestions(new Set(flaggedArray));
+          } catch (error) {
+            console.error('Error decrypting flagged questions:', error);
+          }
+        }
+
+        toast({
+          title: "Test Resumed",
+          description: "Continuing your previous attempt",
+          variant: "default"
+        });
+      } else {
+        // Create new test attempt
+        const attemptNumber = (test.test_attempts?.length || 0) + 1;
+        const startTime = new Date();
+        
+        // Check if we're still within the test window
+        const testEndTime = new Date(test.end_time);
+        if (startTime > testEndTime) {
+          toast({
+            title: "Test Expired",
+            description: "The test window has closed. You can no longer start this test.",
+            variant: "destructive"
+          });
+          onComplete();
+          return;
+        }
+        
+        const { data: newAttempt, error: attemptError } = await supabase
+          .from('test_attempts')
+          .insert({
+            scheduled_test_id: test.id,
+            user_id: authUser.id,
+            attempt_number: attemptNumber,
+            started_at: startTime.toISOString(),
+            current_question_index: 0,
+            progress_percentage: 0,
+            time_remaining: (test.question_papers?.time_limit_minutes || 60) * 60
+          })
+          .select()
+          .single();
+
+        if (attemptError) throw attemptError;
+        attemptData = newAttempt;
+        setTestAttemptId(attemptData.id);
+
+        toast({
+          title: "Test Started",
+          description: "Your test attempt has begun",
+          variant: "default"
+        });
+      }
 
       // Load questions
       const { data: questionsData, error: questionsError } = await supabase
@@ -132,7 +536,7 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
             correct_answer
           )
         `)
-        .eq('question_paper_id', test.id)
+        .eq('question_paper_id', test.question_paper_id)
         .order('question_order');
 
       if (questionsError) throw questionsError;
@@ -154,71 +558,32 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
     }
   };
 
-  const enableFullscreen = () => {
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch(() => {
-        toast({
-          title: "Fullscreen Required",
-          description: "Please enable fullscreen mode for the test",
-          variant: "destructive"
-        });
-      });
+  const processSaveQueue = async () => {
+    if (saveQueue.length === 0 || !isOnline) return;
+    
+    // Get the latest save data (most recent)
+    const latestSave = saveQueue[saveQueue.length - 1];
+    setSaveQueue([]); // Clear queue
+    
+    await debouncedSave(true);
+  };
+
+  // Debounced auto-save trigger
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-  };
 
-  const exitFullscreen = () => {
-    if (document.exitFullscreen && document.fullscreenElement) {
-      document.exitFullscreen();
-    }
-  };
+    saveTimeoutRef.current = setTimeout(() => {
+      debouncedSave();
+    }, 500); // 500ms delay
 
-  const preventContextMenu = (e: Event) => {
-    e.preventDefault();
-  };
-
-  const preventKeyboardShortcuts = (e: KeyboardEvent) => {
-    // Prevent common cheating shortcuts
-    if (
-      (e.ctrlKey && ['c', 'v', 'x', 'a', 's', 'z', 'y'].includes(e.key.toLowerCase())) ||
-      e.key === 'F12' ||
-      (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-      (e.ctrlKey && e.shiftKey && e.key === 'J')
-    ) {
-      e.preventDefault();
-      toast({
-        title: "Action Blocked",
-        description: "This action is not allowed during the test",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleVisibilityChange = () => {
-    if (document.hidden) {
-      setTabSwitchWarnings(prev => prev + 1);
-      toast({
-        title: "Warning!",
-        description: `Tab switching detected. Warning ${tabSwitchWarnings + 1}/3`,
-        variant: "destructive"
-      });
-
-      if (tabSwitchWarnings >= 2) {
-        toast({
-          title: "Test Terminated",
-          description: "Too many tab switches. Test will be auto-submitted.",
-          variant: "destructive"
-        });
-        handleAutoSubmit();
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
-    }
-  };
-
-  const handleWindowBlur = () => {
-    // Additional anti-cheating measure for window focus loss
-    handleVisibilityChange();
-  };
+    };
+  }, [answers, flaggedQuestions, currentQuestionIndex, debouncedSave]);
 
   const handleAnswer = (questionId: string, answer: string) => {
     setAnswers(prev => ({
@@ -255,36 +620,87 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
     return Math.round((correct / questions.length) * 100);
   }, [questions, answers]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '') => {
     if (!testAttemptId) return;
     
     setIsSubmitting(true);
+    setShowFinalConfirmDialog(false);
+    setShowReviewDialog(false);
+    
     try {
       const score = calculateScore();
+      const completionData = {
+        answers: answers,
+        score: score,
+        total_questions: questions.length,
+        completed_at: new Date().toISOString(),
+        completion_type: type,
+        completion_reason: reason,
+        questions_answered: Object.keys(answers).length,
+        questions_flagged: Array.from(flaggedQuestions).length,
+        time_remaining: timeLeft,
+        last_activity_at: new Date().toISOString()
+      };
+
       const { error } = await supabase
         .from('test_attempts')
-        .update({
-          answers: answers,
-          score: score,
-          total_questions: questions.length,
-          completed_at: new Date().toISOString()
-        })
+        .update(completionData)
         .eq('id', testAttemptId);
 
       if (error) throw error;
 
+      // Enhanced completion messages based on submission type
+      const getCompletionMessage = (): { title: string; description: string; variant: "default" | "destructive" } => {
+        switch (type) {
+          case 'manual':
+            return {
+              title: "Test Submitted Successfully",
+              description: `Your test has been submitted. Score: ${score}% (${Object.keys(answers).length}/${questions.length} questions answered)`,
+              variant: score >= 70 ? "default" : "destructive"
+            };
+          case 'auto':
+            return {
+              title: "Test Auto-Submitted",
+              description: `Test automatically submitted due to time expiration. Score: ${score}%`,
+              variant: "destructive"
+            };
+          case 'force':
+            return {
+              title: "Test Force Completed",
+              description: `Test completed due to security violations. Score: ${score}%`,
+              variant: "destructive"
+            };
+          case 'partial':
+            return {
+              title: "Test Partially Saved",
+              description: `Test progress saved due to technical issues. Score: ${score}%`,
+              variant: "destructive"
+            };
+          default:
+            return {
+              title: "Test Completed",
+              description: `Score: ${score}%`,
+              variant: "default"
+            };
+        }
+      };
+
+      const message = getCompletionMessage();
       toast({
-        title: "Test Submitted",
-        description: `Your score: ${score}%`,
-        variant: score >= 70 ? "default" : "destructive"
+        title: message.title,
+        description: message.description,
+        variant: message.variant
       });
 
+      // Force save before completing to ensure all data is persisted
+      await debouncedSave(true, true);
+      
       onComplete();
     } catch (error) {
       console.error('Error submitting test:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit test",
+        title: "Submission Error",
+        description: "Failed to submit test. Your progress has been saved. Please try again or contact support.",
         variant: "destructive"
       });
     } finally {
@@ -292,10 +708,121 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
     }
   };
 
-  const handleAutoSubmit = () => {
-    if (!isSubmitting) {
-      handleSubmit();
+  const handleAutoSubmit = async () => {
+    setSubmissionType('auto');
+    setSubmissionReason('Time expired - automatic submission');
+    await handleFinalSubmit();
+  };
+
+  // handleForceSubmit moved above
+
+  const handleFinalSubmit = async () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    deactivateSecurity();
+    
+    // Final grace period save with enhanced error handling
+    try {
+      await debouncedSave(true, true);
+    } catch (error) {
+      console.error('Final save failed:', error);
+      // Continue with submission even if final save fails
     }
+
+    try {
+      const completedAt = new Date().toISOString();
+      
+      // Calculate final score
+      let score = 0;
+      if (Object.keys(answers).length > 0) {
+        const correctAnswers = questions.reduce((acc, q) => {
+          acc[q.id] = q.correct_answer;
+          return acc;
+        }, {} as Record<string, string>);
+
+        let correct = 0;
+        Object.entries(answers).forEach(([questionId, answer]) => {
+          if (correctAnswers[questionId] === answer) {
+            correct++;
+          }
+        });
+        score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
+      }
+
+      const { error: submitError } = await supabase
+        .from('test_attempts')
+        .update({
+          completed_at: completedAt,
+          score: score,
+          total_questions: questions.length,
+          answers: {
+            encrypted: btoa(JSON.stringify(answers)),
+            flagged: btoa(JSON.stringify(Array.from(flaggedQuestions))),
+            lastSaved: completedAt,
+            submissionType: submissionType,
+            submissionReason: submissionReason,
+            securityViolations: violationCount
+          }
+        })
+        .eq('id', testAttemptId);
+
+      if (submitError) throw submitError;
+
+      // Show completion message based on submission type
+      const completionMessages = {
+        manual: `Test completed successfully! Your score: ${score}%`,
+        auto: `Test auto-submitted due to time expiration. Your score: ${score}%`,
+        force: `Test terminated due to security violations. Your score: ${score}%`,
+        partial: `Test submitted with network issues. Your score: ${score}%`
+      };
+
+      toast({
+        title: "Test Submitted",
+        description: completionMessages[submissionType] || `Test completed. Score: ${score}%`,
+        variant: submissionType === 'force' ? "destructive" : "default"
+      });
+
+      onComplete();
+    } catch (error) {
+      console.error('Final submission failed:', error);
+      toast({
+        title: "Submission Error",
+        description: "There was an error submitting your test. Please contact support.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoFullscreen = async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+      setShowFullscreenPrompt(false);
+      toast({
+        title: "Fullscreen Activated",
+        description: "You are now in fullscreen mode. Do not exit during the test.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Fullscreen request failed:', error);
+      toast({
+        title: "Fullscreen Not Available",
+        description: "Fullscreen mode could not be activated. The test will continue with monitoring.",
+        variant: "destructive"
+      });
+      setShowFullscreenPrompt(false);
+    }
+  };
+
+  const handleContinueWithoutFullscreen = () => {
+    setShowFullscreenPrompt(false);
+    toast({
+      title: "Test Started",
+      description: "Test started without fullscreen. Security monitoring is active.",
+      variant: "default"
+    });
   };
 
   const formatTime = (seconds: number) => {
@@ -306,6 +833,50 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
 
   const getAnsweredCount = () => {
     return Object.keys(answers).length;
+  };
+
+  const getUnansweredQuestions = () => {
+    const unanswered: number[] = [];
+    questions.forEach((question, index) => {
+      if (!answers[question.id]) {
+        unanswered.push(index);
+      }
+    });
+    return unanswered;
+  };
+
+  const getFlaggedUnansweredQuestions = () => {
+    return Array.from(flaggedQuestions).filter(index => !answers[questions[index].id]);
+  };
+
+  // Enhanced submission flow
+  const initiateSubmission = (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '') => {
+    setSubmissionType(type);
+    setSubmissionReason(reason);
+    
+    const unanswered = getUnansweredQuestions();
+    setUnansweredQuestions(unanswered);
+
+    if (type === 'manual') {
+      // Manual submission - show review dialog first
+      setShowReviewDialog(true);
+    } else if (type === 'auto') {
+      // Auto-submit due to time expiration - show brief warning then submit
+      toast({
+        title: "Auto-Submitting",
+        description: reason || "Time expired - automatically submitting test",
+        variant: "destructive"
+      });
+      setTimeout(() => handleSubmit(type, reason), 2000); // 2 second delay for user awareness
+    } else {
+      // Force or partial submit - immediate submission
+      handleSubmit(type, reason);
+    }
+  };
+
+  const proceedToFinalConfirmation = () => {
+    setShowReviewDialog(false);
+    setShowFinalConfirmDialog(true);
   };
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -323,6 +894,31 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
 
   return (
     <div className="min-h-screen bg-background p-4 select-none">
+      {/* Fullscreen Prompt Dialog */}
+      <AlertDialog open={showFullscreenPrompt} onOpenChange={setShowFullscreenPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <Maximize className="w-5 h-5 mr-2" />
+              Fullscreen Recommended
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              For the best test experience and to prevent distractions, we recommend using fullscreen mode.
+              <br /><br />
+              <strong>Note:</strong> Exiting fullscreen during the test will be recorded as a security violation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleContinueWithoutFullscreen}>
+              Continue Without Fullscreen
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleGoFullscreen}>
+              Go Fullscreen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <div className="max-w-6xl mx-auto mb-6">
         <Card>
@@ -333,10 +929,42 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
                 <CardDescription>{test.question_papers.subjects.name}</CardDescription>
               </div>
               <div className="flex items-center space-x-4">
-                {tabSwitchWarnings > 0 && (
+                {/* Save Status Indicator */}
+                <div className="flex items-center space-x-2">
+                  {isSaving ? (
+                    <div className="flex items-center text-muted-foreground">
+                      <Save className="w-4 h-4 mr-1 animate-spin" />
+                      <span className="text-sm">Saving...</span>
+                    </div>
+                  ) : lastSaved ? (
+                    <div className="flex items-center text-success">
+                      <Check className="w-4 h-4 mr-1" />
+                      <span className="text-sm">Saved {new Date(lastSaved).toLocaleTimeString()}</span>
+                    </div>
+                  ) : null}
+                  
+                  {/* Network Status */}
+                  {isOnline ? (
+                    <Wifi className="w-4 h-4 text-success" />
+                  ) : (
+                    <div className="flex items-center text-destructive">
+                      <WifiOff className="w-4 h-4 mr-1" />
+                      <span className="text-sm">Offline</span>
+                    </div>
+                  )}
+                  
+                  {/* Queued Saves Indicator */}
+                  {saveQueue.length > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      {saveQueue.length} pending
+                    </Badge>
+                  )}
+                </div>
+
+                {violationCount > 0 && (
                   <Badge variant="destructive" className="flex items-center">
                     <AlertTriangle className="w-3 h-3 mr-1" />
-                    Warnings: {tabSwitchWarnings}/3
+                    Violations: {violationCount}/3
                   </Badge>
                 )}
                 <Badge variant={timeLeft <= 300 ? "destructive" : "default"} className="flex items-center text-lg px-3 py-1">
@@ -360,13 +988,13 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
                 >
                   <Flag className={`w-4 h-4 ${flaggedQuestions.has(currentQuestionIndex) ? 'fill-current' : ''}`} />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreventCheating(!preventCheating)}
+                <Badge 
+                  variant={isSecurityActive ? "default" : "destructive"}
+                  className="text-xs"
                 >
-                  {preventCheating ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
+                  {isSecurityActive ? <Shield className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                  Security {isSecurityActive ? 'Active' : 'Inactive'}
+                </Badge>
               </div>
             </div>
             
@@ -504,23 +1132,209 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
           <Card>
             <CardContent className="pt-6">
               <Button 
-                onClick={() => setShowSubmitDialog(true)}
+                onClick={() => initiateSubmission('manual')}
                 disabled={isSubmitting || Object.keys(answers).length === 0}
                 className="w-full bg-quiz hover:bg-quiz/90"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Test'}
               </Button>
               
-              <div className="mt-4 text-xs text-muted-foreground text-center">
+              <div className="mt-4 text-xs text-muted-foreground text-center space-y-1">
                 <p>Questions answered: {getAnsweredCount()}/{questions.length}</p>
                 <p>Questions flagged: {flaggedQuestions.size}</p>
+                <div className="flex items-center justify-center space-x-2 mt-2">
+                  {isSaving ? (
+                    <div className="flex items-center text-warning">
+                      <Save className="w-3 h-3 mr-1 animate-spin" />
+                      <span>Auto-saving...</span>
+                    </div>
+                  ) : lastSaved ? (
+                    <div className="flex items-center text-success">
+                      <Check className="w-3 h-3 mr-1" />
+                      <span>Auto-saved</span>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Submit Confirmation Dialog */}
+      {/* Enhanced Submission Flow - Review Modal */}
+      <AlertDialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center text-xl">
+              <AlertTriangle className="w-6 h-6 mr-2 text-warning" />
+              Review Your Test Before Submission
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">Test Summary:</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>Questions Answered: <strong>{Object.keys(answers).length}/{questions.length}</strong></div>
+                  <div>Questions Flagged: <strong>{Array.from(flaggedQuestions).length}</strong></div>
+                  <div>Time Remaining: <strong className={timeLeft <= 300 ? "text-destructive" : ""}>{formatTime(timeLeft)}</strong></div>
+                  <div>Estimated Score: <strong>{calculateScore()}%</strong></div>
+                </div>
+              </div>
+
+              {unansweredQuestions.length > 0 && (
+                <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
+                  <h4 className="font-semibold text-destructive mb-2 flex items-center">
+                    <AlertTriangle className="w-4 h-4 mr-1" />
+                    {unansweredQuestions.length} Unanswered Questions
+                  </h4>
+                  <p className="text-sm text-destructive mb-3">
+                    The following questions haven't been answered yet. You can still submit, but these will be marked as incorrect.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {unansweredQuestions.slice(0, 20).map((questionIndex) => (
+                      <Button
+                        key={questionIndex}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigateToQuestion(questionIndex);
+                          setShowReviewDialog(false);
+                        }}
+                        className="h-8 px-2 text-xs border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        Q{questionIndex + 1}
+                      </Button>
+                    ))}
+                    {unansweredQuestions.length > 20 && (
+                      <span className="text-xs text-muted-foreground self-center">
+                        ...and {unansweredQuestions.length - 20} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {getFlaggedUnansweredQuestions().length > 0 && (
+                <div className="bg-warning/10 border border-warning/20 p-4 rounded-lg">
+                  <h4 className="font-semibold text-warning mb-2 flex items-center">
+                    <Flag className="w-4 h-4 mr-1" />
+                    Flagged & Unanswered Questions
+                  </h4>
+                  <p className="text-sm mb-3">
+                    These questions are flagged for review but haven't been answered:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {getFlaggedUnansweredQuestions().slice(0, 10).map((questionIndex) => (
+                      <Button
+                        key={questionIndex}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigateToQuestion(questionIndex);
+                          setShowReviewDialog(false);
+                        }}
+                        className="h-8 px-2 text-xs border-warning text-warning hover:bg-warning hover:text-warning-foreground"
+                      >
+                        Q{questionIndex + 1}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-info/10 border border-info/20 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">Important Reminders:</h4>
+                <ul className="text-sm space-y-1 list-disc list-inside">
+                  <li>Once submitted, you cannot change your answers</li>
+                  <li>Unanswered questions will be marked as incorrect</li>
+                  <li>Your progress has been automatically saved</li>
+                  <li>You have used {test.test_attempts?.length || 0} of {test.max_attempts} allowed attempts</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => setShowReviewDialog(false)}>
+              Continue Testing
+            </AlertDialogCancel>
+            {unansweredQuestions.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigateToQuestion(unansweredQuestions[0]);
+                  setShowReviewDialog(false);
+                }}
+              >
+                Go to First Unanswered
+              </Button>
+            )}
+            <Button
+              onClick={proceedToFinalConfirmation}
+              className="bg-quiz hover:bg-quiz/90"
+            >
+              Proceed to Submit
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Final Confirmation Modal */}
+      <AlertDialog open={showFinalConfirmDialog} onOpenChange={setShowFinalConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center text-xl text-destructive">
+              <AlertTriangle className="w-6 h-6 mr-2" />
+              Final Confirmation Required
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
+                <p className="font-semibold text-destructive mb-2">⚠️ This action cannot be undone!</p>
+                <p className="text-sm">
+                  You are about to finalize your test submission. After clicking "Submit Test", 
+                  you will not be able to make any changes to your answers.
+                </p>
+              </div>
+              
+              <div className="text-center space-y-2">
+                <div className="text-lg font-semibold">Final Summary</div>
+                <div className="grid grid-cols-2 gap-4 text-sm bg-muted p-3 rounded">
+                  <div>Answered: <strong>{Object.keys(answers).length}/{questions.length}</strong></div>
+                  <div>Score: <strong>{calculateScore()}%</strong></div>
+                </div>
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground">
+                Type "SUBMIT" below to confirm your submission:
+              </p>
+              <input
+                type="text"
+                placeholder="Type SUBMIT to confirm"
+                className="w-full px-3 py-2 border rounded-md text-center"
+                onInput={(e) => {
+                  const submitBtn = document.querySelector('[data-final-submit]') as HTMLButtonElement;
+                  if (submitBtn) {
+                    submitBtn.disabled = (e.target as HTMLInputElement).value.toUpperCase() !== 'SUBMIT' || isSubmitting;
+                  }
+                }}
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowFinalConfirmDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              data-final-submit
+              onClick={() => handleSubmit('manual')}
+              disabled={true}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Test'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Legacy Submit Dialog (kept for backwards compatibility) */}
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -540,7 +1354,7 @@ export const TestInterface = ({ test, onComplete }: TestInterfaceProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Review Answers</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleSubmit}
+              onClick={() => handleSubmit('manual')}
               disabled={isSubmitting}
               className="bg-quiz hover:bg-quiz/90"
             >

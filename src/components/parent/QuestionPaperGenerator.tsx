@@ -153,27 +153,29 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
 
       if (paperError) throw paperError;
 
-      // Randomly select questions from user's repository based on filters
-      let baseQuery: any = supabase
+      // Get questions from user's documents
+      let query2: any = supabase
         .from('questions')
-        .select('id, page_number, documents!inner(subject_id, class_level, user_id)')
+        .select(`
+          *,
+          documents!inner(subject_id, class_level, user_id)
+        `)
         .eq('documents.user_id', user.user.id)
         .eq('documents.subject_id', subject)
         .eq('documents.class_level', classLevel as any)
         .in('difficulty', difficulties);
 
       if (selectedPages.length > 0) {
-        baseQuery = baseQuery.in('page_number', selectedPages);
+        query2 = query2.in('page_number', selectedPages);
       }
 
-      const { data: matchingQuestions, error: questionsError } = await baseQuery;
+      const { data: questions, error: questionsError } = await query2
+        .limit(questionsNeeded);
+
       if (questionsError) throw questionsError;
 
-      // Shuffle and pick the requested amount
-      const shuffled = [...(matchingQuestions || [])].sort(() => Math.random() - 0.5);
-      const picked = shuffled.slice(0, questionsNeeded);
-
-      const paperQuestions = picked.map((q, index) => ({
+      // Add questions to question paper
+      const paperQuestions = questions.map((q, index) => ({
         question_paper_id: paperData.id,
         question_id: q.id,
         question_order: index + 1
@@ -187,7 +189,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
 
       toast({
         title: "Question paper generated",
-        description: `Successfully created "${title}" with ${picked.length} questions.`,
+        description: `Successfully created "${title}" with ${questions.length} questions.`,
       });
 
       // Reset form

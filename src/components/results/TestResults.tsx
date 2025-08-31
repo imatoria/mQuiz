@@ -59,10 +59,18 @@ export const TestResults = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadTestResults();
-  }, [user]);
+    if (user?.id) {
+      loadTestResults();
+    }
+  }, [user?.id]);
 
   const loadTestResults = async () => {
+    if (!user?.id) {
+      console.log('User not available, skipping test results load');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('test_attempts')
@@ -80,7 +88,7 @@ export const TestResults = () => {
             )
           )
         `)
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false });
 
