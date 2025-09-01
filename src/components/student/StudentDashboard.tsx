@@ -377,16 +377,8 @@ export const StudentDashboard = () => {
         <SidebarInset>
           <header className="h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4">
             <SidebarTrigger />
-            <div className="ml-2 flex items-center">
-              <div className="flex md:hidden">
-                <SiteLogo size="sm" />
-              </div>
-              <div className="hidden md:peer-data-[state=collapsed]:flex">
-                <SiteLogo size="sm" />
-              </div>
-            </div>
             {activeItem && (
-              <h1 className="ml-3 flex items-center gap-2 text-base md:text-lg font-semibold text-foreground capitalize">
+              <h1 className="flex items-center gap-2 text-base md:text-lg font-semibold text-foreground capitalize">
                 <activeItem.icon className="w-5 h-5 text-primary" />
                 <span>{activeItem.label}</span>
               </h1>
