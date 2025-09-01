@@ -84,9 +84,13 @@ serve(async (req) => {
     const { data: testData, error: testError } = await supabase
       .from('scheduled_tests')
       .select(`
-        end_time, 
+        end_time,
         start_time,
+        time_limit_hours,
+        time_limit_minutes,
+        question_paper_id,
         question_papers (
+          id,
           time_limit_minutes
         )
       `)
@@ -104,7 +108,7 @@ serve(async (req) => {
     // Get attempt start time for individual time limit validation
     const { data: attemptData, error: attemptError } = await supabase
       .from('test_attempts')
-      .select('started_at, completed_at, time_remaining')
+      .select('started_at, completed_at, time_remaining, last_activity_at, current_question_index, progress_percentage')
       .eq('id', testAttemptId)
       .eq('user_id', user.id)
       .single();
@@ -128,7 +132,11 @@ serve(async (req) => {
     const testEndTime = new Date(testData.end_time);
     const testStartTime = new Date(testData.start_time);
     const attemptStartTime = new Date(attemptData.started_at);
-    const timeLimitMs = testData.question_papers.time_limit_minutes * 60 * 1000;
+    // Determine effective time limit: prefer scheduled test override, fallback to question paper
+    const scheduledMinutes = ((testData.time_limit_hours ?? 0) * 60) + (testData.time_limit_minutes ?? 0);
+    const paperMinutes = testData.question_papers?.time_limit_minutes ?? 0;
+    const effectiveMinutes = scheduledMinutes > 0 ? scheduledMinutes : paperMinutes;
+    const timeLimitMs = effectiveMinutes * 60 * 1000;
     const attemptEndTime = new Date(attemptStartTime.getTime() + timeLimitMs);
     
     // Multiple time validation layers
@@ -153,7 +161,7 @@ serve(async (req) => {
           .select(`
             questions (id, correct_answer)
           `)
-          .eq('question_paper_id', scheduledTestId);
+          .eq('question_paper_id', testData.question_paper_id);
 
         if (questionsData && questionsData.length > 0) {
           totalQuestions = questionsData.length;
@@ -225,6 +233,23 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Test has not started yet' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Deduplicate rapid identical saves within 2s to avoid recursion/thrashing
+    const lastActivityAt = attemptData.last_activity_at ? new Date(attemptData.last_activity_at) : null;
+    const isDuplicateSave =
+      !!lastActivityAt &&
+      (currentTime.getTime() - lastActivityAt.getTime()) < 2000 &&
+      attemptData.current_question_index === currentQuestionIndex &&
+      ((attemptData.progress_percentage ?? null) === (progressPercentage ?? null)) &&
+      (attemptData.time_remaining === timeRemaining);
+
+    if (isDuplicateSave) {
+      console.log('Duplicate save skipped for attempt:', testAttemptId);
+      return new Response(
+        JSON.stringify({ success: true, deduped: true, serverTime: currentTime.toISOString() }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

@@ -81,6 +81,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
   const [testExpired, setTestExpired] = useState(false);
+  const [confirmationText, setConfirmationText] = useState<string>('');
   
   // Auto-save states
   const [isSaving, setIsSaving] = useState(false);
@@ -461,9 +462,19 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
           try {
             const decryptedAnswers = JSON.parse(atob(attemptData.answers.encrypted));
             setAnswers(decryptedAnswers);
+            console.log('Restored answers:', decryptedAnswers);
           } catch (error) {
             console.error('Error decrypting answers:', error);
+            // Try fallback format
+            if (attemptData.answers && typeof attemptData.answers === 'object') {
+              setAnswers(attemptData.answers);
+              console.log('Restored answers from fallback:', attemptData.answers);
+            }
           }
+        } else if (attemptData.answers && typeof attemptData.answers === 'object') {
+          // Direct object format (fallback)
+          setAnswers(attemptData.answers);
+          console.log('Restored answers from direct format:', attemptData.answers);
         }
         
         if (attemptData.answers && attemptData.answers.flagged) {
@@ -1279,7 +1290,12 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       </AlertDialog>
 
       {/* Final Confirmation Modal */}
-      <AlertDialog open={showFinalConfirmDialog} onOpenChange={setShowFinalConfirmDialog}>
+      <AlertDialog open={showFinalConfirmDialog} onOpenChange={(open) => {
+        if (!open) {
+          setConfirmationText('');
+        }
+        setShowFinalConfirmDialog(open);
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center text-xl text-destructive">
@@ -1310,23 +1326,21 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                 type="text"
                 placeholder="Type SUBMIT to confirm"
                 className="w-full px-3 py-2 border rounded-md text-center"
-                onInput={(e) => {
-                  const submitBtn = document.querySelector('[data-final-submit]') as HTMLButtonElement;
-                  if (submitBtn) {
-                    submitBtn.disabled = (e.target as HTMLInputElement).value.toUpperCase() !== 'SUBMIT' || isSubmitting;
-                  }
-                }}
+                value={confirmationText}
+                onChange={(e) => setConfirmationText(e.target.value)}
               />
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowFinalConfirmDialog(false)}>
+            <AlertDialogCancel onClick={() => {
+              setShowFinalConfirmDialog(false);
+              setConfirmationText('');
+            }}>
               Cancel
             </AlertDialogCancel>
             <Button
-              data-final-submit
               onClick={() => handleSubmit('manual')}
-              disabled={true}
+              disabled={confirmationText.toUpperCase() !== 'SUBMIT' || isSubmitting}
               className="bg-destructive hover:bg-destructive/90"
             >
               {isSubmitting ? 'Submitting...' : 'Submit Test'}

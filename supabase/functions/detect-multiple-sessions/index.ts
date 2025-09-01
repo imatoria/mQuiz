@@ -13,18 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-
-    // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -33,12 +21,16 @@ serve(async (req) => {
       );
     }
 
-    // Set the auth token for the client
-    await supabase.auth.setSession({
-      access_token: authHeader.replace('Bearer ', ''),
-      refresh_token: ''
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+
+    // Create client that forwards the user's JWT so RLS runs as the caller
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Verify user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       console.error('Auth error:', userError);
@@ -49,7 +41,6 @@ serve(async (req) => {
     }
 
     const { testAttemptId } = await req.json();
-
     if (!testAttemptId) {
       return new Response(
         JSON.stringify({ error: 'Missing testAttemptId' }),
@@ -59,7 +50,7 @@ serve(async (req) => {
 
     console.log('Checking for multiple sessions:', testAttemptId);
 
-    // Verify the test attempt belongs to the user
+    // Verify the test attempt belongs to the user (RLS also protects this, but we double-check)
     const { data: attemptData, error: attemptError } = await supabase
       .from('test_attempts')
       .select('user_id')
@@ -73,13 +64,13 @@ serve(async (req) => {
       );
     }
 
-    // Get current client info
+    // Current client info
     const currentIP = req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || 'unknown';
     const currentUserAgent = req.headers.get('User-Agent') || 'unknown';
 
     // Find active sessions for this test attempt
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    
+
     const { data: activeSessions, error: sessionsError } = await supabase
       .from('test_sessions')
       .select('*')
@@ -99,17 +90,12 @@ serve(async (req) => {
     const sessionCount = activeSessions?.length || 0;
     const hasMultiple = sessionCount > 1;
 
-    // If multiple sessions detected, analyze them
+    // Analyze sessions
     let suspiciousActivity = false;
-    const sessionAnalysis = activeSessions?.map(session => {
-      // Check for different IPs or user agents
+    const sessionAnalysis = activeSessions?.map((session) => {
       const ipDifferent = session.ip_address && session.ip_address !== currentIP;
       const userAgentDifferent = session.user_agent && session.user_agent !== currentUserAgent;
-      
-      if (ipDifferent || userAgentDifferent) {
-        suspiciousActivity = true;
-      }
-
+      if (ipDifferent || userAgentDifferent) suspiciousActivity = true;
       return {
         id: session.id,
         last_ping: session.last_ping,
@@ -117,50 +103,50 @@ serve(async (req) => {
         user_agent: session.user_agent,
         is_different_location: ipDifferent,
         is_different_device: userAgentDifferent,
-        created_at: session.created_at
+        created_at: session.created_at,
       };
     });
 
-    // If multiple suspicious sessions, deactivate older ones
-    if (hasMultiple && suspiciousActivity) {
-      // Keep only the most recent session active
+    // If multiple suspicious sessions, deactivate older ones (allowed by RLS for the owner)
+    if (hasMultiple && suspiciousActivity && activeSessions) {
       const latestSession = activeSessions[0];
       const sessionsToDeactivate = activeSessions.slice(1);
 
       for (const session of sessionsToDeactivate) {
-        await supabase
+        const { error } = await supabase
           .from('test_sessions')
           .update({ is_active: false })
           .eq('id', session.id);
+        if (error) {
+          console.warn('Failed to deactivate session', session.id, error);
+        }
       }
 
-      console.log(`Deactivated ${sessionsToDeactivate.length} suspicious sessions`);
+      console.log(`Deactivated ${sessionsToDeactivate.length} suspicious sessions; latest kept: ${latestSession?.id}`);
     }
 
     const result = {
       count: sessionCount,
-      hasMultiple: hasMultiple,
-      suspiciousActivity: suspiciousActivity,
+      hasMultiple,
+      suspiciousActivity,
       sessions: sessionAnalysis,
       currentSession: {
         ip_address: currentIP,
         user_agent: currentUserAgent,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     };
 
     console.log('Session check result:', {
       testAttemptId,
       count: sessionCount,
       hasMultiple,
-      suspiciousActivity
+      suspiciousActivity,
     });
 
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error in detect-multiple-sessions function:', error);
     return new Response(
