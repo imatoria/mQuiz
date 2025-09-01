@@ -416,8 +416,8 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       }
     };
 
-    // Reduce sync frequency to every 2 minutes during test to minimize API calls
-    const interval = setInterval(syncServerTime, 120000);
+    // Reduce sync frequency to every 1 minute during test to minimize API calls
+    const interval = setInterval(syncServerTime, 60000);
     syncServerTime(); // Initial sync
 
     return () => clearInterval(interval);
