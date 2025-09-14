@@ -33,7 +33,6 @@ interface Question {
   option_b: string;
   option_c: string;
   option_d: string;
-  correct_answer: string;
   question_order: number;
 }
 
@@ -544,8 +543,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
             option_a,
             option_b,
             option_c,
-            option_d,
-            correct_answer
+            option_d
           )
         `)
         .eq('question_paper_id', test.question_paper_id)
@@ -623,15 +621,10 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     }
   };
 
+  // Students should not see score calculation - this is handled on backend
   const calculateScore = useCallback(() => {
-    let correct = 0;
-    questions.forEach(question => {
-      if (answers[question.id] === question.correct_answer) {
-        correct++;
-      }
-    });
-    return Math.round((correct / questions.length) * 100);
-  }, [questions, answers]);
+    return 0; // Score not available to students
+  }, []);
 
   const handleSubmit = async (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '') => {
     if (!testAttemptId) return;
@@ -707,56 +700,28 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       // Continue with submission even if final save fails
     }
 
+    // Use the complete-test edge function for secure submission
     try {
-      const completedAt = new Date().toISOString();
-      
-      // Calculate final score
-      let score = 0;
-      if (Object.keys(answers).length > 0) {
-        const correctAnswers = questions.reduce((acc, q) => {
-          acc[q.id] = q.correct_answer;
-          return acc;
-        }, {} as Record<string, string>);
-
-        let correct = 0;
-        Object.entries(answers).forEach(([questionId, answer]) => {
-          if (correctAnswers[questionId] === answer) {
-            correct++;
-          }
-        });
-        score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
-      }
-
-      const { error: submitError } = await supabase
-        .from('test_attempts')
-        .update({
-          completed_at: completedAt,
-          score: score,
-          total_questions: questions.length,
-          answers: {
-            encrypted: btoa(JSON.stringify(answers)),
-            flagged: btoa(JSON.stringify(Array.from(flaggedQuestions))),
-            lastSaved: completedAt,
-            submissionType: submissionType,
-            submissionReason: submissionReason,
-            securityViolations: violationCount
-          }
-        })
-        .eq('id', testAttemptId);
+      const { data, error: submitError } = await supabase.functions.invoke('complete-test', {
+        body: {
+          testAttemptId,
+          completionType: submissionType,
+          completionReason: submissionReason,
+          answers,
+          flaggedQuestions: Array.from(flaggedQuestions),
+          currentQuestionIndex,
+          progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
+          timeRemaining: Math.max(0, timeLeft),
+          scheduledTestId: test.id
+        }
+      });
 
       if (submitError) throw submitError;
 
-      // Show completion message based on submission type
-      const completionMessages = {
-        manual: `Test completed successfully! Your score: ${score}%`,
-        auto: `Test auto-submitted due to time expiration. Your score: ${score}%`,
-        force: `Test terminated due to security violations. Your score: ${score}%`,
-        partial: `Test submitted with network issues. Your score: ${score}%`
-      };
-
+      // Show completion message from server response
       toast({
-        title: "Test Submitted",
-        description: completionMessages[submissionType] || `Test completed. Score: ${score}%`,
+        title: data?.title || "Test Submitted",
+        description: data?.message || "Your test has been submitted for evaluation.",
         variant: submissionType === 'force' ? "destructive" : "default"
       });
 

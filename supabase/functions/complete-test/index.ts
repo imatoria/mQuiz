@@ -192,37 +192,37 @@ serve(async (req) => {
       // Don't fail the completion if audit logging fails
     }
 
-    // Create response message based on completion type
+    // Create response message based on completion type (scores hidden from students)
     const getCompletionMessage = () => {
       switch (completionType) {
         case 'manual':
           return {
             title: "Test Submitted Successfully",
-            message: `Your test has been submitted. Score: ${score}% (${Object.keys(answers || {}).length}/${totalQuestions} questions answered)`,
+            message: `Your test has been submitted for evaluation. (${Object.keys(answers || {}).length}/${totalQuestions} questions answered)`,
             success: true
           };
         case 'auto':
           return {
             title: "Test Auto-Submitted",
-            message: `Test automatically submitted due to time expiration. Score: ${score}%`,
+            message: `Test automatically submitted due to time expiration.`,
             success: true
           };
         case 'force':
           return {
             title: "Test Force Completed",
-            message: `Test completed due to security violations. Score: ${score}%`,
+            message: `Test completed due to security violations.`,
             success: true
           };
         case 'partial':
           return {
             title: "Test Partially Saved",
-            message: `Test progress saved due to technical issues. Score: ${score}%`,
+            message: `Test progress saved due to technical issues.`,
             success: true
           };
         default:
           return {
             title: "Test Completed",
-            message: `Score: ${score}%`,
+            message: `Your test has been submitted.`,
             success: true
           };
       }
@@ -233,16 +233,17 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        ...response,
+        title: "Test Submitted Successfully", 
+        message: "Your test has been submitted for evaluation.",
         data: {
-          score: score,
-          totalQuestions: totalQuestions,
           questionsAnswered: Object.keys(answers || {}).length,
+          totalQuestions: totalQuestions,
           questionsFlagged: (flaggedQuestions || []).length,
           completionType: completionType,
           completionReason: completionReason,
           completedAt: currentTime.toISOString(),
           timeRemaining: timeRemaining
+          // Score is hidden from students
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
