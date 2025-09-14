@@ -660,7 +660,7 @@ export const StudentDashboard = ({ onActiveTabChange, onNavigationVisibilityChan
                           </div>
                           <div className="text-right flex-shrink-0">
                             <div className={`text-base leading-none font-bold ${scoreColor}`}>{score}%</div>
-                            <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs p-0">
+                            <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs py-0 px-2">
                               {scoreBadge}
                             </Badge>
                           </div>
