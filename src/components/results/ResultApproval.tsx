@@ -47,10 +47,8 @@ export const ResultApproval = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (profile?.role === 'parent') {
       loadResults();
-    }
-  }, [profile]);
+  }, []);
 
   const loadResults = async () => {
     try {
