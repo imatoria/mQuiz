@@ -869,7 +869,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 select-none">
+    <div className="min-h-screen bg-background p-4 select-none mt-[64px]">
       {/* Fullscreen Prompt Dialog */}
       <AlertDialog open={showFullscreenPrompt} onOpenChange={setShowFullscreenPrompt}>
         <AlertDialogContent>
