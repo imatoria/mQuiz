@@ -47,8 +47,10 @@ export const ResultApproval = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (user?.id) {
       loadResults();
-  }, []);
+    }
+  }, [user]);
 
   const loadResults = async () => {
     try {
