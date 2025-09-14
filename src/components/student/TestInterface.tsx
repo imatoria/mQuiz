@@ -960,72 +960,143 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Question Panel */}
         <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Question {currentQuestionIndex + 1}</span>
-                {flaggedQuestions.has(currentQuestionIndex) && (
-                  <Badge variant="outline" className="bg-warning/20">
-                    <Flag className="w-3 h-3 mr-1 fill-current" />
-                    Flagged
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-lg leading-relaxed">
-                {currentQuestion.question_text}
-              </div>
-              
-              <div className="space-y-3">
-                {['A', 'B', 'C', 'D'].map((option) => {
-                  const optionKey = `option_${option.toLowerCase()}` as keyof Question;
-                  const optionText = currentQuestion[optionKey] as string;
-                  const isSelected = answers[currentQuestion.id] === option;
-                  
-                  return (
-                    <Button
-                      key={option}
-                      variant={isSelected ? "default" : "outline"}
-                      className={`w-full justify-start text-left p-4 h-auto ${
-                        isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                      }`}
-                      onClick={() => handleAnswer(currentQuestion.id, option)}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                          isSelected ? 'border-primary-foreground bg-primary-foreground text-primary' : 'border-muted-foreground'
-                        }`}>
-                          {option}
-                        </div>
-                        <div className="text-wrap">{optionText}</div>
-                      </div>
-                    </Button>
-                  );
-                })}
-              </div>
-              
-              <div className="flex justify-between items-center pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => navigateToQuestion(currentQuestionIndex - 1)}
-                  disabled={currentQuestionIndex === 0}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Previous
-                </Button>
+          {displayMode === 'single' ? (
+            // Single Question Mode
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Question {currentQuestionIndex + 1}</span>
+                  {flaggedQuestions.has(currentQuestionIndex) && (
+                    <Badge variant="outline" className="bg-warning/20">
+                      <Flag className="w-3 h-3 mr-1 fill-current" />
+                      Flagged
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="text-lg leading-relaxed">
+                  {currentQuestion.question_text}
+                </div>
                 
-                <Button
-                  variant="outline"
-                  onClick={() => navigateToQuestion(currentQuestionIndex + 1)}
-                  disabled={currentQuestionIndex === questions.length - 1}
-                >
-                  Next
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="space-y-3">
+                  {['A', 'B', 'C', 'D'].map((option) => {
+                    const optionKey = `option_${option.toLowerCase()}` as keyof Question;
+                    const optionText = currentQuestion[optionKey] as string;
+                    const isSelected = answers[currentQuestion.id] === option;
+                    
+                    return (
+                      <Button
+                        key={option}
+                        variant={isSelected ? "default" : "outline"}
+                        className={`w-full justify-start text-left p-4 h-auto ${
+                          isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                        }`}
+                        onClick={() => handleAnswer(currentQuestion.id, option)}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                            isSelected ? 'border-primary-foreground bg-primary-foreground text-primary' : 'border-muted-foreground'
+                          }`}>
+                            {option}
+                          </div>
+                          <div className="text-wrap">{optionText}</div>
+                        </div>
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <div className="flex justify-between items-center pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigateToQuestion(currentQuestionIndex - 1)}
+                    disabled={currentQuestionIndex === 0}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Previous
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => navigateToQuestion(currentQuestionIndex + 1)}
+                    disabled={currentQuestionIndex === questions.length - 1}
+                  >
+                    Next
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            // All Questions Mode
+            <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+              {questions.map((question, questionIndex) => (
+                <Card key={question.id} id={`question-${questionIndex}`} className="scroll-mt-4">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Question {questionIndex + 1}</span>
+                      <div className="flex items-center space-x-2">
+                        {flaggedQuestions.has(questionIndex) && (
+                          <Badge variant="outline" className="bg-warning/20">
+                            <Flag className="w-3 h-3 mr-1 fill-current" />
+                            Flagged
+                          </Badge>
+                        )}
+                        {answers[question.id] && (
+                          <Badge variant="secondary">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Answered
+                          </Badge>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleFlag(questionIndex)}
+                          className={flaggedQuestions.has(questionIndex) ? 'bg-warning/20' : ''}
+                        >
+                          <Flag className={`w-4 h-4 ${flaggedQuestions.has(questionIndex) ? 'fill-current' : ''}`} />
+                        </Button>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="text-lg leading-relaxed">
+                      {question.question_text}
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {['A', 'B', 'C', 'D'].map((option) => {
+                        const optionKey = `option_${option.toLowerCase()}` as keyof Question;
+                        const optionText = question[optionKey] as string;
+                        const isSelected = answers[question.id] === option;
+                        
+                        return (
+                          <Button
+                            key={option}
+                            variant={isSelected ? "default" : "outline"}
+                            className={`w-full justify-start text-left p-4 h-auto ${
+                              isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                            }`}
+                            onClick={() => handleAnswer(question.id, option)}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                isSelected ? 'border-primary-foreground bg-primary-foreground text-primary' : 'border-muted-foreground'
+                              }`}>
+                                {option}
+                              </div>
+                              <div className="text-wrap">{optionText}</div>
+                            </div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Navigation Panel */}
@@ -1048,7 +1119,18 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
                     }
                     size="sm"
                     className={`relative ${flaggedQuestions.has(index) ? 'ring-2 ring-warning' : ''}`}
-                    onClick={() => navigateToQuestion(index)}
+                    onClick={() => {
+                      if (displayMode === 'all') {
+                        // Scroll to question in all mode
+                        const questionElement = document.getElementById(`question-${index}`);
+                        if (questionElement) {
+                          questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      } else {
+                        // Navigate to question in single mode
+                        navigateToQuestion(index);
+                      }
+                    }}
                   >
                     {index + 1}
                     {flaggedQuestions.has(index) && (
@@ -1061,7 +1143,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
               <div className="mt-4 space-y-2 text-xs">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-primary rounded"></div>
-                  <span>Current</span>
+                  <span>{displayMode === 'single' ? 'Current' : 'Viewing'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-secondary rounded"></div>
