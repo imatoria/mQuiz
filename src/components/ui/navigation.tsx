@@ -4,6 +4,14 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   User, 
   Users, 
@@ -29,6 +37,16 @@ interface NavigationProps {
 export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTabIcon }: NavigationProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { profile, signOut } = useAuth();
+
+  const getUserInitial = () => {
+    if (profile?.full_name) {
+      return profile.full_name.charAt(0).toUpperCase();
+    }
+    if (profile?.email) {
+      return profile.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
 
   const roleConfig = {
     admin: {
@@ -68,9 +86,9 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
           </div>
         </div>
 
-        {/* Active Tab Name */}
+        {/* Active Tab Name - Desktop Only */}
         {activeTabName && activeTabIcon && (
-          <div className="flex items-center space-x-2 flex-1 justify-center">
+          <div className="hidden md:flex items-center space-x-2 flex-1 justify-center">
             {React.createElement(activeTabIcon, { className: "w-4 h-4 md:w-5 md:h-5 text-muted-foreground" })}
             <span className="text-sm md:text-lg font-medium text-foreground">{activeTabName}</span>
           </div>
@@ -81,71 +99,70 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
           <NotificationCenter />
           
           {profile && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">
-                {profile.full_name || profile.email}
-              </span>
-              {currentRole && (
-                <Badge variant="secondary" className="text-xs">
-                  {roleConfig[currentRole].label}
-                </Badge>
-              )}
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="w-8 h-8 rounded-full p-0">
+                  <span className="text-sm font-semibold">{getUserInitial()}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {profile.full_name || profile.email}
+                    </p>
+                    {currentRole && (
+                      <Badge variant="secondary" className="text-xs w-fit">
+                        {roleConfig[currentRole].label}
+                      </Badge>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={signOut}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
         </div>
 
-        {/* Mobile menu button */}
-        <div className="md:hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
-        </div>
-      </div>
-
-      {/* Mobile Navigation */}
-      {isMenuOpen && (
-        <div className="flex justify-between items-center md:hidden py-2 border-t px-4">
+        {/* Mobile Navigation */}
+        <div className="md:hidden flex items-center space-x-4 pr-4">
           <NotificationCenter />
           
           {profile && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">
-                {profile.full_name || profile.email}
-              </span>
-              {currentRole && (
-                <Badge variant="secondary" className="text-xs">
-                  {roleConfig[currentRole].label}
-                </Badge>
-              )}
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="w-8 h-8 rounded-full p-0">
+                  <span className="text-sm font-semibold">{getUserInitial()}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {profile.full_name || profile.email}
+                    </p>
+                    {currentRole && (
+                      <Badge variant="secondary" className="text-xs w-fit">
+                        {roleConfig[currentRole].label}
+                      </Badge>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              signOut();
-              setIsMenuOpen(false);
-            }}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
         </div>
-      )}
+      </div>
+
     </nav>
   );
 };

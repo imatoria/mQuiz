@@ -389,7 +389,20 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         </Sidebar>
 
         <SidebarInset>
-          <div className="min-h-screen bg-gradient-subtle mt-[64px]">
+          {/* Mobile Tab Header */}
+          <div className="md:hidden bg-card border-b p-4 flex items-center space-x-3">
+            {activeTab && (() => {
+              const item = menuItems.find(i => i.value === activeTab);
+              return item ? (
+                <>
+                  <item.icon className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-lg font-medium text-foreground">{item.label}</span>
+                </>
+              ) : null;
+            })()}
+          </div>
+          
+          <div className="min-h-screen bg-gradient-subtle mt-0 md:mt-[64px]">
             <div className="p-3 sm:p-4 md:p-6">
             <Tabs value={activeTab} onValueChange={(value) => {
               setActiveTab(value);
