@@ -119,25 +119,27 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
                     <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50">
                       <RadioGroupItem value="single" id="single" className="mt-1" />
                       <div className="flex-1">
-                        <Label htmlFor="single" className="flex items-center font-medium cursor-pointer">
+                        <Label htmlFor="single" className="flex items-start font-medium cursor-pointer">
                           <Eye className="w-4 h-4 mr-2" />
-                          Single Question View (Recommended)
+                          <div>Single Question View (Recommended)<br />
+                            <p className="text-sm text-muted-foreground mt-1">
+                              View one question at a time with navigation controls. Easier to focus and less overwhelming.
+                            </p>
+                          </div>
                         </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          View one question at a time with navigation controls. Easier to focus and less overwhelming.
-                        </p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50">
                       <RadioGroupItem value="all" id="all" className="mt-1" />
                       <div className="flex-1">
-                        <Label htmlFor="all" className="flex items-center font-medium cursor-pointer">
+                        <Label htmlFor="all" className="flex items-start font-medium cursor-pointer">
                           <List className="w-4 h-4 mr-2" />
-                          All Questions View
+                          <div>All Questions View<br />
+                            <p className="text-sm text-muted-foreground mt-1">
+                              View all questions on a single scrollable page. Good for quick overview and jumping between questions.
+                            </p>
+                          </div>
                         </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          View all questions on a single scrollable page. Good for quick overview and jumping between questions.
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -249,11 +251,11 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center text-xl">
+              <DialogTitle className="flex items-start text-xl">
                 <AlertTriangle className="w-6 h-6 mr-2 text-destructive" />
                 Final Confirmation
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-left">
                 You are about to start the test. This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
@@ -261,13 +263,17 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
             <div className="space-y-6 py-4">
               <Card className="border-destructive/20 bg-destructive/5">
                 <CardContent className="pt-6">
-                  <div className="text-center space-y-3">
-                    <div className="text-lg font-semibold">Ready to Start?</div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>• Test: <strong>{test.title}</strong></p>
-                      <p>• Questions: <strong>{test.question_papers.total_questions}</strong></p>
-                      <p>• Time Limit: <strong>{totalMinutes} minutes</strong></p>
-                      <p>• Display Mode: <strong>{displayMode === 'single' ? 'Single Question View' : 'All Questions View'}</strong></p>
+                  <div className="text-left space-y-3">
+                    <div className="text-center text-lg font-semibold">Ready to Start?</div>
+                    <div className="md:flex text-sm text-muted-foreground space-y-1">
+                      <div className="md:w-1/2">
+                        <p>• Test: <strong>{test.title}</strong></p>
+                        <p>• Questions: <strong>{test.question_papers.total_questions}</strong></p>
+                      </div>
+                      <div className="md:w-1/2">
+                        <p>• Time Limit: <strong>{totalMinutes} minutes</strong></p>
+                        <p>• Display Mode: <strong>{displayMode === 'single' ? 'Single Question View' : 'All Questions View'}</strong></p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

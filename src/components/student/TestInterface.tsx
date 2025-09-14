@@ -294,7 +294,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
       if (data?.autoSubmitted) {
         toast({
           title: "Test Auto-Submitted",
-          description: data.message + (data.score !== undefined ? ` Final Score: ${data.score}%` : ''),
+          description: data.message,
           variant: "destructive"
         });
         onComplete();
@@ -626,11 +626,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
     }
   };
 
-  // Students should not see score calculation - this is handled on backend
-  const calculateScore = useCallback(() => {
-    return 0; // Score not available to students
-  }, []);
-
   const handleSubmit = async (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '') => {
     if (!testAttemptId) return;
     
@@ -638,7 +633,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
     setIsSubmitting(true);
     setShowFinalConfirmDialog(false);
     setShowReviewDialog(false);
-    debugger;
+
     try {
       // Use the complete-test edge function for proper submission
       const { data, error } = await supabase.functions.invoke('complete-test', {
@@ -1203,12 +1198,11 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <div className="bg-muted p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Test Summary:</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <h4 className="text-center font-semibold mb-2">Test Summary:</h4>
+                <div className="md:grid md:grid-cols-2 gap-4 text-sm">
                   <div>Questions Answered: <strong>{Object.keys(answers).length}/{questions.length}</strong></div>
                   <div>Questions Flagged: <strong>{Array.from(flaggedQuestions).length}</strong></div>
                   <div>Time Remaining: <strong className={timeLeft <= 300 ? "text-destructive" : ""}>{formatTime(timeLeft)}</strong></div>
-                  <div>Estimated Score: <strong>{calculateScore()}%</strong></div>
                 </div>
               </div>
 
@@ -1332,10 +1326,9 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
               </div>
               
               <div className="text-center space-y-2">
-                <div className="text-lg font-semibold">Final Summary</div>
                 <div className="grid grid-cols-2 gap-4 text-sm bg-muted p-3 rounded">
-                  <div>Answered: <strong>{Object.keys(answers).length}/{questions.length}</strong></div>
-                  <div>Score: <strong>{calculateScore()}%</strong></div>
+                  <div className="text-lg font-semibold">Final Summary:</div>
+                  <div className="flex items-center justify-center">Answered: <strong>{Object.keys(answers).length}/{questions.length}</strong></div>
                 </div>
               </div>
 
