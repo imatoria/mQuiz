@@ -49,9 +49,9 @@ const [activeTab, setActiveTab] = useState('children');
   return (
     <ErrorBoundary>
       <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gradient-subtle">
-          <Sidebar collapsible="icon">
-            <SidebarContent>
+        <div className="flex w-full">
+          <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
+            <SidebarContent className="h-full overflow-y-auto">
               <SidebarGroup>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -73,17 +73,18 @@ const [activeTab, setActiveTab] = useState('children');
             </SidebarContent>
           </Sidebar>
 
-          <SidebarInset>
-            <header className="h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4">
-              <SidebarTrigger />
-              {activeItem && (
-                <h1 className="ml-3 flex items-center gap-2 text-base md:text-lg font-semibold text-foreground">
-                  <activeItem.icon className="w-5 h-5 text-primary" />
-                  <span>{activeItem.label}</span>
-                </h1>
-              )}
-            </header>
-            <div className="p-3 sm:p-4 md:p-6">
+          <SidebarInset style={{"--sidebar-width": "15rem", "--sidebar-width-icon": "3rem"} as React.CSSProperties} className="ml-[var(--sidebar-width)] group-data-[collapsible=icon]:ml-[var(--sidebar-width-icon)]">
+            <div className="min-h-screen bg-gradient-subtle">
+              <header className="sticky top-16 z-30 h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4 flex-shrink-0">
+                <SidebarTrigger />
+                {activeItem && (
+                  <h1 className="ml-3 flex items-center gap-2 text-base md:text-lg font-semibold text-foreground">
+                    <activeItem.icon className="w-5 h-5 text-primary" />
+                    <span>{activeItem.label}</span>
+                  </h1>
+                )}
+              </header>
+              <div className="p-3 sm:p-4 md:p-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 {/* Content sections */}
                 <TabsContent value="children" className="mt-6">
@@ -152,6 +153,7 @@ const [activeTab, setActiveTab] = useState('children');
                   </ErrorBoundary>
                 </TabsContent>
               </Tabs>
+              </div>
             </div>
           </SidebarInset>
         </div>

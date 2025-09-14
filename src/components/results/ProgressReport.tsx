@@ -80,10 +80,6 @@ export const ProgressReport = () => {
             title,
             creator_id,
             question_papers(total_questions)
-          ),
-          profiles!test_attempts_user_id_fkey(
-            full_name,
-            user_id
           )
         `)
         .gte('started_at', new Date(Date.now() - parseInt(timeframe) * 24 * 60 * 60 * 1000).toISOString());
@@ -103,12 +99,26 @@ export const ProgressReport = () => {
 
       if (error) throw error;
 
+      // Get user profiles separately
+      const userIds = [...new Set(attempts?.map(attempt => attempt.user_id) || [])];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = profiles?.reduce((acc, profile) => {
+        acc[profile.user_id] = profile;
+        return acc;
+      }, {} as Record<string, any>) || {};
+
       // Process data into progress reports
       const progressMap = new Map<string, StudentProgress>();
 
       attempts?.forEach((attempt: any) => {
         const studentId = attempt.user_id;
-        const studentName = attempt.profiles?.full_name || 'Unknown Student';
+        const studentName = profileMap[studentId]?.full_name || 'Unknown Student';
         
         if (!progressMap.has(studentId)) {
           progressMap.set(studentId, {
@@ -170,18 +180,26 @@ export const ProgressReport = () => {
   const getStudentList = async () => {
     if (profile?.role !== 'parent') return [];
     
-    const { data: children } = await supabase
+    // Get children relationships
+    const { data: relationships, error: relError } = await supabase
       .from('parent_child_relationships')
-      .select(`
-        child_id,
-        profiles!parent_child_relationships_child_id_fkey(
-          full_name,
-          user_id
-        )
-      `)
+      .select('child_id')
       .eq('parent_id', profile.user_id);
 
-    return children || [];
+    if (relError || !relationships) return [];
+
+    const childIds = relationships.map(rel => rel.child_id);
+    
+    // Get profiles for children
+    const { data: children, error: childrenError } = await supabase
+      .from('profiles')
+      .select('user_id, full_name')
+      .in('user_id', childIds);
+
+    return children?.map(child => ({
+      child_id: child.user_id,
+      profiles: child
+    })) || [];
   };
 
   const [studentList, setStudentList] = useState<any[]>([]);

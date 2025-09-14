@@ -100,7 +100,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation currentRole={profile.role} onRoleChange={() => signOut()} />
-      <Dashboard role={profile.role} />
+      <div className="pt-14 md:pt-16">
+        <Dashboard role={profile.role} />
+      </div>
     </div>
   );
 };

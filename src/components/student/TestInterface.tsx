@@ -638,81 +638,45 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     setIsSubmitting(true);
     setShowFinalConfirmDialog(false);
     setShowReviewDialog(false);
+    deactivateSecurity(); // Deactivate security monitoring
     
     try {
-      const score = calculateScore();
-      const completionData = {
-        answers: answers,
-        score: score,
-        total_questions: questions.length,
-        completed_at: new Date().toISOString(),
-        completion_type: type,
-        completion_reason: reason,
-        questions_answered: Object.keys(answers).length,
-        questions_flagged: Array.from(flaggedQuestions).length,
-        time_remaining: timeLeft,
-        last_activity_at: new Date().toISOString()
-      };
-
-      const { error } = await supabase
-        .from('test_attempts')
-        .update(completionData)
-        .eq('id', testAttemptId);
-
-      if (error) throw error;
-
-      // Enhanced completion messages based on submission type
-      const getCompletionMessage = (): { title: string; description: string; variant: "default" | "destructive" } => {
-        switch (type) {
-          case 'manual':
-            return {
-              title: "Test Submitted Successfully",
-              description: `Your test has been submitted. Score: ${score}% (${Object.keys(answers).length}/${questions.length} questions answered)`,
-              variant: score >= 70 ? "default" : "destructive"
-            };
-          case 'auto':
-            return {
-              title: "Test Auto-Submitted",
-              description: `Test automatically submitted due to time expiration. Score: ${score}%`,
-              variant: "destructive"
-            };
-          case 'force':
-            return {
-              title: "Test Force Completed",
-              description: `Test completed due to security violations. Score: ${score}%`,
-              variant: "destructive"
-            };
-          case 'partial':
-            return {
-              title: "Test Partially Saved",
-              description: `Test progress saved due to technical issues. Score: ${score}%`,
-              variant: "destructive"
-            };
-          default:
-            return {
-              title: "Test Completed",
-              description: `Score: ${score}%`,
-              variant: "default"
-            };
+      // Use the complete-test edge function for proper submission
+      const { data, error } = await supabase.functions.invoke('complete-test', {
+        body: {
+          testAttemptId,
+          completionType: type,
+          completionReason: reason,
+          answers: answers,
+          flaggedQuestions: Array.from(flaggedQuestions),
+          currentQuestionIndex,
+          progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
+          timeRemaining: Math.max(0, timeLeft),
+          scheduledTestId: test.id
         }
-      };
-
-      const message = getCompletionMessage();
-      toast({
-        title: message.title,
-        description: message.description,
-        variant: message.variant
       });
 
-      // Force save before completing to ensure all data is persisted
-      await debouncedSave(true, true);
-      
-      onComplete();
+      if (error) {
+        console.error('Submission error:', error);
+        throw new Error(error.message || 'Failed to submit test');
+      }
+
+      if (data?.success) {
+        toast({
+          title: data.title || "Test Submitted",
+          description: data.message || `Test completed successfully!`,
+          variant: data.success ? "default" : "destructive"
+        });
+        
+        onComplete();
+      } else {
+        throw new Error(data?.error || 'Unknown submission error');
+      }
     } catch (error) {
       console.error('Error submitting test:', error);
       toast({
         title: "Submission Error",
-        description: "Failed to submit test. Your progress has been saved. Please try again or contact support.",
+        description: error.message || "Failed to submit test. Your progress has been saved. Please try again or contact support.",
         variant: "destructive"
       });
     } finally {

@@ -40,9 +40,9 @@ export const AdminDashboard = () => {
   return (
     <ErrorBoundary>
       <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gradient-subtle">
-          <Sidebar collapsible="icon">
-            <SidebarContent>
+        <div className="flex w-full">
+          <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
+            <SidebarContent className="h-full overflow-y-auto">
               <SidebarHeader className="group-data-[collapsible=icon]:hidden">
                 <SiteLogo />
               </SidebarHeader>
@@ -69,25 +69,26 @@ export const AdminDashboard = () => {
             </SidebarContent>
           </Sidebar>
 
-          <SidebarInset>
-            <header className="h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4">
-              <SidebarTrigger />
-              <div className="ml-2 flex items-center">
-                <div className="flex md:hidden">
-                  <SiteLogo size="sm" />
+          <SidebarInset style={{"--sidebar-width": "15rem", "--sidebar-width-icon": "3rem"} as React.CSSProperties} className="ml-[var(--sidebar-width)] group-data-[collapsible=icon]:ml-[var(--sidebar-width-icon)]">
+            <div className="min-h-screen bg-gradient-subtle">
+              <header className="sticky top-16 z-30 h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4 flex-shrink-0">
+                <SidebarTrigger />
+                <div className="ml-2 flex items-center">
+                  <div className="flex md:hidden">
+                    <SiteLogo size="sm" />
+                  </div>
+                  <div className="hidden md:peer-data-[state=collapsed]:flex">
+                    <SiteLogo size="sm" />
+                  </div>
                 </div>
-                <div className="hidden md:peer-data-[state=collapsed]:flex">
-                  <SiteLogo size="sm" />
-                </div>
-              </div>
-              {activeItem && (
-                <h1 className="ml-3 flex items-center gap-2 text-base md:text-lg font-semibold text-foreground">
-                  <activeItem.icon className="w-5 h-5 text-primary" />
-                  <span>{activeItem.label}</span>
-                </h1>
-              )}
-            </header>
-            <div className="p-3 sm:p-4 md:p-6 space-y-6">
+                {activeItem && (
+                  <h1 className="ml-3 flex items-center gap-2 text-base md:text-lg font-semibold text-foreground">
+                    <activeItem.icon className="w-5 h-5 text-primary" />
+                    <span>{activeItem.label}</span>
+                  </h1>
+                )}
+              </header>
+              <div className="p-3 sm:p-4 md:p-6 space-y-6">
               {/* Quick Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <Card>
@@ -179,6 +180,7 @@ export const AdminDashboard = () => {
                   </ErrorBoundary>
                 </TabsContent>
               </Tabs>
+              </div>
             </div>
           </SidebarInset>
         </div>

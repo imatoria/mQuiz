@@ -90,10 +90,6 @@ export const ResultApproval = () => {
             question_papers (
               subjects (name)
             )
-          ),
-          profiles!user_id (
-            full_name,
-            email
           )
         `)
         .in('user_id', childIds)
@@ -101,6 +97,19 @@ export const ResultApproval = () => {
         .order('completed_at', { ascending: false });
 
       if (attemptsError) throw attemptsError;
+
+      // Get user profiles separately
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', childIds);
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = profiles?.reduce((acc, profile) => {
+        acc[profile.user_id] = profile;
+        return acc;
+      }, {} as Record<string, any>) || {};
 
       const formatted: PendingResult[] = attempts?.map(attempt => ({
         id: attempt.id,
@@ -112,8 +121,8 @@ export const ResultApproval = () => {
         answers: (attempt.answers as Record<string, string>) || {},
         student: {
           id: attempt.user_id,
-          full_name: (attempt.profiles as any)?.full_name || 'Unknown',
-          email: (attempt.profiles as any)?.email || ''
+          full_name: profileMap[attempt.user_id]?.full_name || 'Unknown',
+          email: profileMap[attempt.user_id]?.email || ''
         },
         test: {
           title: attempt.scheduled_test?.title || 'Unknown Test',
@@ -197,6 +206,19 @@ export const ResultApproval = () => {
     return 'text-red-600';
   };
 
+  // Show loading state while profile is being fetched
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="h-64 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only check access after loading is complete
   if (profile?.role !== 'parent') {
     return (
       <Card>
@@ -208,17 +230,6 @@ export const ResultApproval = () => {
           </p>
         </CardContent>
       </Card>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-64 bg-muted rounded"></div>
-        </div>
-      </div>
     );
   }
 

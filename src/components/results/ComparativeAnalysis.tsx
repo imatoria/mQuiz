@@ -93,10 +93,6 @@ export const ComparativeAnalysis = () => {
               class_level,
               subjects(name)
             )
-          ),
-          profiles!test_attempts_user_id_fkey(
-            full_name,
-            user_id
           )
         `)
         .gte('started_at', new Date(Date.now() - parseInt(timeframe) * 24 * 60 * 60 * 1000).toISOString())
@@ -109,10 +105,24 @@ export const ComparativeAnalysis = () => {
       const { data: attempts, error } = await query;
       if (error) throw error;
 
+      // Get user profiles separately
+      const userIds = [...new Set(attempts?.map(attempt => attempt.user_id) || [])];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = profiles?.reduce((acc, profile) => {
+        acc[profile.user_id] = profile;
+        return acc;
+      }, {} as Record<string, any>) || {};
+
       if (selectedComparison === 'students') {
-        processStudentComparisons(attempts || []);
+        processStudentComparisons(attempts || [], profileMap);
       } else if (selectedComparison === 'classes') {
-        processClassComparisons(attempts || []);
+        processClassComparisons(attempts || [], profileMap);
       }
 
     } catch (error: any) {
@@ -126,12 +136,12 @@ export const ComparativeAnalysis = () => {
     }
   };
 
-  const processStudentComparisons = (attempts: any[]) => {
+  const processStudentComparisons = (attempts: any[], profileMap: Record<string, any>) => {
     const studentMap = new Map<string, ComparisonData>();
 
     attempts.forEach((attempt: any) => {
       const studentId = attempt.user_id;
-      const studentName = attempt.profiles?.full_name || 'Unknown Student';
+      const studentName = profileMap[studentId]?.full_name || 'Unknown Student';
       const subject = attempt.scheduled_tests.question_papers?.subjects?.name || 'Unknown';
       
       if (!studentMap.has(studentId)) {
@@ -218,7 +228,7 @@ export const ComparativeAnalysis = () => {
     setComparisonData(studentsArray);
   };
 
-  const processClassComparisons = (attempts: any[]) => {
+  const processClassComparisons = (attempts: any[], profileMap: Record<string, any>) => {
     const classMap = new Map<string, ClassComparison>();
     
     attempts.forEach((attempt: any) => {
