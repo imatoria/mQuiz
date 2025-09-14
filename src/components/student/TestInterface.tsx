@@ -595,8 +595,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     };
   }, [answers, flaggedQuestions, currentQuestionIndex]); // Removed debouncedSave from dependencies
 
-  const handleAnswer = (currentQuestionIndex: number, questionId: string, answer: string) => {
-    setCurrentQuestionIndex(currentQuestionIndex);
+  const handleAnswer = (questionId: string, answer: string) => {
     setAnswers(prev => ({
       ...prev,
       [questionId]: answer
@@ -982,7 +981,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                       className={`w-full justify-start text-left p-4 h-auto ${
                         isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                       }`}
-                      onClick={() => handleAnswer(currentQuestionIndex + 1, currentQuestion.id, option)}
+                      onClick={() => handleAnswer(currentQuestion.id, option)}
                     >
                       <div className="flex items-start space-x-3">
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
