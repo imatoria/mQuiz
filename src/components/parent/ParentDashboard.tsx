@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { ChildrenManagement } from './ChildrenManagement';
-import { TestAssignmentManager } from './TestAssignmentManager';
 import { ContentCreation } from './ContentCreation';
 import QuestionBank from './QuestionBank';
 import { ScheduleManager } from './ScheduleManager';
@@ -49,7 +48,6 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
     { value: 'questions', label: 'Questions', icon: FileText },
     { value: 'papers', label: 'Papers', icon: FileText },
     { value: 'tests', label: 'Tests', icon: Calendar },
-    { value: 'assignments', label: 'Assignments', icon: Settings },
     { value: 'approval', label: 'Approval', icon: CheckCircle },
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
     { value: 'reports', label: 'Reports', icon: FileText },
@@ -139,12 +137,6 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
                 <TabsContent value="tests">
                   <ErrorBoundary>
                     <ScheduleManager />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="assignments">
-                  <ErrorBoundary>
-                    <TestAssignmentManager />
                   </ErrorBoundary>
                 </TabsContent>
 
