@@ -65,9 +65,10 @@ interface TestAttempt {
 
 interface StudentDashboardProps {
   onActiveTabChange?: (tabName: string, tabIcon: any) => void;
+  onNavigationVisibilityChange?: (hidden: boolean) => void;
 }
 
-export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) => {
+export const StudentDashboard = ({ onActiveTabChange, onNavigationVisibilityChange }: StudentDashboardProps) => {
   const [availableTests, setAvailableTests] = useState<ScheduledTest[]>([]);
   const [completedTests, setCompletedTests] = useState<ScheduledTest[]>([]);
   const [activeTests, setActiveTests] = useState<ScheduledTest[]>([]);
@@ -346,7 +347,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
   };
 
   if (currentTest) {
-    return <TestInterface test={currentTest} onComplete={handleTestComplete} displayMode={testDisplayMode} />;
+    return <TestInterface test={currentTest} onComplete={handleTestComplete} displayMode={testDisplayMode} onNavigationVisibilityChange={onNavigationVisibilityChange} />;
   }
 
   if (error) {

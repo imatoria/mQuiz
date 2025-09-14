@@ -57,9 +57,10 @@ interface TestInterfaceProps {
   };
   onComplete: () => void;
   displayMode?: 'single' | 'all';
+  onNavigationVisibilityChange?: (hidden: boolean) => void;
 }
 
-export const TestInterface = ({ test, onComplete, displayMode = 'single' }: TestInterfaceProps) => {
+export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavigationVisibilityChange }: TestInterfaceProps) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -217,7 +218,12 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   // Monitor fullscreen status and handle exits
   useEffect(() => {
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && isSecurityActive) {
+      const isInFullscreen = !!document.fullscreenElement;
+      
+      // Update navigation visibility based on fullscreen state
+      onNavigationVisibilityChange?.(isInFullscreen && isSecurityActive);
+      
+      if (!isInFullscreen && isSecurityActive) {
         // User exited fullscreen during test
         addViolation({
           type: 'fullscreen_exit',
@@ -239,7 +245,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [isSecurityActive, addViolation, toast]);
+  }, [isSecurityActive, addViolation, toast, onNavigationVisibilityChange]);
 
   // Enhanced auto-save functionality with grace period handling
   const debouncedSave = useCallback(async (forceSync = false, isGracePeriod = false) => {
