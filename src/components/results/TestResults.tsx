@@ -28,6 +28,7 @@ interface TestAttempt {
   total_questions: number;
   completed_at: string;
   answers: Record<string, string>;
+  show_results: boolean,
   scheduled_test: {
     title: string;
     question_paper_id: string;
@@ -56,7 +57,6 @@ export const TestResults = () => {
   const [selectedAttempt, setSelectedAttempt] = useState<TestAttempt | null>(null);
   const [questionResults, setQuestionResults] = useState<QuestionResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAnswers, setShowAnswers] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -100,14 +100,8 @@ export const TestResults = () => {
         .order('completed_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Filter results based on show_results setting from test_attempts
-      const filteredResults = data?.filter(attempt => {
-        // Show results if show_results is true in test_attempts
-        return attempt.show_results;
-      }) || [];
-      
-      setAttempts(filteredResults?.map(attempt => ({
+
+      setAttempts(data?.map(attempt => ({
         ...attempt,
         answers: attempt.answers as Record<string, string> || {}
       })) || []);
@@ -193,7 +187,8 @@ export const TestResults = () => {
 
       const results: QuestionResult[] = questionsResult.data.map((item: any) => {
         const question = item.questions;
-        const userAnswer = parsedAnswers[question.id] || parsedAnswers[`question_${question.id}`] || '';
+
+        const userAnswer = parsedAnswers.userAnswers[question.id] || '';
         const isCorrect = userAnswer && userAnswer.toLowerCase() === question.correct_answer.toLowerCase();
         
         console.log(`Question ${question.id}: user=${userAnswer}, correct=${question.correct_answer}, match=${isCorrect}`);
@@ -406,23 +401,10 @@ export const TestResults = () => {
             selectedAttempt && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold">{selectedAttempt.scheduled_test.title}</h3>
-                    <p className="text-muted-foreground">
-                      Score: {selectedAttempt.score}% ({Math.round((selectedAttempt.score / 100) * selectedAttempt.total_questions)}/{selectedAttempt.total_questions} correct)
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowAnswers(!showAnswers)}
-                      disabled={profile?.role === 'child' && !selectedAttempt?.answers?.showAnswersEnabled}
-                    >
-                      {showAnswers ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                      {showAnswers ? 'Hide' : 'Show'} Answers
-                    </Button>
-                  </div>
+                  <h3 className="text-lg font-semibold">{selectedAttempt.scheduled_test.title}</h3>
+                  <p className="text-muted-foreground">
+                    Score: {selectedAttempt.score}% ({Math.round((selectedAttempt.score / 100) * selectedAttempt.total_questions)}/{selectedAttempt.total_questions} correct)
+                  </p>
                 </div>
 
                 <div className="border rounded-lg">
@@ -431,11 +413,10 @@ export const TestResults = () => {
                       <TableRow>
                         <TableHead className="w-12">#</TableHead>
                         <TableHead>Question</TableHead>
-                        {(profile?.role !== 'child' || selectedAttempt?.answers?.showAnswersEnabled) && (
+                        <TableHead className="whitespace-nowrap w-24">Your Answer</TableHead>
+                        {selectedAttempt?.show_results && (
                           <>
-                            <TableHead className="w-24">Your Answer</TableHead>
-                            {showAnswers && <TableHead className="w-24">Correct Answer</TableHead>}
-                            <TableHead className="w-16">Result</TableHead>
+                            <TableHead className="whitespace-nowrap w-24">Correct Answer</TableHead>
                           </>
                         )}
                       </TableRow>
@@ -447,36 +428,25 @@ export const TestResults = () => {
                           <TableCell className="max-w-md">
                             <div className="space-y-2">
                               <p className="text-sm">{result.question_text}</p>
-                              {showAnswers && (
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <div>A. {result.option_a}</div>
-                                  <div>B. {result.option_b}</div>
-                                  <div>C. {result.option_c}</div>
-                                  <div>D. {result.option_d}</div>
-                                </div>
-                              )}
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>A. {result.option_a}</div>
+                                <div>B. {result.option_b}</div>
+                                <div>C. {result.option_c}</div>
+                                <div>D. {result.option_d}</div>
+                              </div>
                             </div>
                           </TableCell>
-                          {(profile?.role !== 'child' || selectedAttempt?.answers?.showAnswersEnabled) && (
+                          <TableCell>
+                            <Badge variant={(selectedAttempt?.show_results && result.user_answer) ? (result.is_correct ? "success" : "destructive") : "secondary"} className="whitespace-nowrap">
+                              {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
+                            </Badge>
+                          </TableCell>
+                          {selectedAttempt?.show_results && (
                             <>
                               <TableCell>
-                                <Badge variant={result.user_answer ? (result.is_correct ? "default" : "destructive") : "secondary"} className="whitespace-nowrap">
-                                  {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
+                                <Badge variant="outline">
+                                  {result.correct_answer}
                                 </Badge>
-                              </TableCell>
-                              {showAnswers && (
-                                <TableCell>
-                                  <Badge variant="outline">
-                                    {result.correct_answer}
-                                  </Badge>
-                                </TableCell>
-                              )}
-                              <TableCell>
-                                {result.is_correct ? (
-                                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                                ) : (
-                                  <XCircle className="w-5 h-5 text-red-600" />
-                                )}
                               </TableCell>
                             </>
                           )}
