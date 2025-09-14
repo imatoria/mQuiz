@@ -50,11 +50,11 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
     { value: 'papers', label: 'Papers', icon: FileText },
     { value: 'tests', label: 'Tests', icon: Calendar },
     { value: 'assignments', label: 'Assignments', icon: Settings },
-    { value: 'ai-settings', label: 'AI Settings', icon: Zap },
-    { value: 'communications', label: 'Communications', icon: MessageSquare },
     { value: 'approval', label: 'Approval', icon: CheckCircle },
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
     { value: 'reports', label: 'Reports', icon: FileText },
+    { value: 'ai-settings', label: 'AI Settings', icon: Zap },
+    { value: 'communications', label: 'Communications', icon: MessageSquare },
   ];
 
   const activeItem = menuItems.find((i) => i.value === activeTab);
