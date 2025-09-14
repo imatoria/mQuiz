@@ -318,7 +318,6 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
             <Label>Test Duration</Label>
             <div className="flex gap-2">
               <div className="flex-1">
-                <Label htmlFor="edit-timeLimitHours" className="text-xs text-muted-foreground">Hours</Label>
                 <Select value={timeLimitHours} onValueChange={setTimeLimitHours}>
                   <SelectTrigger>
                     <SelectValue />
@@ -333,7 +332,6 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
                 </Select>
               </div>
               <div className="flex-1">
-                <Label htmlFor="edit-timeLimitMinutes" className="text-xs text-muted-foreground">Minutes</Label>
                 <Select value={timeLimitMinutes} onValueChange={setTimeLimitMinutes}>
                   <SelectTrigger>
                     <SelectValue />

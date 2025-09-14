@@ -163,11 +163,11 @@ const display = selectedPages.length > 0
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
-        {totalPages > 0 && selectedPages.length === totalPages && (
-          <div className="px-3 pt-2 text-xs text-destructive">
+        {/* {totalPages > 0 && selectedPages.length === totalPages && (
+          <div className="px-3 pb-2 text-xs text-destructive">
             You have selected all available pages. Please select only the required pages.
           </div>
-        )}
+        )} */}
       </PopoverContent>
     </Popover>
   );

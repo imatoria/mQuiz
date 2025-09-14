@@ -61,7 +61,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
 
   return (
     <ErrorBoundary>
-      <div className="flex w-full">
+      <div className="flex w-full pt-[57px] md:pt-[64px]">
           <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
             <SidebarContent className="h-full overflow-y-auto">
               <SidebarGroup>
@@ -102,7 +102,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
               })()}
             </div>
             
-            <div className="min-h-screen bg-gradient-subtle mt-0 md:mt-[64px]">
+            <div className="min-h-screen bg-gradient-subtle">
               <div className="p-3 sm:p-4 md:p-6">
               <Tabs value={activeTab} onValueChange={(value) => {
                 setActiveTab(value);

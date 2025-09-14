@@ -67,7 +67,7 @@ export const AIQuestionGenerator = () => {
   const { toast } = useToast();
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
-  const [mode, setMode] = useState<'book' | 'independent'>('independent');
+  const [mode, setMode] = useState<'book' | 'independent'>('book');
   const [minQuestionsPerPage, setMinQuestionsPerPage] = useState(1);
   const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState(10);
 
@@ -344,10 +344,8 @@ export const AIQuestionGenerator = () => {
               <SelectContent>
                 {difficulties.map((diff) => (
                   <SelectItem key={diff.value} value={diff.value}>
-                    <div>
-                      <div className="font-medium">{diff.label}</div>
-                      <div className="text-xs text-muted-foreground">{diff.description}</div>
-                    </div>
+                    <div className="font-medium">{diff.label}</div>
+                    <div className="text-xs text-muted-foreground">{diff.description}</div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -366,10 +364,8 @@ export const AIQuestionGenerator = () => {
               <SelectContent>
                 {questionTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
-                    <div>
-                      <div className="font-medium">{type.label}</div>
-                      <div className="text-xs text-muted-foreground">{type.description}</div>
-                    </div>
+                    <div className="font-medium">{type.label}</div>
+                    <div className="text-xs text-muted-foreground">{type.description}</div>
                   </SelectItem>
                 ))}
               </SelectContent>
