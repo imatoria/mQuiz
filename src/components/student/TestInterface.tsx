@@ -860,94 +860,92 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Header - Hidden during fullscreen mode */}
-      {!isFullscreen && (
-        <div className="max-w-6xl mx-auto mb-6">
-          <Card>
-            <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-xl">{test.title}</CardTitle>
-                  <CardDescription>{test.question_papers.subjects.name}</CardDescription>
-                </div>
-                <div className="flex items-center space-x-4">
-                  {/* Save Status Indicator */}
-                  <div className="flex items-center space-x-2">
-                    {isSaving ? (
-                      <div className="flex items-center text-muted-foreground">
-                        <Save className="w-4 h-4 mr-1 animate-spin" />
-                        <span className="text-sm">Saving...</span>
-                      </div>
-                    ) : lastSaved ? (
-                      <div className="flex items-center text-success">
-                        <Check className="w-4 h-4 mr-1" />
-                        <span className="text-sm">Saved {new Date(lastSaved).toLocaleTimeString()}</span>
-                      </div>
-                    ) : null}
-                    
-                    {/* Network Status */}
-                    {isOnline ? (
-                      <Wifi className="w-4 h-4 text-success" />
-                    ) : (
-                      <div className="flex items-center text-destructive">
-                        <WifiOff className="w-4 h-4 mr-1" />
-                        <span className="text-sm">Offline</span>
-                      </div>
-                    )}
-                    
-                    {/* Queued Saves Indicator */}
-                    {saveQueue.length > 0 && (
-                      <Badge variant="outline" className="text-xs">
-                        {saveQueue.length} pending
-                      </Badge>
-                    )}
-                  </div>
-
-                  {violationCount > 0 && (
-                    <Badge variant="destructive" className="flex items-center">
-                      <AlertTriangle className="w-3 h-3 mr-1" />
-                      Violations: {violationCount}/3
+      {/* Header */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-xl">{test.title}</CardTitle>
+                <CardDescription>{test.question_papers.subjects.name}</CardDescription>
+              </div>
+              <div className="flex items-center space-x-4">
+                {/* Save Status Indicator */}
+                <div className="flex items-center space-x-2">
+                  {isSaving ? (
+                    <div className="flex items-center text-muted-foreground">
+                      <Save className="w-4 h-4 mr-1 animate-spin" />
+                      <span className="text-sm">Saving...</span>
+                    </div>
+                  ) : lastSaved ? (
+                    <div className="flex items-center text-success">
+                      <Check className="w-4 h-4 mr-1" />
+                      <span className="text-sm">Saved {new Date(lastSaved).toLocaleTimeString()}</span>
+                    </div>
+                  ) : null}
+                  
+                  {/* Network Status */}
+                  {isOnline ? (
+                    <Wifi className="w-4 h-4 text-success" />
+                  ) : (
+                    <div className="flex items-center text-destructive">
+                      <WifiOff className="w-4 h-4 mr-1" />
+                      <span className="text-sm">Offline</span>
+                    </div>
+                  )}
+                  
+                  {/* Queued Saves Indicator */}
+                  {saveQueue.length > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      {saveQueue.length} pending
                     </Badge>
                   )}
-                  <Badge variant={timeLeft <= 300 ? "destructive" : "default"} className="flex items-center text-lg px-3 py-1">
-                    <Clock className="w-4 h-4 mr-2" />
-                    {formatTime(timeLeft)}
+                </div>
+
+                {violationCount > 0 && (
+                  <Badge variant="destructive" className="flex items-center">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Violations: {violationCount}/3
                   </Badge>
-                </div>
+                )}
+                <Badge variant={timeLeft <= 300 ? "destructive" : "default"} className="flex items-center text-lg px-3 py-1">
+                  <Clock className="w-4 h-4 mr-2" />
+                  {formatTime(timeLeft)}
+                </Badge>
               </div>
-              
-              <div className="flex justify-between items-center mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Question {currentQuestionIndex + 1} of {questions.length} • 
-                  Answered: {getAnsweredCount()}/{questions.length}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleFlag(currentQuestionIndex)}
-                    className={flaggedQuestions.has(currentQuestionIndex) ? 'bg-warning/20' : ''}
-                  >
-                    <Flag className={`w-4 h-4 ${flaggedQuestions.has(currentQuestionIndex) ? 'fill-current' : ''}`} />
-                  </Button>
-                  <Badge 
-                    variant={isSecurityActive ? "default" : "destructive"}
-                    className="text-xs"
-                  >
-                    {isSecurityActive ? <Shield className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
-                    Security {isSecurityActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
+            </div>
+            
+            <div className="flex justify-between items-center mt-4">
+              <div className="text-sm text-muted-foreground">
+                Question {currentQuestionIndex + 1} of {questions.length} • 
+                Answered: {getAnsweredCount()}/{questions.length}
               </div>
-              
-              <Progress 
-                value={(getAnsweredCount() / questions.length) * 100} 
-                className="mt-2"
-              />
-            </CardHeader>
-          </Card>
-        </div>
-      )}
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleFlag(currentQuestionIndex)}
+                  className={flaggedQuestions.has(currentQuestionIndex) ? 'bg-warning/20' : ''}
+                >
+                  <Flag className={`w-4 h-4 ${flaggedQuestions.has(currentQuestionIndex) ? 'fill-current' : ''}`} />
+                </Button>
+                <Badge 
+                  variant={isSecurityActive ? "default" : "destructive"}
+                  className="text-xs"
+                >
+                  {isSecurityActive ? <Shield className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                  Security {isSecurityActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+            </div>
+            
+            <Progress 
+              value={(getAnsweredCount() / questions.length) * 100} 
+              className="mt-2"
+            />
+          </CardHeader>
+        </Card>
+      </div>
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
