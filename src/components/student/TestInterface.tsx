@@ -700,6 +700,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
     // Final grace period save with enhanced error handling
     try {
       await debouncedSave(true, true);
+      setShowFullscreenPrompt(false);
     } catch (error) {
       console.error('Final save failed:', error);
       // Continue with submission even if final save fails
@@ -839,8 +840,10 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
     );
   }
 
+  const isInFullscreen = !!document.fullscreenElement;
+
   return (
-    <div className="min-h-screen bg-background p-4 select-none mt-[64px]">
+    <div className={`min-h-screen bg-background p-4 select-none ${ !isInFullscreen && "mt-[64px]" }`}>
       {/* Fullscreen Prompt Dialog */}
       <AlertDialog open={showFullscreenPrompt} onOpenChange={setShowFullscreenPrompt}>
         <AlertDialogContent>
