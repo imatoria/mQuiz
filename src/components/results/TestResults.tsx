@@ -30,7 +30,9 @@ interface TestAttempt {
   answers: Record<string, string>;
   scheduled_test: {
     title: string;
+    question_paper_id: string;
     question_papers: {
+      id: string;
       title: string;
       subjects: { name: string };
     };
@@ -55,6 +57,7 @@ export const TestResults = () => {
   const [questionResults, setQuestionResults] = useState<QuestionResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const { user, profile } = useAuth();
   const { toast } = useToast();
 
@@ -82,7 +85,9 @@ export const TestResults = () => {
           answers,
           scheduled_test:scheduled_tests (
             title,
+            question_paper_id,
             question_papers (
+              id,
               title,
               subjects (name)
             )
@@ -112,29 +117,78 @@ export const TestResults = () => {
   const loadQuestionBreakdown = async (attemptId: string, answers: Record<string, string>) => {
     try {
       const attempt = attempts.find(a => a.id === attemptId);
-      if (!attempt) return;
+      if (!attempt) {
+        toast({
+          title: "Error",
+          description: "Test attempt not found",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      // Get all questions for this test
-      const { data: questionsData, error } = await supabase
-        .from('question_paper_questions')
-        .select(`
-          questions (
-            id,
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            correct_answer
-          )
-        `)
-        .eq('question_paper_id', (attempt.scheduled_test.question_papers as any)?.id);
+      const questionPaperId = attempt.scheduled_test.question_paper_id || attempt.scheduled_test.question_papers?.id;
+      
+      if (!questionPaperId) {
+        toast({
+          title: "Error",
+          description: "Question paper not found for this test",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      if (error) throw error;
+      // Get all questions for this test and check if answers are allowed to be shown
+      const [questionsResult] = await Promise.all([
+        supabase
+          .from('question_paper_questions')
+          .select(`
+            questions (
+              id,
+              question_text,
+              option_a,
+              option_b,
+              option_c,
+              option_d,
+              correct_answer
+            )
+          `)
+          .eq('question_paper_id', questionPaperId)
+          .order('question_order')
+      ]);
 
-      const results: QuestionResult[] = questionsData.map((item: any) => {
+      if (questionsResult.error) {
+        console.error('Database error:', questionsResult.error);
+        throw questionsResult.error;
+      }
+
+      if (!questionsResult.data || questionsResult.data.length === 0) {
+        toast({
+          title: "Error",
+          description: "No questions found for this test",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Parse answers - handle both string and object formats
+      let parsedAnswers = answers;
+      if (typeof answers === 'string') {
+        try {
+          parsedAnswers = JSON.parse(answers);
+        } catch (e) {
+          console.warn('Failed to parse answers as JSON, using as-is');
+        }
+      }
+
+      console.log('Parsed answers:', parsedAnswers);
+
+      const results: QuestionResult[] = questionsResult.data.map((item: any) => {
         const question = item.questions;
-        const userAnswer = answers[question.id] || '';
+        const userAnswer = parsedAnswers[question.id] || parsedAnswers[`question_${question.id}`] || '';
+        const isCorrect = userAnswer && userAnswer.toLowerCase() === question.correct_answer.toLowerCase();
+        
+        console.log(`Question ${question.id}: user=${userAnswer}, correct=${question.correct_answer}, match=${isCorrect}`);
+        
         return {
           question_id: question.id,
           question_text: question.question_text,
@@ -143,12 +197,13 @@ export const TestResults = () => {
           option_c: question.option_c,
           option_d: question.option_d,
           correct_answer: question.correct_answer,
-          user_answer: userAnswer,
-          is_correct: userAnswer === question.correct_answer
+          user_answer: userAnswer || '',
+          is_correct: isCorrect
         };
       });
 
       setQuestionResults(results);
+      setShowBreakdown(true);
     } catch (error) {
       console.error('Error loading question breakdown:', error);
       toast({
@@ -266,149 +321,164 @@ export const TestResults = () => {
       {/* Test Results */}
       <Card>
         <CardHeader>
-          <CardTitle>Test Results</CardTitle>
-          <CardDescription>
-            View your test performance and detailed breakdowns
-          </CardDescription>
+          <CardTitle className="flex items-center justify-between">
+            <span>{showBreakdown ? 'Test Results Breakdown' : 'Test Results'}</span>
+            {showBreakdown && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowBreakdown(false)}
+              >
+                ← Back to Results
+              </Button>
+            )}
+          </CardTitle>
+          {!showBreakdown && (
+            <CardDescription>
+              View your test performance and detailed breakdowns
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="list" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="list">Results List</TabsTrigger>
-              <TabsTrigger value="details" disabled={!selectedAttempt}>
-                Question Breakdown
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="list" className="space-y-4">
-              <div className="space-y-4">
-                {attempts.map((attempt) => (
-                  <Card key={attempt.id} className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => {
-                          setSelectedAttempt(attempt);
-                          loadQuestionBreakdown(attempt.id, attempt.answers);
-                        }}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <h4 className="font-semibold">{attempt.scheduled_test.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {attempt.scheduled_test.question_papers.subjects.name} • 
-                            {attempt.scheduled_test.question_papers.title}
-                          </p>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {new Date(attempt.completed_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <div className="text-right space-y-2">
-                          <div className={`text-2xl font-bold ${getScoreColor(attempt.score)}`}>
-                            {attempt.score}%
-                          </div>
-                          <Badge variant={attempt.score >= 70 ? "default" : "destructive"}>
-                            {getGrade(attempt.score)}
-                          </Badge>
-                          <div className="text-xs text-muted-foreground">
-                            {Math.round((attempt.score / 100) * attempt.total_questions)}/{attempt.total_questions} correct
-                          </div>
+          {!showBreakdown ? (
+            // Results List
+            <div className="space-y-4">
+              {attempts.map((attempt) => (
+                <Card key={attempt.id} className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        setSelectedAttempt(attempt);
+                        loadQuestionBreakdown(attempt.id, attempt.answers);
+                      }}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h4 className="font-semibold">{attempt.scheduled_test.title}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {attempt.scheduled_test.question_papers.subjects.name} • 
+                          {attempt.scheduled_test.question_papers.title}
+                        </p>
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {new Date(attempt.completed_at).toLocaleDateString()}
                         </div>
                       </div>
-                      <Progress 
-                        value={attempt.score} 
-                        className="mt-4 h-2"
-                      />
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {attempts.length === 0 && (
-                  <div className="text-center py-8">
-                    <Award className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Test Results</h3>
-                    <p className="text-muted-foreground">
-                      Complete a test to see your results here.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="details" className="space-y-4">
-              {selectedAttempt && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">{selectedAttempt.scheduled_test.title}</h3>
-                      <p className="text-muted-foreground">Question-by-question breakdown</p>
+                      <div className="text-right space-y-2">
+                        <div className={`text-2xl font-bold ${getScoreColor(attempt.score)}`}>
+                          {attempt.score}%
+                        </div>
+                        <Badge variant={attempt.score >= 70 ? "default" : "destructive"}>
+                          {getGrade(attempt.score)}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground">
+                          {Math.round((attempt.score / 100) * attempt.total_questions)}/{attempt.total_questions} correct
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowAnswers(!showAnswers)}
-                      >
-                        {showAnswers ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                        {showAnswers ? 'Hide' : 'Show'} Answers
-                      </Button>
-                    </div>
-                  </div>
+                    <Progress 
+                      value={attempt.score} 
+                      className="mt-4 h-2"
+                    />
+                  </CardContent>
+                </Card>
+              ))}
 
-                  <div className="border rounded-lg">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">#</TableHead>
-                          <TableHead>Question</TableHead>
-                          <TableHead className="w-24">Your Answer</TableHead>
-                          {showAnswers && <TableHead className="w-24">Correct Answer</TableHead>}
-                          <TableHead className="w-16">Result</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {questionResults.map((result, index) => (
-                          <TableRow key={result.question_id}>
-                            <TableCell className="font-medium">{index + 1}</TableCell>
-                            <TableCell className="max-w-md">
-                              <div className="space-y-2">
-                                <p className="text-sm">{result.question_text}</p>
-                                {showAnswers && (
-                                  <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div>A. {result.option_a}</div>
-                                    <div>B. {result.option_b}</div>
-                                    <div>C. {result.option_c}</div>
-                                    <div>D. {result.option_d}</div>
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={result.is_correct ? "default" : "destructive"}>
-                                {result.user_answer || 'No Answer'}
-                              </Badge>
-                            </TableCell>
-                            {showAnswers && (
-                              <TableCell>
-                                <Badge variant="outline">
-                                  {result.correct_answer}
-                                </Badge>
-                              </TableCell>
-                            )}
-                            <TableCell>
-                              {result.is_correct ? (
-                                <CheckCircle2 className="w-5 h-5 text-green-600" />
-                              ) : (
-                                <XCircle className="w-5 h-5 text-red-600" />
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+              {attempts.length === 0 && (
+                <div className="text-center py-8">
+                  <Award className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Test Results</h3>
+                  <p className="text-muted-foreground">
+                    Complete a test to see your results here.
+                  </p>
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+          ) : (
+            // Question Breakdown
+            selectedAttempt && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{selectedAttempt.scheduled_test.title}</h3>
+                    <p className="text-muted-foreground">
+                      Score: {selectedAttempt.score}% ({Math.round((selectedAttempt.score / 100) * selectedAttempt.total_questions)}/{selectedAttempt.total_questions} correct)
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAnswers(!showAnswers)}
+                      disabled={profile?.role === 'child' && !selectedAttempt?.answers?.showAnswersEnabled}
+                    >
+                      {showAnswers ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                      {showAnswers ? 'Hide' : 'Show'} Answers
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">#</TableHead>
+                        <TableHead>Question</TableHead>
+                        {(profile?.role !== 'child' || selectedAttempt?.answers?.showAnswersEnabled) && (
+                          <>
+                            <TableHead className="w-24">Your Answer</TableHead>
+                            {showAnswers && <TableHead className="w-24">Correct Answer</TableHead>}
+                            <TableHead className="w-16">Result</TableHead>
+                          </>
+                        )}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {questionResults.map((result, index) => (
+                        <TableRow key={result.question_id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell className="max-w-md">
+                            <div className="space-y-2">
+                              <p className="text-sm">{result.question_text}</p>
+                              {showAnswers && (
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div>A. {result.option_a}</div>
+                                  <div>B. {result.option_b}</div>
+                                  <div>C. {result.option_c}</div>
+                                  <div>D. {result.option_d}</div>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          {(profile?.role !== 'child' || selectedAttempt?.answers?.showAnswersEnabled) && (
+                            <>
+                              <TableCell>
+                                <Badge variant={result.user_answer ? (result.is_correct ? "default" : "destructive") : "secondary"} className="whitespace-nowrap">
+                                  {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
+                                </Badge>
+                              </TableCell>
+                              {showAnswers && (
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {result.correct_answer}
+                                  </Badge>
+                                </TableCell>
+                              )}
+                              <TableCell>
+                                {result.is_correct ? (
+                                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                ) : (
+                                  <XCircle className="w-5 h-5 text-red-600" />
+                                )}
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )
+          )}
         </CardContent>
       </Card>
     </div>

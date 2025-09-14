@@ -89,13 +89,28 @@ serve(async (req) => {
       );
     }
 
+    // First get the scheduled test to get the question_paper_id
+    const { data: scheduledTestData, error: scheduledTestError } = await supabase
+      .from('scheduled_tests')
+      .select('question_paper_id')
+      .eq('id', scheduledTestId)
+      .single();
+
+    if (scheduledTestError || !scheduledTestData) {
+      console.error('Error fetching scheduled test:', scheduledTestError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch test information' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get questions to calculate score
     const { data: questionsData, error: questionsError } = await supabase
       .from('question_paper_questions')
       .select(`
         questions (id, correct_answer)
       `)
-      .eq('question_paper_id', scheduledTestId);
+      .eq('question_paper_id', scheduledTestData.question_paper_id);
 
     if (questionsError) {
       console.error('Error fetching questions:', questionsError);

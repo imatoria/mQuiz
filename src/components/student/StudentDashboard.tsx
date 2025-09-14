@@ -598,6 +598,13 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
                                   {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} left
                                 </span>
                               )}
+                              
+                              {/* Show Submitted badge if any attempt has been completed */}
+                              {test.test_attempts.some(attempt => attempt.completed_at) && (
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                  Submitted
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <div className="flex-shrink-0 w-full sm:w-auto">
