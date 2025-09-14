@@ -54,12 +54,7 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
       <div className="flex w-full">
           <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
             <SidebarContent className="h-full overflow-y-auto">
-              <SidebarHeader className="group-data-[collapsible=icon]:hidden">
-                <SiteLogo />
-              </SidebarHeader>
-              <SidebarSeparator />
               <SidebarGroup>
-                <SidebarGroupLabel>Admin Tools</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {menuItems.map((item) => (
@@ -84,7 +79,7 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
           </Sidebar>
 
           <SidebarInset>
-            <div className="min-h-screen bg-gradient-subtle">
+            <div className="min-h-screen bg-gradient-subtle mt-[64px]">
               <div className="p-3 sm:p-4 md:p-6 space-y-6">
               {/* Quick Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

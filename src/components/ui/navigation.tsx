@@ -56,8 +56,8 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
       <div className="flex justify-between items-center h-14 md:h-16">
         {/* Logo and Sidebar Trigger Container */}
         <div className="flex items-center justify-between pl-2 sm:pl-4 md:w-64 md:pl-4">
-          {/* Mobile: Sidebar Trigger + Logo - max width container */}
-          <div className="flex items-center gap-3 md:hidden max-w-16">
+          {/* Sidebar Trigger + Logo - max width container */}
+          <div className="flex items-center gap-3 max-w-16">
             <SidebarTrigger />
             <div className="flex items-center space-x-1">
               <div className="w-7 h-7 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -65,19 +65,6 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
               </div>
               <span className="text-lg font-bold text-foreground">mQuiz</span>
             </div>
-          </div>
-          
-          {/* Desktop/Tablet: Logo + Sidebar Trigger */}
-          <div className="hidden md:flex items-center space-x-1 md:space-x-2">
-            <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg md:text-xl font-bold text-foreground">mQuiz</span>
-          </div>
-          
-          {/* Sidebar Trigger - Desktop/Tablet only */}
-          <div className="hidden md:block">
-            <SidebarTrigger />
           </div>
         </div>
 

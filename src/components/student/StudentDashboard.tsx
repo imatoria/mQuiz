@@ -389,7 +389,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         </Sidebar>
 
         <SidebarInset>
-          <div className="min-h-screen bg-gradient-subtle">
+          <div className="min-h-screen bg-gradient-subtle mt-[64px]">
             <div className="p-3 sm:p-4 md:p-6">
             <Tabs value={activeTab} onValueChange={(value) => {
               setActiveTab(value);
@@ -652,11 +652,11 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
             </Card>
               </TabsContent>
 
-              <TabsContent value="results" className="mt-6">
+              <TabsContent value="results">
                 <TestResults />
               </TabsContent>
 
-              <TabsContent value="analytics" className="mt-6">
+              <TabsContent value="analytics">
                 <PerformanceAnalytics />
               </TabsContent>
             </Tabs>

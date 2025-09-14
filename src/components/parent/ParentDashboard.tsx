@@ -89,7 +89,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
           </Sidebar>
 
           <SidebarInset>
-            <div className="min-h-screen bg-gradient-subtle pt-2 md:pt-4">
+            <div className="min-h-screen bg-gradient-subtle mt-[64px]">
               <div className="p-3 sm:p-4 md:p-6">
               <Tabs value={activeTab} onValueChange={(value) => {
                 setActiveTab(value);
@@ -99,67 +99,67 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
                 }
               }} className="space-y-6">
                 {/* Content sections */}
-                <TabsContent value="children" className="mt-6">
+                <TabsContent value="children">
                   <ErrorBoundary>
                     <ChildrenManagement />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="content" className="mt-6">
+                <TabsContent value="content">
                   <ErrorBoundary>
                     <ContentCreation />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="questions" className="mt-6">
+                <TabsContent value="questions">
                   <ErrorBoundary>
                     <QuestionBank />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="papers" className="mt-6">
+                <TabsContent value="papers">
                   <ErrorBoundary>
                     <PapersManager />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="tests" className="mt-6">
+                <TabsContent value="tests">
                   <ErrorBoundary>
                     <ScheduleManager />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="assignments" className="mt-6">
+                <TabsContent value="assignments">
                   <ErrorBoundary>
                     <TestAssignmentManager />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="ai-settings" className="mt-6">
+                <TabsContent value="ai-settings">
                   <ErrorBoundary>
                     <AIProviderSettings />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="communications" className="mt-6">
+                <TabsContent value="communications">
                   <ErrorBoundary>
                     <CommunicationHub />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="approval" className="mt-6">
+                <TabsContent value="approval">
                   <ErrorBoundary>
                     <ResultApproval />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="analytics" className="mt-6">
+                <TabsContent value="analytics">
                   <ErrorBoundary>
                     <QuestionAnalytics />
                   </ErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="reports" className="mt-6">
+                <TabsContent value="reports">
                   <ErrorBoundary>
                     <ReportingDashboard />
                   </ErrorBoundary>
