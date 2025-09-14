@@ -22,11 +22,23 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
-import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger, SidebarHeader, SidebarSeparator } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarHeader, SidebarSeparator } from '@/components/ui/sidebar';
 import { SiteLogo } from '@/components/ui/site-logo';
 
-export const AdminDashboard = () => {
+interface AdminDashboardProps {
+  onActiveTabChange?: (tabName: string, tabIcon: any) => void;
+}
+
+export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
   const [activeTab, setActiveTab] = useState('approvals');
+  
+  // Notify initial tab on mount
+  React.useEffect(() => {
+    const initialItem = menuItems.find(i => i.value === 'approvals');
+    if (initialItem) {
+      onActiveTabChange?.(initialItem.label, initialItem.icon);
+    }
+  }, [onActiveTabChange]);
   const menuItems = [
     { value: 'approvals', label: 'Approvals', icon: Clock },
     { value: 'users', label: 'Users', icon: Users },
@@ -39,8 +51,7 @@ export const AdminDashboard = () => {
   const activeItem = menuItems.find((i) => i.value === activeTab);
   return (
     <ErrorBoundary>
-      <SidebarProvider>
-        <div className="flex w-full">
+      <div className="flex w-full">
           <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
             <SidebarContent className="h-full overflow-y-auto">
               <SidebarHeader className="group-data-[collapsible=icon]:hidden">
@@ -55,7 +66,10 @@ export const AdminDashboard = () => {
                       <SidebarMenuItem key={item.value}>
                         <SidebarMenuButton
                           isActive={activeTab === item.value}
-                          onClick={() => setActiveTab(item.value)}
+                          onClick={() => {
+                            setActiveTab(item.value);
+                            onActiveTabChange?.(item.label, item.icon);
+                          }}
                           tooltip={item.label}
                         >
                           <item.icon className="w-4 h-4" />
@@ -71,23 +85,6 @@ export const AdminDashboard = () => {
 
           <SidebarInset>
             <div className="min-h-screen bg-gradient-subtle">
-              <header className="sticky top-16 z-30 h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4 flex-shrink-0">
-                <SidebarTrigger />
-                <div className="ml-2 flex items-center">
-                  <div className="flex md:hidden">
-                    <SiteLogo size="sm" />
-                  </div>
-                  <div className="hidden md:peer-data-[state=collapsed]:flex">
-                    <SiteLogo size="sm" />
-                  </div>
-                </div>
-                {activeItem && (
-                  <h1 className="ml-3 flex items-center gap-2 text-base md:text-lg font-semibold text-foreground">
-                    <activeItem.icon className="w-5 h-5 text-primary" />
-                    <span>{activeItem.label}</span>
-                  </h1>
-                )}
-              </header>
               <div className="p-3 sm:p-4 md:p-6 space-y-6">
               {/* Quick Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -137,7 +134,13 @@ export const AdminDashboard = () => {
               </div>
 
               {/* Content Sections */}
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <Tabs value={activeTab} onValueChange={(value) => {
+                setActiveTab(value);
+                const item = menuItems.find(i => i.value === value);
+                if (item) {
+                  onActiveTabChange?.(item.label, item.icon);
+                }
+              }} className="space-y-6">
                 <TabsContent value="approvals">
                   <ErrorBoundary>
                     <ApprovalWorkflow />
@@ -184,7 +187,6 @@ export const AdminDashboard = () => {
             </div>
           </SidebarInset>
         </div>
-      </SidebarProvider>
     </ErrorBoundary>
   );
 };

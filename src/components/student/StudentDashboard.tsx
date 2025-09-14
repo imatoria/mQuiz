@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { useToast } from '@/hooks/use-toast';
@@ -63,7 +63,11 @@ interface TestAttempt {
   progress_percentage?: number;
 }
 
-export const StudentDashboard = () => {
+interface StudentDashboardProps {
+  onActiveTabChange?: (tabName: string, tabIcon: any) => void;
+}
+
+export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) => {
   const [availableTests, setAvailableTests] = useState<ScheduledTest[]>([]);
   const [completedTests, setCompletedTests] = useState<ScheduledTest[]>([]);
   const [activeTests, setActiveTests] = useState<ScheduledTest[]>([]);
@@ -82,6 +86,14 @@ export const StudentDashboard = () => {
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
   const activeItem = menuItems.find((i) => i.value === activeTab);
+  
+  // Notify initial tab on mount
+  React.useEffect(() => {
+    const initialItem = menuItems.find(i => i.value === 'tests');
+    if (initialItem) {
+      onActiveTabChange?.(initialItem.label, initialItem.icon);
+    }
+  }, [onActiveTabChange]);
   
   const { loading, error, execute: executeAsync } = useAsyncOperation({
     onError: (error) => console.error('Student dashboard error:', error)
@@ -349,8 +361,7 @@ export const StudentDashboard = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex w-full">
+    <div className="flex w-full">
         <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
           <SidebarContent className="h-full overflow-y-auto">
             <SidebarGroup>
@@ -358,11 +369,14 @@ export const StudentDashboard = () => {
                 <SidebarMenu>
                   {menuItems.map((item) => (
                     <SidebarMenuItem key={item.value}>
-                      <SidebarMenuButton
-                        isActive={activeTab === item.value}
-                        onClick={() => setActiveTab(item.value)}
-                        tooltip={item.label}
-                      >
+                    <SidebarMenuButton
+                      isActive={activeTab === item.value}
+                      onClick={() => {
+                        setActiveTab(item.value);
+                        onActiveTabChange?.(item.label, item.icon);
+                      }}
+                      tooltip={item.label}
+                    >
                         <item.icon className="w-4 h-4" />
                         <span>{item.label}</span>
                       </SidebarMenuButton>
@@ -376,17 +390,14 @@ export const StudentDashboard = () => {
 
         <SidebarInset>
           <div className="min-h-screen bg-gradient-subtle">
-            <header className="sticky top-16 z-30 h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4 flex-shrink-0">
-              <SidebarTrigger />
-              {activeItem && (
-                <h1 className="flex items-center gap-2 text-base md:text-lg font-semibold text-foreground capitalize">
-                  <activeItem.icon className="w-5 h-5 text-primary" />
-                  <span>{activeItem.label}</span>
-                </h1>
-              )}
-            </header>
             <div className="p-3 sm:p-4 md:p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={(value) => {
+              setActiveTab(value);
+              const item = menuItems.find(i => i.value === value);
+              if (item) {
+                onActiveTabChange?.(item.label, item.icon);
+              }
+            }} className="space-y-6">
               <TabsContent value="tests" className="space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -663,6 +674,5 @@ export const StudentDashboard = () => {
           />
         )}
       </div>
-    </SidebarProvider>
   );
 };

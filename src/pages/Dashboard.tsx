@@ -23,19 +23,20 @@ import {
 
 interface DashboardProps {
   role: 'admin' | 'parent' | 'child';
+  onActiveTabChange?: (tabName: string, tabIcon: any) => void;
 }
 
-export const Dashboard = ({ role }: DashboardProps) => {
+export const Dashboard = ({ role, onActiveTabChange }: DashboardProps) => {
   const getDashboardContent = () => {
     switch (role) {
       case 'admin':
-        return <AdminDashboard />;
+        return <AdminDashboard onActiveTabChange={onActiveTabChange} />;
 
       case 'parent':
-        return <ParentDashboard />;
+        return <ParentDashboard onActiveTabChange={onActiveTabChange} />;
 
       case 'child':
-        return <StudentDashboard />;
+        return <StudentDashboard onActiveTabChange={onActiveTabChange} />;
 
       default:
         return null;

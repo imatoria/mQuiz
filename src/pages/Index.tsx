@@ -1,15 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { Navigation } from '@/components/ui/navigation';
 import { Dashboard } from '@/pages/Dashboard';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Clock } from 'lucide-react';
+import { AlertCircle, Clock, LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import heroBanner from '@/assets/hero-banner.jpg';
 
 const Index = () => {
   const { loading, isAuthenticated, profile, canAccess, signOut } = useAuth();
+  const [activeTabName, setActiveTabName] = useState<string>('');
+  const [activeTabIcon, setActiveTabIcon] = useState<LucideIcon | null>(null);
+
+  const handleActiveTabChange = (tabName: string, tabIcon: LucideIcon) => {
+    setActiveTabName(tabName);
+    setActiveTabIcon(tabIcon);
+  };
 
   if (loading) {
     return (
@@ -98,12 +106,19 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation currentRole={profile.role} onRoleChange={() => signOut()} />
-      <div className="pt-14 md:pt-16">
-        <Dashboard role={profile.role} />
+    <SidebarProvider>
+      <div className="min-h-screen bg-background w-full">
+        <Navigation 
+          currentRole={profile.role} 
+          onRoleChange={() => signOut()} 
+          activeTabName={activeTabName}
+          activeTabIcon={activeTabIcon}
+        />
+        <div className="pt-14 md:pt-16">
+          <Dashboard role={profile.role} onActiveTabChange={handleActiveTabChange} />
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

@@ -26,9 +26,22 @@ import {
 } from 'lucide-react';
 
 import { PapersManager } from './PapersManager';
-import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-export const ParentDashboard = () => {
-const [activeTab, setActiveTab] = useState('children');
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
+
+interface ParentDashboardProps {
+  onActiveTabChange?: (tabName: string, tabIcon: any) => void;
+}
+
+export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => {
+  const [activeTab, setActiveTab] = useState('children');
+  
+  // Notify initial tab on mount
+  React.useEffect(() => {
+    const initialItem = menuItems.find(i => i.value === 'children');
+    if (initialItem) {
+      onActiveTabChange?.(initialItem.label, initialItem.icon);
+    }
+  }, [onActiveTabChange]);
 
   const menuItems = [
     { value: 'children', label: 'Children', icon: Users },
@@ -48,8 +61,7 @@ const [activeTab, setActiveTab] = useState('children');
 
   return (
     <ErrorBoundary>
-      <SidebarProvider>
-        <div className="flex w-full">
+      <div className="flex w-full">
           <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
             <SidebarContent className="h-full overflow-y-auto">
               <SidebarGroup>
@@ -59,7 +71,10 @@ const [activeTab, setActiveTab] = useState('children');
                       <SidebarMenuItem key={item.value}>
                         <SidebarMenuButton
                           isActive={activeTab === item.value}
-                          onClick={() => setActiveTab(item.value)}
+                          onClick={() => {
+                            setActiveTab(item.value);
+                            onActiveTabChange?.(item.label, item.icon);
+                          }}
                           tooltip={item.label}
                         >
                           <item.icon className="w-4 h-4" />
@@ -74,18 +89,15 @@ const [activeTab, setActiveTab] = useState('children');
           </Sidebar>
 
           <SidebarInset>
-            <div className="min-h-screen bg-gradient-subtle">
-              <header className="sticky top-16 z-30 h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4 flex-shrink-0">
-                <SidebarTrigger />
-                {activeItem && (
-                  <h1 className="ml-3 flex items-center gap-2 text-base md:text-lg font-semibold text-foreground">
-                    <activeItem.icon className="w-5 h-5 text-primary" />
-                    <span>{activeItem.label}</span>
-                  </h1>
-                )}
-              </header>
+            <div className="min-h-screen bg-gradient-subtle pt-2 md:pt-4">
               <div className="p-3 sm:p-4 md:p-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <Tabs value={activeTab} onValueChange={(value) => {
+                setActiveTab(value);
+                const item = menuItems.find(i => i.value === value);
+                if (item) {
+                  onActiveTabChange?.(item.label, item.icon);
+                }
+              }} className="space-y-6">
                 {/* Content sections */}
                 <TabsContent value="children" className="mt-6">
                   <ErrorBoundary>
@@ -157,7 +169,6 @@ const [activeTab, setActiveTab] = useState('children');
             </div>
           </SidebarInset>
         </div>
-      </SidebarProvider>
     </ErrorBoundary>
   );
 };
