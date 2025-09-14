@@ -10,8 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Eye, 
-  Check, 
-  X, 
+  EyeOff,
   Clock, 
   AlertCircle,
   MessageSquare,
@@ -19,12 +18,12 @@ import {
   Calendar
 } from 'lucide-react';
 
-interface PendingResult {
+interface TestResult {
   id: string;
   score: number;
   total_questions: number;
   completed_at: string;
-  status: 'pending' | 'approved' | 'rejected';
+  show_results: boolean;
   feedback?: string;
   student: {
     id: string;
@@ -39,8 +38,8 @@ interface PendingResult {
 }
 
 export const ResultApproval = () => {
-  const [pendingResults, setPendingResults] = useState<PendingResult[]>([]);
-  const [selectedResult, setSelectedResult] = useState<PendingResult | null>(null);
+  const [results, setResults] = useState<TestResult[]>([]);
+  const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -49,11 +48,11 @@ export const ResultApproval = () => {
 
   useEffect(() => {
     if (profile?.role === 'parent') {
-      loadPendingResults();
+      loadResults();
     }
   }, [profile]);
 
-  const loadPendingResults = async () => {
+  const loadResults = async () => {
     try {
       setLoading(true);
 
@@ -68,12 +67,28 @@ export const ResultApproval = () => {
       const childIds = children?.map(c => c.child_id) || [];
 
       if (childIds.length === 0) {
-        setPendingResults([]);
+        setResults([]);
         setLoading(false);
         return;
       }
 
-      // Get test attempts that need approval
+      // Get all tests created by this parent
+      const { data: parentTests, error: testsError } = await supabase
+        .from('scheduled_tests')
+        .select('id')
+        .eq('creator_id', user?.id);
+
+      if (testsError) throw testsError;
+
+      const testIds = parentTests?.map(t => t.id) || [];
+
+      if (testIds.length === 0) {
+        setResults([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get all test attempts from parent's children for parent's tests
       const { data: attempts, error: attemptsError } = await supabase
         .from('test_attempts')
         .select(`
@@ -82,9 +97,10 @@ export const ResultApproval = () => {
           total_questions,
           completed_at,
           answers,
-          approval_status,
+          show_results,
           feedback,
           user_id,
+          scheduled_test_id,
           scheduled_test:scheduled_tests (
             title,
             question_papers (
@@ -93,6 +109,7 @@ export const ResultApproval = () => {
           )
         `)
         .in('user_id', childIds)
+        .in('scheduled_test_id', testIds)
         .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false });
 
@@ -111,12 +128,12 @@ export const ResultApproval = () => {
         return acc;
       }, {} as Record<string, any>) || {};
 
-      const formatted: PendingResult[] = attempts?.map(attempt => ({
+      const formatted: TestResult[] = attempts?.map(attempt => ({
         id: attempt.id,
         score: attempt.score || 0,
         total_questions: attempt.total_questions || 0,
         completed_at: attempt.completed_at,
-        status: (attempt.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
+        show_results: attempt.show_results || false,
         feedback: attempt.feedback,
         answers: (attempt.answers as Record<string, string>) || {},
         student: {
@@ -130,13 +147,13 @@ export const ResultApproval = () => {
         }
       })) || [];
 
-      setPendingResults(formatted);
+      setResults(formatted);
 
     } catch (error) {
-      console.error('Error loading pending results:', error);
+      console.error('Error loading results:', error);
       toast({
         title: "Error",
-        description: "Failed to load pending results",
+        description: "Failed to load results",
         variant: "destructive"
       });
     } finally {
@@ -144,17 +161,14 @@ export const ResultApproval = () => {
     }
   };
 
-  const handleApproval = async (resultId: string, status: 'approved' | 'rejected', feedbackText?: string) => {
+  const handleShowResultsToggle = async (resultId: string, showResults: boolean) => {
     try {
       setProcessing(true);
 
       const { error } = await supabase
         .from('test_attempts')
         .update({
-          approval_status: status,
-          feedback: feedbackText || null,
-          approved_at: status === 'approved' ? new Date().toISOString() : null,
-          approved_by: user?.id
+          show_results: showResults
         })
         .eq('id', resultId);
 
@@ -162,20 +176,20 @@ export const ResultApproval = () => {
 
       toast({
         title: "Success",
-        description: `Result ${status} successfully`,
+        description: `Results ${showResults ? 'shown' : 'hidden'} successfully`,
         variant: "default"
       });
 
       // Refresh the list
-      loadPendingResults();
+      loadResults();
       setSelectedResult(null);
       setFeedback('');
 
     } catch (error) {
-      console.error('Error updating approval status:', error);
+      console.error('Error updating show results status:', error);
       toast({
         title: "Error",
-        description: "Failed to update approval status",
+        description: "Failed to update show results status",
         variant: "destructive"
       });
     } finally {
@@ -183,20 +197,12 @@ export const ResultApproval = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-yellow-100 text-yellow-800';
-    }
+  const getShowResultsColor = (showResults: boolean) => {
+    return showResults ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved': return <Check className="w-3 h-3" />;
-      case 'rejected': return <X className="w-3 h-3" />;
-      default: return <Clock className="w-3 h-3" />;
-    }
+  const getShowResultsIcon = (showResults: boolean) => {
+    return showResults ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />;
   };
 
   const getScoreColor = (score: number) => {
@@ -236,9 +242,9 @@ export const ResultApproval = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Result Approval</h2>
+        <h2 className="text-2xl font-bold">Result Management</h2>
         <p className="text-muted-foreground">
-          Review and approve test results before showing them to students
+          Manage result visibility for your students' test attempts
         </p>
       </div>
 
@@ -246,36 +252,36 @@ export const ResultApproval = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
+            <CardTitle className="text-sm font-medium">Total Results</CardTitle>
+            <Clock className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {pendingResults.filter(r => r.status === 'pending').length}
+              {results.length}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
-            <Check className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium">Results Shown</CardTitle>
+            <Eye className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {pendingResults.filter(r => r.status === 'approved').length}
+              {results.filter(r => r.show_results).length}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-            <X className="h-4 w-4 text-red-600" />
+            <CardTitle className="text-sm font-medium">Results Hidden</CardTitle>
+            <EyeOff className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {pendingResults.filter(r => r.status === 'rejected').length}
+              {results.filter(r => !r.show_results).length}
             </div>
           </CardContent>
         </Card>
@@ -284,8 +290,8 @@ export const ResultApproval = () => {
       {/* Results Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Test Results Awaiting Review</CardTitle>
-          <CardDescription>Click on a result to review and approve</CardDescription>
+          <CardTitle>Test Results Management</CardTitle>
+          <CardDescription>Manage result visibility and feedback for your students</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -295,12 +301,12 @@ export const ResultApproval = () => {
                 <TableHead>Test</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Completed</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Visibility</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pendingResults.map((result) => (
+              {results.map((result) => (
                 <TableRow key={result.id}>
                   <TableCell>
                     <div className="flex items-center space-x-2">
@@ -332,9 +338,9 @@ export const ResultApproval = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${getStatusColor(result.status)} flex items-center space-x-1`}>
-                      {getStatusIcon(result.status)}
-                      <span className="capitalize">{result.status}</span>
+                    <Badge className={`${getShowResultsColor(result.show_results)} flex items-center space-x-1`}>
+                      {getShowResultsIcon(result.show_results)}
+                      <span>{result.show_results ? 'Visible' : 'Hidden'}</span>
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -384,59 +390,51 @@ export const ResultApproval = () => {
                             </div>
 
                             <div className="space-y-2">
-                              <label className="text-sm font-medium">Feedback (Optional)</label>
-                              <Textarea
-                                placeholder="Add feedback for the student..."
-                                value={feedback}
-                                onChange={(e) => setFeedback(e.target.value)}
-                                rows={3}
-                              />
+                              <label className="text-sm font-medium">Current Visibility Status</label>
+                              <div className="p-3 border rounded-md bg-muted/50">
+                                <Badge className={`${getShowResultsColor(result.show_results)} flex items-center space-x-1 w-fit`}>
+                                  {getShowResultsIcon(result.show_results)}
+                                  <span>{result.show_results ? 'Results are visible to student' : 'Results are hidden from student'}</span>
+                                </Badge>
+                              </div>
                             </div>
 
                             <div className="flex justify-end space-x-2">
                               <Button
                                 variant="outline"
-                                onClick={() => handleApproval(result.id, 'rejected', feedback)}
+                                onClick={() => handleShowResultsToggle(result.id, !result.show_results)}
                                 disabled={processing}
                               >
-                                <X className="w-4 h-4 mr-2" />
-                                Reject
-                              </Button>
-                              <Button
-                                onClick={() => handleApproval(result.id, 'approved', feedback)}
-                                disabled={processing}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <Check className="w-4 h-4 mr-2" />
-                                Approve
+                                {result.show_results ? (
+                                  <>
+                                    <EyeOff className="w-4 h-4 mr-2" />
+                                    Hide Results
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Show Results
+                                  </>
+                                )}
                               </Button>
                             </div>
                           </div>
                         </DialogContent>
                       </Dialog>
 
-                      {result.status === 'pending' && (
-                        <div className="flex space-x-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleApproval(result.id, 'approved')}
-                            disabled={processing}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleApproval(result.id, 'rejected')}
-                            disabled={processing}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleShowResultsToggle(result.id, !result.show_results)}
+                        disabled={processing}
+                        className={result.show_results ? "text-gray-600 hover:text-gray-700" : "text-green-600 hover:text-green-700"}
+                      >
+                        {result.show_results ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -444,12 +442,12 @@ export const ResultApproval = () => {
             </TableBody>
           </Table>
 
-          {pendingResults.length === 0 && (
+          {results.length === 0 && (
             <div className="text-center py-8">
               <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Results to Review</h3>
+              <h3 className="text-lg font-semibold mb-2">No Results Found</h3>
               <p className="text-muted-foreground">
-                All test results have been reviewed and processed.
+                No test results available to manage at this time.
               </p>
             </div>
           )}

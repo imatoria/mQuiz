@@ -971,6 +971,7 @@ export type Database = {
           id: string
           max_attempts: number
           question_paper_id: string
+          show_results: boolean | null
           start_time: string
           time_limit_hours: number | null
           time_limit_minutes: number | null
@@ -985,6 +986,7 @@ export type Database = {
           id?: string
           max_attempts?: number
           question_paper_id: string
+          show_results?: boolean | null
           start_time: string
           time_limit_hours?: number | null
           time_limit_minutes?: number | null
@@ -999,6 +1001,7 @@ export type Database = {
           id?: string
           max_attempts?: number
           question_paper_id?: string
+          show_results?: boolean | null
           start_time?: string
           time_limit_hours?: number | null
           time_limit_minutes?: number | null
@@ -1119,9 +1122,6 @@ export type Database = {
       test_attempts: {
         Row: {
           answers: Json | null
-          approval_status: string | null
-          approved_at: string | null
-          approved_by: string | null
           attempt_number: number
           completed_at: string | null
           current_question_index: number | null
@@ -1132,6 +1132,7 @@ export type Database = {
           progress_percentage: number | null
           scheduled_test_id: string
           score: number | null
+          show_results: boolean
           started_at: string
           time_remaining: number | null
           total_questions: number | null
@@ -1139,9 +1140,6 @@ export type Database = {
         }
         Insert: {
           answers?: Json | null
-          approval_status?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           attempt_number?: number
           completed_at?: string | null
           current_question_index?: number | null
@@ -1152,6 +1150,7 @@ export type Database = {
           progress_percentage?: number | null
           scheduled_test_id: string
           score?: number | null
+          show_results?: boolean
           started_at?: string
           time_remaining?: number | null
           total_questions?: number | null
@@ -1159,9 +1158,6 @@ export type Database = {
         }
         Update: {
           answers?: Json | null
-          approval_status?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           attempt_number?: number
           completed_at?: string | null
           current_question_index?: number | null
@@ -1172,6 +1168,7 @@ export type Database = {
           progress_percentage?: number | null
           scheduled_test_id?: string
           score?: number | null
+          show_results?: boolean
           started_at?: string
           time_remaining?: number | null
           total_questions?: number | null

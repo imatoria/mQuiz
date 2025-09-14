@@ -83,9 +83,11 @@ export const TestResults = () => {
           total_questions,
           completed_at,
           answers,
+          show_results,
           scheduled_test:scheduled_tests (
             title,
             question_paper_id,
+            show_results,
             question_papers (
               id,
               title,
@@ -98,7 +100,14 @@ export const TestResults = () => {
         .order('completed_at', { ascending: false });
 
       if (error) throw error;
-      setAttempts(data?.map(attempt => ({
+      
+      // Filter results based on show_results setting from test_attempts
+      const filteredResults = data?.filter(attempt => {
+        // Show results if show_results is true in test_attempts
+        return attempt.show_results;
+      }) || [];
+      
+      setAttempts(filteredResults?.map(attempt => ({
         ...attempt,
         answers: attempt.answers as Record<string, string> || {}
       })) || []);

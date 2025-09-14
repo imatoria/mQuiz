@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, Clock, Users, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Users, Loader2, Eye } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,6 +20,7 @@ interface ScheduledTest {
   question_paper_id: string;
   time_limit_hours?: number;
   time_limit_minutes?: number;
+  show_results?: boolean;
   question_papers?: {
     title: string;
     total_questions: number;
@@ -44,6 +45,7 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [timeLimitHours, setTimeLimitHours] = useState('1');
   const [timeLimitMinutes, setTimeLimitMinutes] = useState('0');
+  const [showResults, setShowResults] = useState(false);
   const [children, setChildren] = useState<any[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
@@ -56,6 +58,7 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
       setMaxAttempts(test.max_attempts.toString());
       setTimeLimitHours((test.time_limit_hours || 1).toString());
       setTimeLimitMinutes((test.time_limit_minutes || 0).toString());
+      setShowResults(test.show_results || false);
       setAssignToAll(test.assign_to_all);
       fetchChildren();
       if (!test.assign_to_all) {
@@ -172,7 +175,8 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
           max_attempts: parseInt(maxAttempts),
           assign_to_all: assignToAll,
           time_limit_hours: parseInt(timeLimitHours),
-          time_limit_minutes: parseInt(timeLimitMinutes)
+          time_limit_minutes: parseInt(timeLimitMinutes),
+          show_results: showResults
         })
         .eq('id', test.id);
 
@@ -235,6 +239,7 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
     setMaxAttempts('1');
     setTimeLimitHours('1');
     setTimeLimitMinutes('0');
+    setShowResults(false);
     setAssignToAll(true);
     setSelectedChildren([]);
   };
@@ -350,6 +355,18 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
         </div>
 
           <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-showResults"
+                checked={showResults}
+                onCheckedChange={setShowResults}
+              />
+              <Label htmlFor="edit-showResults" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Show Results Immediately
+              </Label>
+            </div>
+
             <div className="flex items-center space-x-2">
               <Switch
                 id="edit-assignToAll"

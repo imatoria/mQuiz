@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
-import { Calendar, Clock, Users, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Users, Loader2, Eye } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,6 +24,7 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [timeLimitHours, setTimeLimitHours] = useState('1');
   const [timeLimitMinutes, setTimeLimitMinutes] = useState('0');
+  const [showResults, setShowResults] = useState(false);
   const [questionPapers, setQuestionPapers] = useState<any[]>([]);
   const [children, setChildren] = useState<any[]>([]);
   const [isScheduling, setIsScheduling] = useState(false);
@@ -155,7 +156,8 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
           max_attempts: parseInt(maxAttempts),
           assign_to_all: assignToAll,
           time_limit_hours: parseInt(timeLimitHours),
-          time_limit_minutes: parseInt(timeLimitMinutes)
+          time_limit_minutes: parseInt(timeLimitMinutes),
+          show_results: showResults
         })
         .select()
         .single();
@@ -189,6 +191,7 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
       setMaxAttempts('1');
       setTimeLimitHours('1');
       setTimeLimitMinutes('0');
+      setShowResults(false);
       setAssignToAll(true);
       setSelectedChildren([]);
       onTestScheduled();
@@ -328,6 +331,18 @@ export const TestScheduler = ({ onTestScheduled }: TestSchedulerProps) => {
         </div>
 
         <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="showResults"
+              checked={showResults}
+              onCheckedChange={setShowResults}
+            />
+            <Label htmlFor="showResults" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Show Results Immediately
+            </Label>
+          </div>
+          
           <div className="flex items-center space-x-2">
             <Switch
               id="assignToAll"

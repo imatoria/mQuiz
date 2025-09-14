@@ -19,6 +19,7 @@ interface ScheduledTest {
   question_paper_id: string;
   time_limit_hours?: number;
   time_limit_minutes?: number;
+  show_results?: boolean;
   question_papers?: {
     title: string;
     total_questions: number;
@@ -135,9 +136,10 @@ export const ScheduleManager = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm mb-1 truncate">{test.title}</h4>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {test.question_papers?.subjects?.name} • {test.question_papers?.title}
-                      </p>
+                       <p className="text-xs text-muted-foreground mb-2">
+                         {test.question_papers?.subjects?.name} • {test.question_papers?.title}
+                         {test.show_results ? ' • Auto-approve results' : ' • Manual approval required'}
+                       </p>
                       
                       <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">
