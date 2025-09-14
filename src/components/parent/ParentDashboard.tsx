@@ -41,7 +41,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
     if (initialItem) {
       onActiveTabChange?.(initialItem.label, initialItem.icon);
     }
-  }, [onActiveTabChange]);
+  }, []); // Empty dependency array to run only once on mount
 
   const menuItems = [
     { value: 'children', label: 'Children', icon: Users },

@@ -14,10 +14,10 @@ const Index = () => {
   const [activeTabName, setActiveTabName] = useState<string>('');
   const [activeTabIcon, setActiveTabIcon] = useState<LucideIcon | null>(null);
 
-  const handleActiveTabChange = (tabName: string, tabIcon: LucideIcon) => {
+  const handleActiveTabChange = React.useCallback((tabName: string, tabIcon: LucideIcon) => {
     setActiveTabName(tabName);
     setActiveTabIcon(tabIcon);
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -114,9 +114,7 @@ const Index = () => {
           activeTabName={activeTabName}
           activeTabIcon={activeTabIcon}
         />
-        <div className="pt-14 md:pt-16">
-          <Dashboard role={profile.role} onActiveTabChange={handleActiveTabChange} />
-        </div>
+        <Dashboard role={profile.role} onActiveTabChange={handleActiveTabChange} />
       </div>
     </SidebarProvider>
   );

@@ -55,9 +55,20 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b shadow-sm">
       <div className="flex justify-between items-center h-14 md:h-16">
         {/* Logo and Sidebar Trigger Container */}
-        <div className="flex items-center md:w-64 justify-between pl-4 sm:pl-6 lg:pl-4">
-          {/* Logo */}
-          <div className="flex items-center space-x-1 md:space-x-2">
+        <div className="flex items-center justify-between pl-2 sm:pl-4 md:w-64 md:pl-4">
+          {/* Mobile: Sidebar Trigger + Logo - max width container */}
+          <div className="flex items-center gap-3 md:hidden max-w-16">
+            <SidebarTrigger />
+            <div className="flex items-center space-x-1">
+              <div className="w-7 h-7 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <BookOpen className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <span className="text-lg font-bold text-foreground">mQuiz</span>
+            </div>
+          </div>
+          
+          {/* Desktop/Tablet: Logo + Sidebar Trigger */}
+          <div className="hidden md:flex items-center space-x-1 md:space-x-2">
             <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
               <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
             </div>
@@ -70,11 +81,11 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
           </div>
         </div>
 
-        {/* Active Tab Name - Desktop/Tablet only */}
+        {/* Active Tab Name */}
         {activeTabName && activeTabIcon && (
           <div className="flex items-center space-x-2 flex-1 justify-center">
-            {React.createElement(activeTabIcon, { className: "w-5 h-5 text-muted-foreground" })}
-            <span className="text-lg font-medium text-foreground">{activeTabName}</span>
+            {React.createElement(activeTabIcon, { className: "w-4 h-4 md:w-5 md:h-5 text-muted-foreground" })}
+            <span className="text-sm md:text-lg font-medium text-foreground">{activeTabName}</span>
           </div>
         )}
 

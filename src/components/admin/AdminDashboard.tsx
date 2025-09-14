@@ -38,7 +38,7 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
     if (initialItem) {
       onActiveTabChange?.(initialItem.label, initialItem.icon);
     }
-  }, [onActiveTabChange]);
+  }, []); // Empty dependency array to run only once on mount
   const menuItems = [
     { value: 'approvals', label: 'Approvals', icon: Clock },
     { value: 'users', label: 'Users', icon: Users },

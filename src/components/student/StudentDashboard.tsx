@@ -93,7 +93,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
     if (initialItem) {
       onActiveTabChange?.(initialItem.label, initialItem.icon);
     }
-  }, [onActiveTabChange]);
+  }, []); // Empty dependency array to run only once on mount
   
   const { loading, error, execute: executeAsync } = useAsyncOperation({
     onError: (error) => console.error('Student dashboard error:', error)
