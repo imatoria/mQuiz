@@ -597,7 +597,8 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     };
   }, [answers, flaggedQuestions, currentQuestionIndex]); // Removed debouncedSave from dependencies
 
-  const handleAnswer = (questionId: string, answer: string) => {
+  const handleAnswer = (currentQuestionIndex: number, questionId: string, answer: string) => {
+    setCurrentQuestionIndex(currentQuestionIndex);
     setAnswers(prev => ({
       ...prev,
       [questionId]: answer
@@ -635,11 +636,11 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   const handleSubmit = async (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '') => {
     if (!testAttemptId) return;
     
+    deactivateSecurity(); // Deactivate security monitoring
     setIsSubmitting(true);
     setShowFinalConfirmDialog(false);
     setShowReviewDialog(false);
-    deactivateSecurity(); // Deactivate security monitoring
-    
+    debugger;
     try {
       // Use the complete-test edge function for proper submission
       const { data, error } = await supabase.functions.invoke('complete-test', {
@@ -1016,7 +1017,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                       className={`w-full justify-start text-left p-4 h-auto ${
                         isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                       }`}
-                      onClick={() => handleAnswer(currentQuestion.id, option)}
+                      onClick={() => handleAnswer(currentQuestionIndex + 1, currentQuestion.id, option)}
                     >
                       <div className="flex items-start space-x-3">
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
