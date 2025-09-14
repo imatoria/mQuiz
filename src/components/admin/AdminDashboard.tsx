@@ -69,7 +69,7 @@ export const AdminDashboard = () => {
             </SidebarContent>
           </Sidebar>
 
-          <SidebarInset style={{"--sidebar-width": "15rem", "--sidebar-width-icon": "3rem"} as React.CSSProperties} className="ml-[var(--sidebar-width)] group-data-[collapsible=icon]:ml-[var(--sidebar-width-icon)]">
+          <SidebarInset>
             <div className="min-h-screen bg-gradient-subtle">
               <header className="sticky top-16 z-30 h-14 md:h-16 flex items-center bg-card border-b shadow-sm px-2 md:px-4 flex-shrink-0">
                 <SidebarTrigger />
