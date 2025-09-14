@@ -9,7 +9,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { AIKeyStatusOverview } from './AIKeyStatusOverview';
 import { 
   Key, 
   Settings, 
@@ -403,8 +402,6 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
   return (
     <div className="space-y-6">
-      <AIKeyStatusOverview />
-      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
