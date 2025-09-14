@@ -53,103 +53,101 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b shadow-sm">
-      <div className="px-4 sm:px-6 lg:px-4">
-        <div className="flex justify-between items-center h-14 md:h-16">
-          {/* Logo and Sidebar Trigger Container */}
-          <div className="flex items-center w-64 justify-between">
-            {/* Logo */}
-            <div className="flex items-center space-x-1 md:space-x-2">
-              <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
-              </div>
-              <span className="text-lg md:text-xl font-bold text-foreground">mQuiz</span>
+      <div className="flex justify-between items-center h-14 md:h-16">
+        {/* Logo and Sidebar Trigger Container */}
+        <div className="flex items-center md:w-64 justify-between pl-4 sm:pl-6 lg:pl-4">
+          {/* Logo */}
+          <div className="flex items-center space-x-1 md:space-x-2">
+            <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
             </div>
-            
-            {/* Sidebar Trigger - Desktop/Tablet only */}
-            <div className="hidden md:block">
-              <SidebarTrigger />
-            </div>
+            <span className="text-lg md:text-xl font-bold text-foreground">mQuiz</span>
           </div>
-
-          {/* Active Tab Name - Desktop/Tablet only */}
-          {activeTabName && activeTabIcon && (
-            <div className="hidden md:flex items-center space-x-2 flex-1 justify-center">
-              {React.createElement(activeTabIcon, { className: "w-5 h-5 text-muted-foreground" })}
-              <span className="text-lg font-medium text-foreground">{activeTabName}</span>
-            </div>
-          )}
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
-            <NotificationCenter />
-            
-            {profile && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">
-                  {profile.full_name || profile.email}
-                </span>
-                {currentRole && (
-                  <Badge variant="secondary" className="text-xs">
-                    {roleConfig[currentRole].label}
-                  </Badge>
-                )}
-              </div>
-            )}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={signOut}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
+          
+          {/* Sidebar Trigger - Desktop/Tablet only */}
+          <div className="hidden md:block">
+            <SidebarTrigger />
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="flex justify-between items-center md:hidden py-2 border-t">
-            <NotificationCenter />
-            
-            {profile && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">
-                  {profile.full_name || profile.email}
-                </span>
-                {currentRole && (
-                  <Badge variant="secondary" className="text-xs">
-                    {roleConfig[currentRole].label}
-                  </Badge>
-                )}
-              </div>
-            )}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                signOut();
-                setIsMenuOpen(false);
-              }}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
+        {/* Active Tab Name - Desktop/Tablet only */}
+        {activeTabName && activeTabIcon && (
+          <div className="flex items-center space-x-2 flex-1 justify-center">
+            {React.createElement(activeTabIcon, { className: "w-5 h-5 text-muted-foreground" })}
+            <span className="text-lg font-medium text-foreground">{activeTabName}</span>
           </div>
         )}
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center space-x-4 pr-4 sm:pr-6 lg:pr-4">
+          <NotificationCenter />
+          
+          {profile && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">
+                {profile.full_name || profile.email}
+              </span>
+              {currentRole && (
+                <Badge variant="secondary" className="text-xs">
+                  {roleConfig[currentRole].label}
+                </Badge>
+              )}
+            </div>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={signOut}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
+
+        {/* Mobile menu button */}
+        <div className="md:hidden">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
+        </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {isMenuOpen && (
+        <div className="flex justify-between items-center md:hidden py-2 border-t px-4">
+          <NotificationCenter />
+          
+          {profile && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">
+                {profile.full_name || profile.email}
+              </span>
+              {currentRole && (
+                <Badge variant="secondary" className="text-xs">
+                  {roleConfig[currentRole].label}
+                </Badge>
+              )}
+            </div>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              signOut();
+              setIsMenuOpen(false);
+            }}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
+      )}
     </nav>
   );
 };
