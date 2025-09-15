@@ -382,7 +382,23 @@ export const ResultApproval = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Name:</span>
+                <span>{selectedResult.student.full_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Email:</span>
+                <span>{selectedResult.student.email}</span>
+              </div>
+            </CardContent>
+          </Card>
+          
           <Card>
             <CardHeader>
               <CardTitle>Score</CardTitle>
@@ -401,44 +417,28 @@ export const ResultApproval = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Student Information</CardTitle>
+              <CardTitle>Test Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Name:</span>
-                <span>{selectedResult.student.full_name}</span>
+                <span className="text-muted-foreground">Subject:</span>
+                <span>{selectedResult.test.subject}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Email:</span>
-                <span>{selectedResult.student.email}</span>
+                <span className="text-muted-foreground">Completed:</span>
+                <span>{new Date(selectedResult.completed_at).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Results Visible:</span>
+                <Switch
+                  checked={selectedResult.show_results}
+                  onCheckedChange={(checked) => handleShowResultsToggle(selectedResult.id, checked)}
+                  disabled={processing}
+                />
               </div>
             </CardContent>
           </Card>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Test Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subject:</span>
-              <span>{selectedResult.test.subject}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Completed:</span>
-              <span>{new Date(selectedResult.completed_at).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Results Visible:</span>
-              <Switch
-                checked={selectedResult.show_results}
-                onCheckedChange={(checked) => handleShowResultsToggle(selectedResult.id, checked)}
-                disabled={processing}
-              />
-            </div>
-          </CardContent>
-        </Card>
 
         {loadingQuestions ? (
           <Card>
@@ -466,7 +466,6 @@ export const ResultApproval = () => {
                       <TableHead>Question</TableHead>
                       <TableHead className="whitespace-nowrap w-32">Student Answer</TableHead>
                       <TableHead className="whitespace-nowrap w-32">Correct Answer</TableHead>
-                      <TableHead className="w-20">Result</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -486,7 +485,7 @@ export const ResultApproval = () => {
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            variant={result.user_answer ? (result.is_correct ? "default" : "destructive") : "secondary"} 
+                            variant={result.user_answer ? (result.is_correct ? "success" : "destructive") : "secondary"} 
                             className="whitespace-nowrap"
                           >
                             {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
@@ -496,17 +495,6 @@ export const ResultApproval = () => {
                           <Badge variant="outline" className="whitespace-nowrap">
                             {result.correct_answer.toUpperCase()}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {result.user_answer ? (
-                            result.is_correct ? (
-                              <CheckCircle2 className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-red-600" />
-                            )
-                          ) : (
-                            <XCircle className="w-5 h-5 text-gray-400" />
-                          )}
                         </TableCell>
                       </TableRow>
                     ))}
