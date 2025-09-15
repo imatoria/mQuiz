@@ -637,47 +637,6 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
               </CardContent>
             </Card>
 
-            {/* Recent Results */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Results</CardTitle>
-                <CardDescription>Your latest test performances</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {completedTests.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No completed tests yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {completedTests.slice(0, 5).map((test) => {
-                      const lastAttempt = test.test_attempts[test.test_attempts.length - 1];
-                      const score = lastAttempt?.score || 0;
-                      const scoreColor = score >= 80 ? 'text-success' : score >= 60 ? 'text-warning' : 'text-destructive';
-                      const scoreBadge = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs Improvement';
-                      
-                      return (
-                        <div key={test.id} className="flex flex-row justify-between p-3 bg-muted rounded-lg gap-2">
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-sm font-medium truncate pr-2">{test.title}</h4>
-                            <p className="text-xs text-muted-foreground truncate">
-                              Completed {lastAttempt?.completed_at ? new Date(lastAttempt.completed_at).toLocaleDateString() : 'N/A'}
-                            </p>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <div className={`text-base leading-none font-bold ${scoreColor}`}>{score}%</div>
-                            <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs py-0 px-2">
-                              {scoreBadge}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
               </TabsContent>
 
               <TabsContent value="results">

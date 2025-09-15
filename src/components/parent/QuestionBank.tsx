@@ -75,12 +75,12 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
         setSubjects(subjectsData);
       }
 
-      // Fetch questions with document info
+      // Fetch questions with document info (using left join to include questions without documents)
       const { data: questionsData } = await supabase
         .from('questions')
         .select(`
           *,
-          documents!inner(
+          documents(
             title,
             subject_id,
             class_level,

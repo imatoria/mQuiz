@@ -72,9 +72,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [showFinalConfirmDialog, setShowFinalConfirmDialog] = useState(false);
-  const [submissionType, setSubmissionType] = useState<'manual' | 'auto' | 'force' | 'partial'>('manual');
   const [unansweredQuestions, setUnansweredQuestions] = useState<number[]>([]);
-  const [submissionReason, setSubmissionReason] = useState<string>('');
   const [testAttemptId, setTestAttemptId] = useState<string | null>(null);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
@@ -94,10 +92,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
   // Define handleForceSubmit first
   const handleForceSubmit = useCallback(async (reason: string) => {
-    setSubmissionType('force');
-    setSubmissionReason(reason);
-    deactivateSecurity();
-    await handleFinalSubmit();
+    await handleSubmit('force', reason, true);
   }, []);
 
   // Enhanced security system with simplified fullscreen approach
@@ -148,9 +143,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         variant: "destructive"
       });
       // Auto-submit the expired attempt
-      setSubmissionType('auto');
-      setSubmissionReason('Individual attempt time limit exceeded');
-      await handleFinalSubmit();
+      await handleSubmit('auto', 'Individual attempt time limit exceeded', true);
       return false;
     }
     
@@ -621,13 +614,23 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     }
   };
 
-  const handleSubmit = async (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '') => {
-    if (!testAttemptId) return;
+  const handleSubmit = async (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '', doFinalSave = false) => {
+    if (!testAttemptId || isSubmitting) return;
     
     deactivateSecurity(); // Deactivate security monitoring
     setIsSubmitting(true);
     setShowFinalConfirmDialog(false);
     setShowReviewDialog(false);
+
+    // Final grace period save if requested
+    if (doFinalSave) {
+      try {
+        await debouncedSave(true, true);
+      } catch (error) {
+        console.error('Final save failed:', error);
+        // Continue with submission even if final save fails
+      }
+    }
 
     try {
       // Use the complete-test edge function for proper submission
@@ -674,65 +677,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   };
 
   const handleAutoSubmit = async () => {
-    setSubmissionType('auto');
-    setSubmissionReason('Time expired - automatic submission');
-    await handleFinalSubmit();
-  };
-
-  // handleForceSubmit moved above
-
-  const handleFinalSubmit = async () => {
-    if (isSubmitting) return;
-    
-    setIsSubmitting(true);
-    
-    // Final grace period save with enhanced error handling
-    try {
-      await debouncedSave(true, true);
-      // setShowFullscreenPrompt(false);
-    } catch (error) {
-      console.error('Final save failed:', error);
-      // Continue with submission even if final save fails
-    }
-
-    // Use the complete-test edge function for secure submission
-    try {
-      const { data, error: submitError } = await supabase.functions.invoke('complete-test', {
-        body: {
-          testAttemptId,
-          completionType: submissionType,
-          completionReason: submissionReason,
-          answers,
-          flaggedQuestions: Array.from(flaggedQuestions),
-          currentQuestionIndex,
-          progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
-          timeRemaining: Math.max(0, timeLeft),
-          scheduledTestId: test.id
-        }
-      });
-
-      if (submitError) throw submitError;
-
-      // Show completion message from server response
-      toast({
-        title: data?.title || "Test Submitted",
-        description: data?.message || "Your test has been submitted for evaluation.",
-        variant: submissionType === 'force' ? "destructive" : "default"
-      });
-
-      onComplete();
-    } catch (error) {
-      console.error('Final submission failed:', error);
-      toast({
-        title: "Submission Error",
-        description: "There was an error submitting your test. Please contact support.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-
-    deactivateSecurity();
+    await handleSubmit('auto', 'Time expired - automatic submission', true);
   };
 
   const handleGoFullscreen = async () => {
@@ -790,9 +735,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
   // Enhanced submission flow
   const initiateSubmission = (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '') => {
-    setSubmissionType(type);
-    setSubmissionReason(reason);
-    
     const unanswered = getUnansweredQuestions();
     setUnansweredQuestions(unanswered);
 
@@ -806,10 +748,10 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         description: reason || "Time expired - automatically submitting test",
         variant: "destructive"
       });
-      setTimeout(() => handleSubmit(type, reason), 2000); // 2 second delay for user awareness
+      setTimeout(() => handleSubmit(type, reason, true), 2000); // 2 second delay for user awareness
     } else {
       // Force or partial submit - immediate submission
-      handleSubmit(type, reason);
+      handleSubmit(type, reason, true);
     }
   };
 
@@ -1348,7 +1290,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
               Cancel
             </AlertDialogCancel>
             <Button
-              onClick={() => handleSubmit('manual')}
+              onClick={() => handleSubmit('manual', 'Manual submission by user', true)}
               disabled={confirmationText.toUpperCase() !== 'SUBMIT' || isSubmitting}
               className="bg-destructive hover:bg-destructive/90"
             >
