@@ -617,7 +617,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   const handleSubmit = async (type: 'manual' | 'auto' | 'force' | 'partial' = 'manual', reason = '', doFinalSave = false) => {
     if (!testAttemptId || isSubmitting) return;
     
-    deactivateSecurity(); // Deactivate security monitoring
     setIsSubmitting(true);
     setShowFinalConfirmDialog(false);
     setShowReviewDialog(false);
@@ -673,6 +672,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       });
     } finally {
       setIsSubmitting(false);
+      deactivateSecurity(); // Deactivate security monitoring
     }
   };
 
@@ -762,21 +762,19 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
   const currentQuestion = questions[currentQuestionIndex];
 
-  if (!currentQuestion) {
+  if (!currentQuestion || isSubmitting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading test...</p>
+          <p>{isSubmitting ? "Submitting test..." : "Loading test..."}</p>
         </div>
       </div>
     );
-  }
-
-  const isInFullscreen = !!document.fullscreenElement;
+  }  
 
   return (
-    <div className={`min-h-screen bg-background p-4 select-none ${ !isInFullscreen && "mt-[64px]" }`}>
+    <div className={`min-h-screen bg-background p-4 select-none`}>
       {/* Fullscreen Prompt Dialog */}
       <AlertDialog open={showFullscreenPrompt} onOpenChange={setShowFullscreenPrompt}>
         <AlertDialogContent>
@@ -927,8 +925,8 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                         }`}
                         onClick={() => handleAnswer(currentQuestion.id, option)}
                       >
-                        <div className="flex items-start space-x-3">
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                             isSelected ? 'border-primary-foreground bg-primary-foreground text-primary' : 'border-muted-foreground'
                           }`}>
                             {option}
