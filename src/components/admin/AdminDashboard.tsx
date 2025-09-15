@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { Navigation } from '@/components/ui/navigation';
 import { UserManagement } from './UserManagement';
 import { SystemAnalytics } from './SystemAnalytics';
 
@@ -22,8 +23,9 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarHeader, SidebarSeparator } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarHeader, SidebarSeparator, SidebarProvider } from '@/components/ui/sidebar';
 import { SiteLogo } from '@/components/ui/site-logo';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AdminDashboardProps {
   onActiveTabChange?: (tabName: string, tabIcon: any) => void;
@@ -31,6 +33,7 @@ interface AdminDashboardProps {
 
 export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
   const [activeTab, setActiveTab] = useState('approvals');
+  const { profile, signOut } = useAuth();
   
   // Notify initial tab on mount
   React.useEffect(() => {
@@ -50,8 +53,15 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
   ];
   const activeItem = menuItems.find((i) => i.value === activeTab);
   return (
-    <ErrorBoundary>
-      <div className="flex w-full pt-[57px] md:pt-[64px]">
+    <SidebarProvider>
+      <ErrorBoundary>
+        <Navigation 
+          currentRole={profile?.role || null} 
+          onRoleChange={() => signOut()} 
+          activeTabName={activeItem?.label}
+          activeTabIcon={activeItem?.icon}
+        />
+        <div className="flex w-full pt-[57px] md:pt-[64px]">
           <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
             <SidebarContent className="h-full overflow-y-auto">
               <SidebarGroup>
@@ -195,6 +205,7 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
             </div>
           </SidebarInset>
         </div>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </SidebarProvider>
   );
 };

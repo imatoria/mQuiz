@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { Navigation } from '@/components/ui/navigation';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { useToast } from '@/hooks/use-toast';
@@ -77,7 +78,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
   const [selectedTest, setSelectedTest] = useState<ScheduledTest | null>(null);
   const [testDisplayMode, setTestDisplayMode] = useState<'single' | 'all'>('single');
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { user } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
   
   const menuItems = [
@@ -361,7 +362,14 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
   }
 
   return (
-    <div className="flex w-full pt-[57px] md:pt-[64px]">
+    <SidebarProvider>
+      <Navigation 
+        currentRole={profile?.role || null} 
+        onRoleChange={() => signOut()} 
+        activeTabName={activeItem?.label}
+        activeTabIcon={activeItem?.icon}
+      />
+      <div className="flex w-full pt-[57px] md:pt-[64px]">
       <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
         <SidebarContent className="h-full overflow-y-auto">
           <SidebarGroup>
@@ -694,5 +702,6 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         />
       )}
     </div>
+    </SidebarProvider>
   );
 };

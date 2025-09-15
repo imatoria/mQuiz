@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { AuthPage } from '@/components/auth/AuthPage';
-import { Navigation } from '@/components/ui/navigation';
 import { Dashboard } from '@/pages/Dashboard';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Clock, LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import heroBanner from '@/assets/hero-banner.jpg';
 
 const Index = () => {
@@ -106,17 +104,9 @@ const Index = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen bg-background w-full">
-        <Navigation 
-          currentRole={profile.role} 
-          onRoleChange={() => signOut()} 
-          activeTabName={activeTabName}
-          activeTabIcon={activeTabIcon}
-        />
-        <Dashboard role={profile.role} onActiveTabChange={handleActiveTabChange} />
-      </div>
-    </SidebarProvider>
+    <div className="min-h-screen bg-background w-full">
+      <Dashboard role={profile.role} onActiveTabChange={handleActiveTabChange} />
+    </div>
   );
 };
 

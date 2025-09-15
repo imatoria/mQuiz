@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { Navigation } from '@/components/ui/navigation';
 import { ChildrenManagement } from './ChildrenManagement';
 import { ContentCreation } from './ContentCreation';
 import QuestionBank from './QuestionBank';
@@ -25,7 +26,8 @@ import {
 } from 'lucide-react';
 
 import { PapersManager } from './PapersManager';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ParentDashboardProps {
   onActiveTabChange?: (tabName: string, tabIcon: any) => void;
@@ -33,6 +35,7 @@ interface ParentDashboardProps {
 
 export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => {
   const [activeTab, setActiveTab] = useState('children');
+  const { profile, signOut } = useAuth();
   
   // Notify initial tab on mount
   React.useEffect(() => {
@@ -58,8 +61,15 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
   const activeItem = menuItems.find((i) => i.value === activeTab);
 
   return (
-    <ErrorBoundary>
-      <div className="flex w-full pt-[57px] md:pt-[64px]">
+    <SidebarProvider>
+      <ErrorBoundary>
+        <Navigation 
+          currentRole={profile?.role || null} 
+          onRoleChange={() => signOut()} 
+          activeTabName={activeItem?.label}
+          activeTabIcon={activeItem?.icon}
+        />
+        <div className="flex w-full pt-[57px] md:pt-[64px]">
           <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
             <SidebarContent className="h-full overflow-y-auto">
               <SidebarGroup>
@@ -174,6 +184,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
             </div>
           </SidebarInset>
         </div>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </SidebarProvider>
   );
 };
