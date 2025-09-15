@@ -57,10 +57,9 @@ interface TestInterfaceProps {
   };
   onComplete: () => void;
   displayMode?: 'single' | 'all';
-  onNavigationVisibilityChange?: (hidden: boolean) => void;
 }
 
-export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavigationVisibilityChange }: TestInterfaceProps) => {
+export const TestInterface = ({ test, onComplete, displayMode = 'single' }: TestInterfaceProps) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -71,7 +70,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
     return (hours * 60 + minutes) * 60;
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [showFinalConfirmDialog, setShowFinalConfirmDialog] = useState(false);
   const [submissionType, setSubmissionType] = useState<'manual' | 'auto' | 'force' | 'partial'>('manual');
@@ -220,9 +218,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
     const handleFullscreenChange = () => {
       const isInFullscreen = !!document.fullscreenElement;
       
-      // Update navigation visibility based on fullscreen state
-      onNavigationVisibilityChange?.(isInFullscreen && isSecurityActive);
-      
       if (!isInFullscreen && isSecurityActive) {
         // User exited fullscreen during test
         addViolation({
@@ -245,7 +240,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [isSecurityActive, addViolation, toast, onNavigationVisibilityChange]);
+  }, [isSecurityActive, addViolation, toast]);
 
   // Enhanced auto-save functionality with grace period handling
   const debouncedSave = useCallback(async (forceSync = false, isGracePeriod = false) => {
@@ -690,12 +685,11 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
     if (isSubmitting) return;
     
     setIsSubmitting(true);
-    deactivateSecurity();
     
     // Final grace period save with enhanced error handling
     try {
       await debouncedSave(true, true);
-      setShowFullscreenPrompt(false);
+      // setShowFullscreenPrompt(false);
     } catch (error) {
       console.error('Final save failed:', error);
       // Continue with submission even if final save fails
@@ -737,6 +731,8 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
     } finally {
       setIsSubmitting(false);
     }
+
+    deactivateSecurity();
   };
 
   const handleGoFullscreen = async () => {
@@ -1358,36 +1354,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single', onNavi
             >
               {isSubmitting ? 'Submitting...' : 'Submit Test'}
             </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Legacy Submit Dialog (kept for backwards compatibility) */}
-      <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center">
-              <AlertTriangle className="w-5 h-5 mr-2 text-warning" />
-              Submit Test?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to submit your test? This action cannot be undone.
-              <br /><br />
-              <strong>Summary:</strong>
-              <br />• Questions answered: {getAnsweredCount()}/{questions.length}
-              <br />• Questions flagged: {flaggedQuestions.size}
-              <br />• Time remaining: {formatTime(timeLeft)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Review Answers</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => handleSubmit('manual')}
-              disabled={isSubmitting}
-              className="bg-quiz hover:bg-quiz/90"
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit Test'}
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

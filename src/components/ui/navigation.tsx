@@ -32,10 +32,9 @@ interface NavigationProps {
   onRoleChange: (role: 'admin' | 'parent' | 'child' | null) => void;
   activeTabName?: string;
   activeTabIcon?: LucideIcon;
-  hidden?: boolean;
 }
 
-export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTabIcon, hidden = false }: NavigationProps) => {
+export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTabIcon }: NavigationProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { profile, signOut } = useAuth();
 
@@ -69,10 +68,6 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
       features: ['Take Tests', 'View Results', 'Study Mode']
     }
   };
-
-  if (hidden) {
-    return null;
-  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b shadow-sm">

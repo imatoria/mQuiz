@@ -13,15 +13,10 @@ const Index = () => {
   const { loading, isAuthenticated, profile, canAccess, signOut } = useAuth();
   const [activeTabName, setActiveTabName] = useState<string>('');
   const [activeTabIcon, setActiveTabIcon] = useState<LucideIcon | null>(null);
-  const [hideNavigation, setHideNavigation] = useState(false);
 
   const handleActiveTabChange = React.useCallback((tabName: string, tabIcon: LucideIcon) => {
     setActiveTabName(tabName);
     setActiveTabIcon(tabIcon);
-  }, []);
-
-  const handleNavigationVisibility = React.useCallback((hidden: boolean) => {
-    setHideNavigation(hidden);
   }, []);
 
   if (loading) {
@@ -118,9 +113,8 @@ const Index = () => {
           onRoleChange={() => signOut()} 
           activeTabName={activeTabName}
           activeTabIcon={activeTabIcon}
-          hidden={hideNavigation}
         />
-        <Dashboard role={profile.role} onActiveTabChange={handleActiveTabChange} onNavigationVisibilityChange={handleNavigationVisibility} />
+        <Dashboard role={profile.role} onActiveTabChange={handleActiveTabChange} />
       </div>
     </SidebarProvider>
   );

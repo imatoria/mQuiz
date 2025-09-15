@@ -24,10 +24,9 @@ import {
 interface DashboardProps {
   role: 'admin' | 'parent' | 'child';
   onActiveTabChange?: (tabName: string, tabIcon: any) => void;
-  onNavigationVisibilityChange?: (hidden: boolean) => void;
 }
 
-export const Dashboard = ({ role, onActiveTabChange, onNavigationVisibilityChange }: DashboardProps) => {
+export const Dashboard = ({ role, onActiveTabChange }: DashboardProps) => {
   const getDashboardContent = () => {
     switch (role) {
       case 'admin':
@@ -37,7 +36,7 @@ export const Dashboard = ({ role, onActiveTabChange, onNavigationVisibilityChang
         return <ParentDashboard onActiveTabChange={onActiveTabChange} />;
 
       case 'child':
-        return <StudentDashboard onActiveTabChange={onActiveTabChange} onNavigationVisibilityChange={onNavigationVisibilityChange} />;
+        return <StudentDashboard onActiveTabChange={onActiveTabChange} />;
 
       default:
         return null;
