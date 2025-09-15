@@ -53,14 +53,15 @@ export const ContentCreation = () => {
       .eq('user_id', user.user.id)
       .order('created_at', { ascending: false });
 
-    // Fetch scheduled tests
+    // Fetch scheduled papers (tests)
     const { data: testsData } = await supabase
-      .from('scheduled_tests')
+      .from('question_papers')
       .select(`
         *,
-        question_papers(title, subjects(name))
+        subjects(name)
       `)
-      .eq('creator_id', user.user.id)
+      .eq('user_id', user.user.id)
+      .eq('is_scheduled', true)
       .order('created_at', { ascending: false });
 
     setDocuments(docsData || []);

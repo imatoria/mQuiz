@@ -54,8 +54,8 @@ export const SystemAnalytics = () => {
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('documents').select('*', { count: 'exact', head: true }),
         supabase.from('questions').select('*', { count: 'exact', head: true }),
-        supabase.from('scheduled_tests').select('*', { count: 'exact', head: true }),
-        supabase.from('scheduled_tests').select('*', { count: 'exact', head: true }).lte('start_time', new Date().toISOString()).gte('end_time', new Date().toISOString())
+        supabase.from('question_papers').select('*', { count: 'exact', head: true }).eq('is_scheduled', true),
+        supabase.from('question_papers').select('*', { count: 'exact', head: true }).eq('is_scheduled', true).lte('start_time', new Date().toISOString()).gte('end_time', new Date().toISOString())
       ]);
 
       // Calculate growth metrics (mock data for now)

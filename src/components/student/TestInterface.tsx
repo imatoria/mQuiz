@@ -260,7 +260,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     
     try {
       const saveStartTime = Date.now();
-      const { data, error } = await supabase.functions.invoke('save-test-progress', {
+      const { data, error } = await supabase.functions.invoke('save-paper-progress', {
         body: progressData
       });
 
@@ -390,7 +390,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
     const syncServerTime = async () => {
       try {
-        const { data } = await supabase.functions.invoke('save-test-progress', {
+        const { data } = await supabase.functions.invoke('save-paper-progress', {
           body: {
             testAttemptId: 'sync-time',
             answers: {},
@@ -426,9 +426,9 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
       // Check for existing active attempt first
       const { data: existingAttempt, error: existingError } = await supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select('*')
-        .eq('scheduled_test_id', test.id)
+        .eq('paper_id', test.id)
         .eq('user_id', authUser.id)
         .is('completed_at', null)
         .order('started_at', { ascending: false })
@@ -503,15 +503,15 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         }
         
         const { data: newAttempt, error: attemptError } = await supabase
-          .from('test_attempts')
+          .from('paper_attempts')
           .insert({
-            scheduled_test_id: test.id,
+            paper_id: test.id,
             user_id: authUser.id,
             attempt_number: attemptNumber,
             started_at: startTime.toISOString(),
             current_question_index: 0,
             progress_percentage: 0,
-            time_remaining: (test.question_papers?.time_limit_minutes || 60) * 60
+            time_remaining: (test.time_limit_minutes || 60) * 60
           })
           .select()
           .single();
@@ -633,8 +633,8 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     }
 
     try {
-      // Use the complete-test edge function for proper submission
-      const { data, error } = await supabase.functions.invoke('complete-test', {
+      // Use the complete-paper-attempt edge function for proper submission
+      const { data, error } = await supabase.functions.invoke('complete-paper-attempt', {
         body: {
           testAttemptId,
           completionType: type,

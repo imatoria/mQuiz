@@ -53,14 +53,14 @@ serve(async (req) => {
     }
 
     const {
-      testAttemptId,
+      paperAttemptId,
       violationType,
       severity = 'medium',
       details = {},
       timestamp
     } = await req.json();
 
-    if (!testAttemptId || !violationType) {
+    if (!paperAttemptId || !violationType) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -68,22 +68,22 @@ serve(async (req) => {
     }
 
     console.log('Logging violation:', {
-      testAttemptId,
+      paperAttemptId,
       violationType,
       severity,
       user: user.id
     });
 
-    // Verify the test attempt belongs to the user
+    // Verify the paper attempt belongs to the user
     const { data: attemptData, error: attemptError } = await supabase
-      .from('test_attempts')
-      .select('user_id, scheduled_test_id')
-      .eq('id', testAttemptId)
+      .from('paper_attempts')
+      .select('user_id, paper_id')
+      .eq('id', paperAttemptId)
       .single();
 
     if (attemptError || !attemptData || attemptData.user_id !== user.id) {
       return new Response(
-        JSON.stringify({ error: 'Test attempt not found or access denied' }),
+        JSON.stringify({ error: 'Paper attempt not found or access denied' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -95,14 +95,14 @@ serve(async (req) => {
       ipAddress: req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || 'unknown',
       timestamp: timestamp || new Date().toISOString(),
       userId: user.id,
-      scheduledTestId: attemptData.scheduled_test_id
+      paperId: attemptData.paper_id
     };
 
     // Log the violation
     const { data: violationData, error: violationError } = await supabase
-      .from('test_violations')
+      .from('paper_violations')
       .insert({
-        test_attempt_id: testAttemptId,
+        paper_attempt_id: paperAttemptId,
         violation_type: violationType,
         severity: severity,
         details: violationDetails,
@@ -121,9 +121,9 @@ serve(async (req) => {
 
     // Count total violations for this attempt
     const { data: violationCount, error: countError } = await supabase
-      .from('test_violations')
+      .from('paper_violations')
       .select('id')
-      .eq('test_attempt_id', testAttemptId);
+      .eq('paper_attempt_id', paperAttemptId);
 
     if (countError) {
       console.error('Error counting violations:', countError);
@@ -134,23 +134,23 @@ serve(async (req) => {
     // Check if we need to notify admins/parents for severe violations
     if (severity === 'critical' || severity === 'high') {
       try {
-        // Get test creator (parent) information
-        const { data: testData } = await supabase
-          .from('scheduled_tests')
-          .select('creator_id, title')
-          .eq('id', attemptData.scheduled_test_id)
+        // Get paper creator (parent) information
+        const { data: paperData } = await supabase
+          .from('question_papers')
+          .select('user_id, title')
+          .eq('id', attemptData.paper_id)
           .single();
 
-        if (testData) {
-          // Create notification for the test creator
+        if (paperData) {
+          // Create notification for the paper creator
           await supabase
             .from('notifications')
             .insert({
-              user_id: testData.creator_id,
+              user_id: paperData.user_id,
               title: 'Security Violation Alert',
-              message: `Security violation detected in test "${testData.title}". Type: ${violationType}, Severity: ${severity}`,
+              message: `Security violation detected in test "${paperData.title}". Type: ${violationType}, Severity: ${severity}`,
               type: 'security_alert',
-              related_id: testAttemptId
+              related_id: paperAttemptId
             });
         }
       } catch (notificationError) {
@@ -172,7 +172,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in log-test-violation function:', error);
+    console.error('Error in log-paper-violation function:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

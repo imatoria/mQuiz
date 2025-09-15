@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { TestScheduler } from './TestScheduler';
 import { TestEditModal } from './TestEditModal';
 import { useToast } from '@/components/ui/use-toast';
 import { Edit, Trash2, Users, Clock, Calendar } from 'lucide-react';
@@ -16,16 +15,11 @@ interface ScheduledTest {
   end_time: string;
   max_attempts: number;
   assign_to_all: boolean;
-  question_paper_id: string;
   time_limit_hours?: number;
   time_limit_minutes?: number;
   show_results?: boolean;
-  question_papers?: {
-    title: string;
-    total_questions: number;
-    time_limit_minutes: number;
-    subjects?: { name: string };
-  };
+  total_questions: number;
+  subjects?: { name: string };
 }
 
 export const ScheduleManager = () => {
@@ -44,17 +38,13 @@ export const ScheduleManager = () => {
     if (!user.user) return;
 
     const { data: testsData } = await supabase
-      .from('scheduled_tests')
+      .from('question_papers')
       .select(`
         *,
-        question_papers(
-          title, 
-          total_questions, 
-          time_limit_minutes,
-          subjects(name)
-        )
+        subjects(name)
       `)
-      .eq('creator_id', user.user.id)
+      .eq('user_id', user.user.id)
+      .eq('is_scheduled', true)
       .order('created_at', { ascending: false });
 
     setScheduledTests(testsData || []);
@@ -69,16 +59,24 @@ export const ScheduleManager = () => {
 
   const handleDelete = async (testId: string, testTitle: string) => {
     try {
-      // First delete test assignments
+      // First delete paper assignments
       await supabase
-        .from('test_assignments')
+        .from('paper_assignments')
         .delete()
-        .eq('scheduled_test_id', testId);
+        .eq('paper_id', testId);
 
-      // Then delete the test
+      // Then unschedule the paper (set is_scheduled to false)
       const { error } = await supabase
-        .from('scheduled_tests')
-        .delete()
+        .from('question_papers')
+        .update({ 
+          is_scheduled: false,
+          start_time: null,
+          end_time: null,
+          max_attempts: 1,
+          assign_to_all: true,
+          time_limit_hours: null,
+          time_limit_minutes: null
+        })
         .eq('id', testId);
 
       if (error) throw error;
@@ -119,13 +117,11 @@ export const ScheduleManager = () => {
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-6">
-      <TestScheduler onTestScheduled={handleRefresh} />
-
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Scheduled Tests</CardTitle>
-          <CardDescription>Manage your upcoming and past tests</CardDescription>
+          <CardTitle>Scheduled Papers</CardTitle>
+          <CardDescription>Manage your scheduled question papers</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -137,9 +133,9 @@ export const ScheduleManager = () => {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm mb-1 truncate">{test.title}</h4>
                        <p className="text-xs text-muted-foreground mb-2">
-                         {test.question_papers?.subjects?.name} • {test.question_papers?.title}
-                         {test.show_results ? ' • Auto-approve results' : ' • Manual approval required'}
-                       </p>
+                          {test.subjects?.name}
+                          {test.show_results ? ' • Auto-approve results' : ' • Manual approval required'}
+                        </p>
                       
                       <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">

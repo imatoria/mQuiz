@@ -83,23 +83,21 @@ export const ComparativeAnalysis = () => {
       setLoading(true);
       
       let query = supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select(`
           *,
-          scheduled_tests!inner(
+          question_papers!inner(
             title,
-            creator_id,
-            question_papers(
-              class_level,
-              subjects(name)
-            )
+            user_id,
+            class_level,
+            subjects(name)
           )
         `)
         .gte('started_at', new Date(Date.now() - parseInt(timeframe) * 24 * 60 * 60 * 1000).toISOString())
         .not('completed_at', 'is', null);
 
       if (profile?.role === 'parent') {
-        query = query.eq('scheduled_tests.creator_id', profile.user_id);
+        query = query.eq('question_papers.user_id', profile.user_id);
       }
 
       const { data: attempts, error } = await query;
@@ -142,7 +140,7 @@ export const ComparativeAnalysis = () => {
     attempts.forEach((attempt: any) => {
       const studentId = attempt.user_id;
       const studentName = profileMap[studentId]?.full_name || 'Unknown Student';
-      const subject = attempt.scheduled_tests.question_papers?.subjects?.name || 'Unknown';
+      const subject = attempt.question_papers.subjects?.name || 'Unknown';
       
       if (!studentMap.has(studentId)) {
         studentMap.set(studentId, {
@@ -232,8 +230,8 @@ export const ComparativeAnalysis = () => {
     const classMap = new Map<string, ClassComparison>();
     
     attempts.forEach((attempt: any) => {
-      const classLevel = attempt.scheduled_tests.question_papers?.class_level || 'Unknown';
-      const subject = attempt.scheduled_tests.question_papers?.subjects?.name || 'Unknown';
+      const classLevel = attempt.question_papers.class_level || 'Unknown';
+      const subject = attempt.question_papers.subjects?.name || 'Unknown';
       
       if (!classMap.has(classLevel)) {
         classMap.set(classLevel, {

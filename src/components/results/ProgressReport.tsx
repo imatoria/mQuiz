@@ -73,20 +73,20 @@ export const ProgressReport = () => {
       setLoading(true);
       
       let query = supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select(`
           *,
-          scheduled_tests!inner(
+          question_papers!inner(
             title,
-            creator_id,
-            question_papers(total_questions)
+            user_id,
+            total_questions
           )
         `)
         .gte('started_at', new Date(Date.now() - parseInt(timeframe) * 24 * 60 * 60 * 1000).toISOString());
 
       // Filter by creator for parents, or by user for students
       if (profile?.role === 'parent') {
-        query = query.eq('scheduled_tests.creator_id', profile.user_id);
+        query = query.eq('question_papers.user_id', profile.user_id);
       } else if (profile?.role === 'child') {
         query = query.eq('user_id', profile.user_id);
       }

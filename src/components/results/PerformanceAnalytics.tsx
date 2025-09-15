@@ -71,17 +71,14 @@ export const PerformanceAnalytics = () => {
 
       // Load test performance data
       const { data: attempts, error } = await supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select(`
           score,
           completed_at,
           attempt_number,
-          scheduled_test:scheduled_tests (
+          question_papers!inner (
             title,
-            question_papers (
-              title,
-              subjects (name)
-            )
+            subjects (name)
           )
         `)
         .eq('user_id', user?.id)
@@ -93,10 +90,10 @@ export const PerformanceAnalytics = () => {
 
       // Format performance data
       const formatted: PerformanceData[] = attempts?.map(attempt => ({
-        test_name: attempt.scheduled_test.title,
+        test_name: attempt.question_papers.title,
         score: attempt.score,
         date: new Date(attempt.completed_at).toLocaleDateString(),
-        subject: attempt.scheduled_test.question_papers.subjects.name,
+        subject: attempt.question_papers.subjects.name,
         attempt_number: attempt.attempt_number
       })) || [];
 

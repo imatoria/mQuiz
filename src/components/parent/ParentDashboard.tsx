@@ -6,7 +6,6 @@ import { Navigation } from '@/components/ui/navigation';
 import { ChildrenManagement } from './ChildrenManagement';
 import { ContentCreation } from './ContentCreation';
 import QuestionBank from './QuestionBank';
-import { ScheduleManager } from './ScheduleManager';
 import QuestionAnalytics from './QuestionAnalytics';
 import { ReportingDashboard } from '@/components/results/ReportingDashboard';
 import { ResultApproval } from '@/components/results/ResultApproval';
@@ -49,8 +48,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
     { value: 'children', label: 'Children', icon: Users },
     { value: 'content', label: 'Content', icon: BookOpen },
     { value: 'questions', label: 'Questions', icon: FileText },
-    { value: 'papers', label: 'Papers', icon: FileText },
-    { value: 'tests', label: 'Tests', icon: Calendar },
+    { value: 'papers', label: 'Papers & Tests', icon: FileText },
     { value: 'approval', label: 'Approval', icon: CheckCircle },
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
     { value: 'reports', label: 'Reports', icon: FileText },
@@ -141,12 +139,6 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
                 <TabsContent value="papers">
                   <ErrorBoundary>
                     <PapersManager />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="tests">
-                  <ErrorBoundary>
-                    <ScheduleManager />
                   </ErrorBoundary>
                 </TabsContent>
 

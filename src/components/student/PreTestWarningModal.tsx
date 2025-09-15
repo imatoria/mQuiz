@@ -29,13 +29,6 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [displayMode, setDisplayMode] = useState<'single' | 'all'>('single');
 
-  // Debug logging to see what test data we're receiving
-  console.log('PreTestWarningModal test data:', test);
-  console.log('question_papers:', test?.question_papers);
-  console.log('time_limit_minutes:', test?.question_papers?.time_limit_minutes);
-  console.log('time_limit_hours:', test?.time_limit_hours);
-  console.log('time_limit_minutes direct:', test?.time_limit_minutes);
-
   // Calculate total minutes with proper fallback chain
   const getTotalMinutes = () => {
     if (test?.question_papers?.time_limit_minutes && test.question_papers.time_limit_minutes > 0) {
@@ -52,7 +45,6 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
   };
 
   const totalMinutes = getTotalMinutes();
-  console.log('Calculated totalMinutes:', totalMinutes);
 
   const handleNext = () => {
     if (!understood) return;

@@ -107,24 +107,22 @@ export const GradeDistribution = () => {
 
       // Get test attempts for all children
       let query = supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select(`
           user_id,
           score,
           completed_at,
-          scheduled_test:scheduled_tests (
+          question_papers!inner (
             id,
             title,
-            question_papers (
-              subjects (name)
-            )
+            subjects (name)
           )
         `)
         .in('user_id', childIds)
         .not('completed_at', 'is', null);
 
       if (selectedTest !== 'all') {
-        query = query.eq('scheduled_test_id', selectedTest);
+        query = query.eq('paper_id', selectedTest);
       }
 
       const { data: attempts, error: attemptsError } = await query;
@@ -204,15 +202,14 @@ export const GradeDistribution = () => {
 
       // Load test statistics
       const { data: tests, error: testsError } = await supabase
-        .from('scheduled_tests')
+        .from('question_papers')
         .select(`
           id,
           title,
-          question_papers (
-            subjects (name)
-          )
+          subjects (name)
         `)
-        .eq('creator_id', user?.id);
+        .eq('user_id', user?.id)
+        .eq('is_scheduled', true);
 
       if (testsError) throw testsError;
 
@@ -220,9 +217,9 @@ export const GradeDistribution = () => {
       
       for (const test of tests || []) {
         const { data: testAttempts, error } = await supabase
-          .from('test_attempts')
+          .from('paper_attempts')
           .select('score, user_id')
-          .eq('scheduled_test_id', test.id)
+          .eq('paper_id', test.id)
           .not('completed_at', 'is', null);
 
         if (!error && testAttempts) {
@@ -232,7 +229,7 @@ export const GradeDistribution = () => {
           testStatsData.push({
             test_id: test.id,
             test_title: test.title,
-            subject: test.question_papers?.subjects?.name || 'Unknown',
+            subject: test.subjects?.name || 'Unknown',
             total_attempts: testAttempts.length,
             average_score: scores.length > 0 ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length) : 0,
             highest_score: scores.length > 0 ? Math.max(...scores) : 0,

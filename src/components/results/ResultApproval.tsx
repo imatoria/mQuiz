@@ -91,9 +91,10 @@ export const ResultApproval = () => {
 
       // Get all tests created by this parent
       const { data: parentTests, error: testsError } = await supabase
-        .from('scheduled_tests')
+        .from('question_papers')
         .select('id')
-        .eq('creator_id', user?.id);
+        .eq('user_id', user?.id)
+        .eq('is_scheduled', true);
 
       if (testsError) throw testsError;
 
@@ -105,9 +106,9 @@ export const ResultApproval = () => {
         return;
       }
 
-      // Get all test attempts from parent's children for parent's tests
+      // Get all paper attempts from parent's children for parent's papers
       const { data: attempts, error: attemptsError } = await supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select(`
           id,
           score,
@@ -117,17 +118,14 @@ export const ResultApproval = () => {
           show_results,
           feedback,
           user_id,
-          scheduled_test_id,
-          scheduled_test:scheduled_tests (
+          paper_id,
+          question_papers!inner (
             title,
-            question_paper_id,
-            question_papers (
-              subjects (name)
-            )
+            subjects (name)
           )
         `)
         .in('user_id', childIds)
-        .in('scheduled_test_id', testIds)
+        .in('paper_id', testIds)
         .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false });
 
@@ -160,9 +158,9 @@ export const ResultApproval = () => {
           email: profileMap[attempt.user_id]?.email || ''
         },
         test: {
-          title: attempt.scheduled_test?.title || 'Unknown Test',
-          subject: attempt.scheduled_test?.question_papers?.subjects?.name || 'Unknown Subject',
-          question_paper_id: attempt.scheduled_test?.question_paper_id || ''
+          title: attempt.question_papers?.title || 'Unknown Test',
+          subject: attempt.question_papers?.subjects?.name || 'Unknown Subject',
+          question_paper_id: attempt.paper_id || ''
         }
       })) || [];
 
@@ -184,25 +182,25 @@ export const ResultApproval = () => {
     try {
       setProcessing(true);
 
-      // Get the test attempt first to verify parent-child relationship
+      // Get the paper attempt first to verify parent-child relationship
       const { data: attempt, error: attemptError } = await supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select(`
           user_id,
-          scheduled_test:scheduled_tests(creator_id)
+          question_papers!inner(user_id)
         `)
         .eq('id', resultId)
         .single();
 
       if (attemptError) throw attemptError;
 
-      // Verify the test creator is the current user
-      if (attempt?.scheduled_test?.creator_id !== user?.id) {
-        throw new Error('Unauthorized: You can only manage results for your own tests');
+      // Verify the paper creator is the current user
+      if (attempt?.question_papers?.user_id !== user?.id) {
+        throw new Error('Unauthorized: You can only manage results for your own papers');
       }
 
       const { error } = await supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .update({
           show_results: showResults
         })

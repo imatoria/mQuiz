@@ -17,16 +17,11 @@ interface ScheduledTest {
   end_time: string;
   max_attempts: number;
   assign_to_all: boolean;
-  question_paper_id: string;
   time_limit_hours?: number;
   time_limit_minutes?: number;
   show_results?: boolean;
-  question_papers?: {
-    title: string;
-    total_questions: number;
-    time_limit_minutes: number;
-    subjects?: { name: string };
-  };
+  total_questions: number;
+  subjects?: { name: string };
 }
 
 interface TestEditModalProps {
@@ -110,16 +105,16 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
 
     try {
       const { data: assignments, error } = await supabase
-        .from('test_assignments')
+        .from('paper_assignments')
         .select('assigned_to_user_id')
-        .eq('scheduled_test_id', test.id);
+        .eq('paper_id', test.id);
 
       if (error) throw error;
 
       const assignedIds = assignments?.map(a => a.assigned_to_user_id) || [];
       setSelectedChildren(assignedIds);
     } catch (error: any) {
-      console.error('Error fetching test assignments:', error);
+      console.error('Error fetching paper assignments:', error);
     }
   };
 
@@ -165,9 +160,9 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
     setIsUpdating(true);
 
     try {
-      // Update scheduled test
+      // Update scheduled paper
       const { error: testError } = await supabase
-        .from('scheduled_tests')
+        .from('question_papers')
         .update({
           title,
           start_time: startDate.toISOString(),
@@ -186,25 +181,25 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
       if (assignToAll) {
         // Delete existing specific assignments if switching to assign all
         await supabase
-          .from('test_assignments')
+          .from('paper_assignments')
           .delete()
-          .eq('scheduled_test_id', test.id);
+          .eq('paper_id', test.id);
       } else {
         // Delete existing assignments
         await supabase
-          .from('test_assignments')
+          .from('paper_assignments')
           .delete()
-          .eq('scheduled_test_id', test.id);
+          .eq('paper_id', test.id);
 
         // Create new assignments
         if (selectedChildren.length > 0) {
           const assignments = selectedChildren.map(childId => ({
-            scheduled_test_id: test.id,
+            paper_id: test.id,
             assigned_to_user_id: childId
           }));
 
           const { error: assignError } = await supabase
-            .from('test_assignments')
+            .from('paper_assignments')
             .insert(assignments);
 
           if (assignError) throw assignError;
@@ -261,12 +256,12 @@ export const TestEditModal = ({ test, isOpen, onClose, onTestUpdated }: TestEdit
 
         <div className="space-y-4">
           <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-            <div className="font-medium mb-1">Question Paper: {test.question_papers?.title}</div>
+            <div className="font-medium mb-1">Question Paper: {test.title}</div>
             <div className="flex items-center gap-2 mb-1">
               <Clock className="h-4 w-4" />
               Duration: {test.time_limit_hours || 1}h {test.time_limit_minutes || 0}m
             </div>
-            <div>Questions: {test.question_papers?.total_questions}</div>
+            <div>Questions: {test.total_questions}</div>
           </div>
 
           <div>

@@ -116,7 +116,6 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
 
   const fetchTests = async () => {
     return executeAsync(async () => {
-      console.log('Fetching tests for user:', user?.id);
       
       // Get current user info
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -124,19 +123,13 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         throw new Error('User not authenticated');
       }
 
-      // Fetch all scheduled tests that the current user can view
-      const { data: scheduledTests, error } = await supabase
-        .from('scheduled_tests')
+      // Fetch all scheduled papers that the current user can view
+      const { data: scheduledPapers, error } = await supabase
+        .from('question_papers')
         .select(`
           *,
-          question_papers!inner (
-            id,
-            title,
-            total_questions,
-            time_limit_minutes,
-            subjects!inner (name)
-          ),
-          test_attempts (
+          subjects!inner (name),
+          paper_attempts (
             id,
             attempt_number,
             score,
@@ -145,6 +138,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
             user_id
           )
         `)
+        .eq('is_scheduled', true)
         .order('start_time', { ascending: true });
 
       if (error) {
@@ -152,15 +146,11 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         throw error;
       }
 
-      console.log('Raw scheduled tests:', scheduledTests);
-
-      // Filter test attempts to only include current user's attempts
-      const testsWithUserAttempts = scheduledTests?.map(test => ({
-        ...test,
-        test_attempts: test.test_attempts?.filter(attempt => attempt.user_id === authUser.id) || []
+      // Filter paper attempts to only include current user's attempts
+      const papersWithUserAttempts = scheduledPapers?.map(paper => ({
+        ...paper,
+        paper_attempts: paper.paper_attempts?.filter(attempt => attempt.user_id === authUser.id) || []
       })) || [];
-
-      console.log('Filtered tests with user attempts:', testsWithUserAttempts);
 
       const now = new Date();
       const available: ScheduledTest[] = [];
@@ -178,66 +168,91 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
       // Process tests and handle expired attempts
       const expiredAttemptData: Array<{ attemptId: string; scheduledTestId: string }> = [];
 
-      testsWithUserAttempts.forEach((test) => {
-        const testStart = new Date(test.start_time);
-        const testEnd = new Date(test.end_time);
-        const timeLimitMinutes = test.question_papers?.time_limit_minutes || 60;
+      papersWithUserAttempts.forEach((paper) => {
+        const paperStart = new Date(paper.start_time);
+        const paperEnd = new Date(paper.end_time);
+        const timeLimitMinutes = paper.time_limit_minutes || 60;
         
         // Check for in-progress attempts and validate time limits
-        const inProgressAttempts = test.test_attempts?.filter(attempt => !attempt.completed_at) || [];
+        const inProgressAttempts = paper.paper_attempts?.filter(attempt => !attempt.completed_at) || [];
         const validActiveAttempts = inProgressAttempts.filter(attempt => {
           const isExpired = isAttemptTimeExpired(attempt, timeLimitMinutes);
           if (isExpired) {
-            expiredAttemptData.push({ attemptId: attempt.id, scheduledTestId: test.id });
-            console.log(`Test attempt ${attempt.id} has exceeded time limit and will be auto-submitted`);
+            expiredAttemptData.push({ attemptId: attempt.id, scheduledTestId: paper.id });
           }
           return !isExpired;
         });
 
         const hasValidInProgressAttempt = validActiveAttempts.length > 0;
-        const completedAttempts = test.test_attempts?.filter(attempt => attempt.completed_at) || [];
+        const completedAttempts = paper.paper_attempts?.filter(attempt => attempt.completed_at) || [];
         const hasCompletedAttempt = completedAttempts.length > 0;
-        const totalAttempts = test.test_attempts?.length || 0;
-        const hasRemainingAttempts = totalAttempts < test.max_attempts;
+        const totalAttempts = paper.paper_attempts?.length || 0;
+        const hasRemainingAttempts = totalAttempts < paper.max_attempts;
+        
+        const mappedPaper: ScheduledTest = {
+          id: paper.id,
+          title: paper.title,
+          start_time: paper.start_time,
+          end_time: paper.end_time,
+          max_attempts: paper.max_attempts,
+          question_paper_id: paper.id,
+          time_limit_hours: paper.time_limit_hours,
+          time_limit_minutes: paper.time_limit_minutes,
+          question_papers: {
+            id: paper.id,
+            title: paper.title,
+            total_questions: paper.total_questions,
+            time_limit_minutes: paper.time_limit_minutes,
+            subjects: paper.subjects
+          },
+          test_attempts: paper.paper_attempts?.map(attempt => ({
+            id: attempt.id,
+            attempt_number: attempt.attempt_number,
+            score: attempt.score,
+            completed_at: attempt.completed_at,
+            started_at: attempt.started_at,
+            current_question_index: 0,
+            total_questions: paper.total_questions,
+            time_remaining: 0,
+            answers: {},
+            progress_percentage: 0
+          })) || []
+        };
         
         if (hasValidInProgressAttempt) {
-          active.push(test);
-        } else if (testEnd < now || (hasCompletedAttempt && !hasRemainingAttempts)) {
+          active.push(mappedPaper);
+        } else if (paperEnd < now || (hasCompletedAttempt && !hasRemainingAttempts)) {
           // Test expired OR all attempts used (and at least one completed)
-          completed.push(test);
-        } else if (testStart <= now && testEnd >= now && hasRemainingAttempts) {
+          completed.push(mappedPaper);
+        } else if (paperStart <= now && paperEnd >= now && hasRemainingAttempts) {
           // Test is currently active and student has remaining attempts
-          available.push(test);
-        } else if (testStart > now) {
+          available.push(mappedPaper);
+        } else if (paperStart > now) {
           // Future tests go to available with appropriate status
-          available.push(test);
+          available.push(mappedPaper);
         }
       });
 
       // Auto-submit expired attempts
       if (expiredAttemptData.length > 0) {
-        console.log('Auto-submitting expired attempts:', expiredAttemptData);
         
         for (const { attemptId, scheduledTestId } of expiredAttemptData) {
           try {
-            const { error: submitError } = await supabase.functions.invoke('complete-test', {
+            const { error: submitError } = await supabase.functions.invoke('complete-paper-attempt', {
               body: {
-                testAttemptId: attemptId,
+                paperAttemptId: attemptId,
                 completionType: 'auto',
                 completionReason: 'time_expired',
                 answers: {},
                 flaggedQuestions: [],
                 currentQuestionIndex: 0,
                 progressPercentage: 0,
-                timeRemaining: 0,
-                scheduledTestId: scheduledTestId
+                timeRemaining: 0
               }
             });
             
             if (submitError) {
               console.error(`Failed to auto-submit attempt ${attemptId}:`, submitError);
-            } else {
-              console.log(`Successfully auto-submitted expired attempt ${attemptId}`);
             }
           } catch (error) {
             console.error(`Error auto-submitting attempt ${attemptId}:`, error);

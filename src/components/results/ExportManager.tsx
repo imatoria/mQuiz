@@ -72,11 +72,12 @@ export const ExportManager = () => {
 
       // Fetch tests
       let testQuery = supabase
-        .from('scheduled_tests')
-        .select('id, title, creator_id');
+        .from('question_papers')
+        .select('id, title, user_id')
+        .eq('is_scheduled', true);
 
       if (profile?.role === 'parent') {
-        testQuery = testQuery.eq('creator_id', profile.user_id);
+        testQuery = testQuery.eq('user_id', profile.user_id);
       }
 
       const { data: tests } = await testQuery;
@@ -96,18 +97,16 @@ export const ExportManager = () => {
       setLoading(true);
 
       let query = supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select(`
           *,
-          scheduled_tests!inner(
+          question_papers!inner(
             title,
-            creator_id,
-            question_papers(
-              class_level,
-              subjects(name)
-            )
+            user_id,
+            class_level,
+            subjects(name)
           ),
-          profiles!test_attempts_user_id_fkey(
+          profiles!paper_attempts_user_id_fkey(
             full_name,
             user_id
           )
@@ -116,7 +115,7 @@ export const ExportManager = () => {
 
       // Apply filters
       if (profile?.role === 'parent') {
-        query = query.eq('scheduled_tests.creator_id', profile.user_id);
+        query = query.eq('question_papers.user_id', profile.user_id);
       } else if (profile?.role === 'child') {
         query = query.eq('user_id', profile.user_id);
       }
@@ -126,7 +125,7 @@ export const ExportManager = () => {
       }
 
       if (selectedTests.length > 0) {
-        query = query.in('scheduled_test_id', selectedTests);
+        query = query.in('paper_id', selectedTests);
       }
 
       if (dateRange?.from) {
@@ -144,7 +143,7 @@ export const ExportManager = () => {
       // Transform data for export
       const exportData: ExportData[] = attempts?.map((attempt: any) => ({
         student_name: attempt.profiles?.full_name || 'Unknown Student',
-        test_title: attempt.scheduled_tests.title,
+        test_title: attempt.question_papers.title,
         score: attempt.score || 0,
         total_questions: attempt.total_questions || 0,
         percentage: attempt.total_questions > 0 
@@ -154,8 +153,8 @@ export const ExportManager = () => {
         time_taken: attempt.completed_at && attempt.started_at 
           ? Math.round((new Date(attempt.completed_at).getTime() - new Date(attempt.started_at).getTime()) / 60000)
           : 0,
-        subject: attempt.scheduled_tests.question_papers?.subjects?.name || 'Unknown',
-        class_level: attempt.scheduled_tests.question_papers?.class_level || 'Unknown'
+        subject: attempt.question_papers.subjects?.name || 'Unknown',
+        class_level: attempt.question_papers.class_level || 'Unknown'
       })) || [];
 
       setExportData(exportData);

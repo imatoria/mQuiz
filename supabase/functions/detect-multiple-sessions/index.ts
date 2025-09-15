@@ -40,26 +40,26 @@ serve(async (req) => {
       );
     }
 
-    const { testAttemptId } = await req.json();
-    if (!testAttemptId) {
+    const { paperAttemptId } = await req.json();
+    if (!paperAttemptId) {
       return new Response(
-        JSON.stringify({ error: 'Missing testAttemptId' }),
+        JSON.stringify({ error: 'Missing paperAttemptId' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Checking for multiple sessions:', testAttemptId);
+    console.log('Checking for multiple sessions:', paperAttemptId);
 
-    // Verify the test attempt belongs to the user (RLS also protects this, but we double-check)
+    // Verify the paper attempt belongs to the user (RLS also protects this, but we double-check)
     const { data: attemptData, error: attemptError } = await supabase
-      .from('test_attempts')
+      .from('paper_attempts')
       .select('user_id')
-      .eq('id', testAttemptId)
+      .eq('id', paperAttemptId)
       .single();
 
     if (attemptError || !attemptData || attemptData.user_id !== user.id) {
       return new Response(
-        JSON.stringify({ error: 'Test attempt not found or access denied' }),
+        JSON.stringify({ error: 'Paper attempt not found or access denied' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -68,13 +68,13 @@ serve(async (req) => {
     const currentIP = req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || 'unknown';
     const currentUserAgent = req.headers.get('User-Agent') || 'unknown';
 
-    // Find active sessions for this test attempt
+    // Find active sessions for this paper attempt
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
     const { data: activeSessions, error: sessionsError } = await supabase
-      .from('test_sessions')
+      .from('paper_sessions')
       .select('*')
-      .eq('test_attempt_id', testAttemptId)
+      .eq('paper_attempt_id', paperAttemptId)
       .eq('is_active', true)
       .gte('last_ping', fiveMinutesAgo.toISOString())
       .order('last_ping', { ascending: false });
@@ -114,7 +114,7 @@ serve(async (req) => {
 
       for (const session of sessionsToDeactivate) {
         const { error } = await supabase
-          .from('test_sessions')
+          .from('paper_sessions')
           .update({ is_active: false })
           .eq('id', session.id);
         if (error) {
@@ -138,7 +138,7 @@ serve(async (req) => {
     };
 
     console.log('Session check result:', {
-      testAttemptId,
+      paperAttemptId,
       count: sessionCount,
       hasMultiple,
       suspiciousActivity,

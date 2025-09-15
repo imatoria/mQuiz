@@ -28,15 +28,11 @@ interface TestAttempt {
   total_questions: number;
   completed_at: string;
   answers: Record<string, string>;
-  show_results: boolean,
-  scheduled_test: {
+  show_results: boolean;
+  question_papers: {
+    id: string;
     title: string;
-    question_paper_id: string;
-    question_papers: {
-      id: string;
-      title: string;
-      subjects: { name: string };
-    };
+    subjects: { name: string };
   };
 }
 
@@ -76,7 +72,7 @@ export const TestResults = () => {
 
     try {
       const { data, error } = await supabase
-        .from('test_attempts')
+        .from('paper_attempts')
         .select(`
           id,
           score,
@@ -84,15 +80,10 @@ export const TestResults = () => {
           completed_at,
           answers,
           show_results,
-          scheduled_test:scheduled_tests (
+          question_papers!inner (
+            id,
             title,
-            question_paper_id,
-            show_results,
-            question_papers (
-              id,
-              title,
-              subjects (name)
-            )
+            subjects (name)
           )
         `)
         .eq('user_id', user.id)
@@ -103,7 +94,7 @@ export const TestResults = () => {
 
       setAttempts(data?.map(attempt => ({
         ...attempt,
-        answers: attempt.answers as Record<string, string> || {}
+        answers: (attempt.answers as Record<string, string>) || {}
       })) || []);
     } catch (error) {
       console.error('Error loading test results:', error);
@@ -129,7 +120,7 @@ export const TestResults = () => {
         return;
       }
 
-      const questionPaperId = attempt.scheduled_test.question_paper_id || attempt.scheduled_test.question_papers?.id;
+      const questionPaperId = attempt.question_papers?.id;
       
       if (!questionPaperId) {
         toast({
@@ -356,10 +347,9 @@ export const TestResults = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <h4 className="font-semibold">{attempt.scheduled_test.title}</h4>
+                        <h4 className="font-semibold">{attempt.question_papers.title}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {attempt.scheduled_test.question_papers.subjects.name} • 
-                          {attempt.scheduled_test.question_papers.title}
+                          {attempt.question_papers.subjects.name}
                         </p>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Clock className="w-3 h-3 mr-1" />
@@ -401,7 +391,7 @@ export const TestResults = () => {
             selectedAttempt && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">{selectedAttempt.scheduled_test.title}</h3>
+                  <h3 className="text-lg font-semibold">{selectedAttempt.question_papers.title}</h3>
                   <p className="text-muted-foreground">
                     Score: {selectedAttempt.score}% ({Math.round((selectedAttempt.score / 100) * selectedAttempt.total_questions)}/{selectedAttempt.total_questions} correct)
                   </p>

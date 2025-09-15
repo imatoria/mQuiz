@@ -38,9 +38,9 @@ export const useTestSecurity = ({
     if (!testAttemptId) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('log-test-violation', {
+      const { data, error } = await supabase.functions.invoke('log-paper-violation', {
         body: {
-          testAttemptId,
+          paperAttemptId: testAttemptId,
           violationType: violation.type,
           severity: violation.severity,
           details: violation.details,
@@ -202,9 +202,9 @@ export const useTestSecurity = ({
     try {
       // First check if an active session already exists for this test attempt
       const { data: existingSessions, error: checkError } = await supabase
-        .from('test_sessions')
+        .from('paper_sessions')
         .select('id')
-        .eq('test_attempt_id', testAttemptId)
+        .eq('paper_attempt_id', testAttemptId)
         .eq('is_active', true)
         .limit(1);
 
@@ -219,9 +219,9 @@ export const useTestSecurity = ({
 
       // Create new session only if none exists
       const { data, error } = await supabase
-        .from('test_sessions')
+        .from('paper_sessions')
         .insert({
-          test_attempt_id: testAttemptId,
+          paper_attempt_id: testAttemptId,
           ip_address: '0.0.0.0', // Will be set by server
           user_agent: navigator.userAgent,
           is_active: true
@@ -245,7 +245,7 @@ export const useTestSecurity = ({
 
     try {
       await supabase
-        .from('test_sessions')
+        .from('paper_sessions')
         .update({ last_ping: new Date().toISOString() })
         .eq('id', sessionId);
     } catch (error) {
@@ -351,7 +351,7 @@ export const useTestSecurity = ({
     // Close session
     if (sessionId) {
       supabase
-        .from('test_sessions')
+        .from('paper_sessions')
         .update({ is_active: false })
         .eq('id', sessionId);
     }
@@ -376,7 +376,7 @@ export const useTestSecurity = ({
 
       if (sessionId) {
         supabase
-          .from('test_sessions')
+          .from('paper_sessions')
           .update({ is_active: false })
           .eq('id', sessionId);
       }

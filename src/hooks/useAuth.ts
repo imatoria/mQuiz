@@ -25,7 +25,6 @@ export const useAuth = () => {
     if (loading && profile?.user_id === userId) return;
     
     try {
-      console.log('Loading profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -36,10 +35,8 @@ export const useAuth = () => {
         console.error('Error loading profile:', error);
         setProfile(null);
       } else if (data) {
-        console.log('Profile loaded successfully:', data);
         setProfile(data as UserProfile);
       } else {
-        console.log('No profile found for user');
         setProfile(null);
       }
     } catch (error) {

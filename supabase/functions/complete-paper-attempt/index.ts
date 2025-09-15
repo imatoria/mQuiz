@@ -45,7 +45,7 @@ serve(async (req) => {
     }
 
     const {
-      testAttemptId,
+      paperAttemptId,
       completionType,
       completionReason,
       answers,
@@ -53,26 +53,26 @@ serve(async (req) => {
       currentQuestionIndex,
       progressPercentage,
       timeRemaining,
-      scheduledTestId
+      paperId
     } = await req.json();
 
-    console.log('Completing test attempt:', testAttemptId, 'type:', completionType, 'user:', user.id);
+    console.log('Completing paper attempt:', paperAttemptId, 'type:', completionType, 'user:', user.id);
 
     // Get current server time
     const currentTime = new Date();
     
-    // Validate test attempt exists and belongs to user
+    // Validate paper attempt exists and belongs to user
     const { data: attemptData, error: attemptError } = await supabase
-      .from('test_attempts')
+      .from('paper_attempts')
       .select('*')
-      .eq('id', testAttemptId)
+      .eq('id', paperAttemptId)
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (attemptError || !attemptData) {
       console.error('Error fetching attempt data:', attemptError);
       return new Response(
-        JSON.stringify({ error: 'Test attempt not found or access denied' }),
+        JSON.stringify({ error: 'Paper attempt not found or access denied' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -81,26 +81,11 @@ serve(async (req) => {
     if (attemptData.completed_at) {
       return new Response(
         JSON.stringify({ 
-          error: 'Test attempt already completed',
+          error: 'Paper attempt already completed',
           completedAt: attemptData.completed_at,
           score: attemptData.score
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // First get the scheduled test to get the question_paper_id
-    const { data: scheduledTestData, error: scheduledTestError } = await supabase
-      .from('scheduled_tests')
-      .select('question_paper_id')
-      .eq('id', scheduledTestId)
-      .single();
-
-    if (scheduledTestError || !scheduledTestData) {
-      console.error('Error fetching scheduled test:', scheduledTestError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch test information' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -110,7 +95,7 @@ serve(async (req) => {
       .select(`
         questions (id, correct_answer)
       `)
-      .eq('question_paper_id', scheduledTestData.question_paper_id);
+      .eq('question_paper_id', paperId);
 
     if (questionsError) {
       console.error('Error fetching questions:', questionsError);
@@ -168,17 +153,17 @@ serve(async (req) => {
       is_paused: false
     };
 
-    // Update test attempt
+    // Update paper attempt
     const { error: updateError } = await supabase
-      .from('test_attempts')
+      .from('paper_attempts')
       .update(completionData)
-      .eq('id', testAttemptId)
+      .eq('id', paperAttemptId)
       .eq('user_id', user.id);
 
     if (updateError) {
-      console.error('Error updating test attempt:', updateError);
+      console.error('Error updating paper attempt:', updateError);
       return new Response(
-        JSON.stringify({ error: 'Failed to complete test attempt' }),
+        JSON.stringify({ error: 'Failed to complete paper attempt' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -189,9 +174,9 @@ serve(async (req) => {
         .from('audit_logs')
         .insert({
           user_id: user.id,
-          action: 'TEST_COMPLETED',
-          resource_type: 'test_attempts',
-          resource_id: testAttemptId,
+          action: 'PAPER_COMPLETED',
+          resource_type: 'paper_attempts',
+          resource_id: paperAttemptId,
           details: {
             completion_type: completionType,
             completion_reason: completionReason,
@@ -199,7 +184,7 @@ serve(async (req) => {
             questions_answered: Object.keys(answers || {}).length,
             total_questions: totalQuestions,
             time_remaining: timeRemaining,
-            scheduled_test_id: scheduledTestId
+            paper_id: paperId
           }
         });
     } catch (auditError) {
@@ -265,7 +250,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in complete-test function:', error);
+    console.error('Error in complete-paper-attempt function:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
