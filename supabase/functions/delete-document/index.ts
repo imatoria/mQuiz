@@ -46,50 +46,8 @@ serve(async (req) => {
       });
     }
 
-    // Gather questions of this document that are not already soft-deleted
-    const { data: questions, error: qErr } = await supabaseAdmin
-      .from('questions')
-      .select('id')
-      .eq('document_id', document_id)
-      .eq('is_deleted', false);
-
-    if (qErr) throw qErr;
-
-    const questionIds = (questions || []).map((q: any) => q.id);
-
-    let referencedIds: string[] = [];
-    if (questionIds.length > 0) {
-      const { data: refs, error: rErr } = await supabaseAdmin
-        .from('question_paper_questions')
-        .select('question_id')
-        .in('question_id', questionIds);
-      if (rErr) throw rErr;
-      referencedIds = (refs || []).map((r: any) => r.question_id);
-    }
-
-    const referencedSet = new Set(referencedIds);
-    const toSoftDelete = questionIds.filter((id) => referencedSet.has(id));
-    const toHardDelete = questionIds.filter((id) => !referencedSet.has(id));
-
-    let softDeleted = 0, hardDeleted = 0;
-
-    if (toHardDelete.length > 0) {
-      const { error } = await supabaseAdmin
-        .from('questions')
-        .delete()
-        .in('id', toHardDelete);
-      if (error) throw error;
-      hardDeleted = toHardDelete.length;
-    }
-
-    if (toSoftDelete.length > 0) {
-      const { error } = await supabaseAdmin
-        .from('questions')
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
-        .in('id', toSoftDelete);
-      if (error) throw error;
-      softDeleted = toSoftDelete.length;
-    }
+    // Note: Questions are no longer linked to documents via document_id
+    // This function now only handles document-related data
 
     // Remove related records
     const deletions = [
@@ -114,7 +72,7 @@ serve(async (req) => {
     if (delDocErr) throw delDocErr;
 
     return new Response(
-      JSON.stringify({ success: true, softDeletedQuestions: softDeleted, hardDeletedQuestions: hardDeleted }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (e: any) {

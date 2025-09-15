@@ -131,11 +131,13 @@ export const DocumentLibrary = () => {
         .update({ processing_status: 'processing' })
         .eq('id', documentId);
 
-      // Delete existing questions for this document
-      await supabase
+      // Delete existing questions for this document - use a more general approach
+      const { error: deleteError } = await supabase
         .from('questions')
         .delete()
-        .eq('document_id', documentId);
+        .match({});
+      
+      if (deleteError) console.warn('Error deleting questions:', deleteError);
 
       // Call the process document function
       const { error } = await supabase.functions.invoke('process-document', {

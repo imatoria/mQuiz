@@ -25,8 +25,9 @@ interface Question {
   option_d: string;
   correct_answer: string;
   difficulty: 'easy' | 'medium' | 'difficult';
-  document_id?: string;
   page_number?: number;
+  subject_id?: string;
+  class_level?: string;
 }
 
 export default function BulkQuestionOperations() {
@@ -238,7 +239,7 @@ export default function BulkQuestionOperations() {
             q.correct_answer,
             q.difficulty,
             q.page_number || '',
-            `"${q.documents?.title || ''}"`
+            '' // No longer using document title
           ];
           exportData += row.join(',') + '\n';
         });
@@ -253,8 +254,7 @@ export default function BulkQuestionOperations() {
           option_d: q.option_d,
           correct_answer: q.correct_answer,
           difficulty: q.difficulty,
-          page_number: q.page_number,
-          document_title: q.documents?.title
+          page_number: q.page_number
         }));
         
         exportData = JSON.stringify(exportQuestions, null, 2);

@@ -45,6 +45,11 @@ export const PerformanceAnalytics = () => {
   }, [user, timeRange]);
 
   const loadAnalyticsData = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -173,6 +178,18 @@ export const PerformanceAnalytics = () => {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex items-center justify-center py-8">
+            <p className="text-muted-foreground">Please log in to view analytics.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -259,21 +276,31 @@ export const PerformanceAnalytics = () => {
               <CardDescription>Your test scores over time</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="score" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {performanceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={performanceData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis domain={[0, 100]} />
+                    <Tooltip />
+                    <Line 
+                      type="monotone" 
+                      dataKey="score" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: "hsl(var(--primary))" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No test data available for the selected time period.</p>
+                    <p className="text-sm mt-2">Complete some tests to see your progress trend.</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -287,15 +314,25 @@ export const PerformanceAnalytics = () => {
                 <CardDescription>Average scores by subject</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={subjectData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="subject" />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip />
-                    <Bar dataKey="average_score" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {subjectData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={subjectData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="subject" />
+                      <YAxis domain={[0, 100]} />
+                      <Tooltip />
+                      <Bar dataKey="average_score" fill="hsl(var(--primary))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    <div className="text-center">
+                      <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No subject data available.</p>
+                      <p className="text-sm mt-2">Complete tests in different subjects to see performance breakdown.</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -306,25 +343,35 @@ export const PerformanceAnalytics = () => {
                 <CardDescription>Tests taken by subject</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={subjectData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ subject, test_count }) => `${subject}: ${test_count}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="test_count"
-                    >
-                      {subjectData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                {subjectData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={subjectData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ subject, test_count }) => `${subject}: ${test_count}`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="test_count"
+                      >
+                        {subjectData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    <div className="text-center">
+                      <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No test distribution data available.</p>
+                      <p className="text-sm mt-2">Complete tests to see subject distribution.</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -337,17 +384,27 @@ export const PerformanceAnalytics = () => {
               <CardDescription>Average scores and test frequency by month</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={timeData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis yAxisId="score" orientation="left" domain={[0, 100]} />
-                  <YAxis yAxisId="count" orientation="right" />
-                  <Tooltip />
-                  <Bar yAxisId="score" dataKey="score" fill="hsl(var(--primary))" name="Average Score" />
-                  <Bar yAxisId="count" dataKey="tests_taken" fill="hsl(var(--secondary))" name="Tests Taken" />
-                </BarChart>
-              </ResponsiveContainer>
+              {timeData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={timeData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis yAxisId="score" orientation="left" domain={[0, 100]} />
+                    <YAxis yAxisId="count" orientation="right" />
+                    <Tooltip />
+                    <Bar yAxisId="score" dataKey="score" fill="hsl(var(--primary))" name="Average Score" />
+                    <Bar yAxisId="count" dataKey="tests_taken" fill="hsl(var(--secondary))" name="Tests Taken" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[400px] text-muted-foreground">
+                  <div className="text-center">
+                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No timeline data available.</p>
+                    <p className="text-sm mt-2">Complete tests over time to see performance trends.</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

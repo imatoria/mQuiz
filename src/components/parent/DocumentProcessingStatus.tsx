@@ -107,11 +107,7 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
         .update({ processing_status: 'processing' })
         .eq('id', documentId);
 
-      // Delete existing questions for this document
-      await supabase
-        .from('questions')
-        .delete()
-        .eq('document_id', documentId);
+      // Note: Questions are no longer directly linked to documents
 
       // Call the process document function
       const { error } = await supabase.functions.invoke('process-document', {

@@ -25,12 +25,8 @@ interface Question {
   correct_answer: string;
   difficulty: 'easy' | 'medium' | 'difficult';
   page_number?: number;
-  document_id: string;
-  document?: {
-    title: string;
-    subject_id: string;
-    class_level: string;
-  };
+  subject_id: string;
+  class_level: string;
 }
 
 interface Subject {
@@ -75,18 +71,10 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
         setSubjects(subjectsData);
       }
 
-      // Fetch questions with document info (using left join to include questions without documents)
+      // Fetch questions directly (no longer using document relationships)
       const { data: questionsData } = await supabase
         .from('questions')
-        .select(`
-          *,
-          documents(
-            title,
-            subject_id,
-            class_level,
-            subjects(name)
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (questionsData) {
@@ -105,11 +93,10 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   };
 
   const filteredQuestions = questions.filter(question => {
-    const matchesSearch = question.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         question.document?.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = selectedSubject === 'all' || question.document?.subject_id === selectedSubject;
+    const matchesSearch = question.question_text.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSubject = selectedSubject === 'all' || question.subject_id === selectedSubject;
     const matchesDifficulty = selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
-    const matchesClass = selectedClass === 'all' || question.document?.class_level === selectedClass;
+    const matchesClass = selectedClass === 'all' || question.class_level === selectedClass;
     
     return matchesSearch && matchesSubject && matchesDifficulty && matchesClass;
   });
@@ -442,7 +429,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Question</TableHead>
-                    <TableHead>Document</TableHead>
+                    <TableHead>Subject</TableHead>
                     <TableHead>Difficulty</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Page</TableHead>
@@ -458,7 +445,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {question.document?.title}
+                        {subjects.find(s => s.id === question.subject_id)?.name || '-'}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
@@ -466,7 +453,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {question.document?.class_level?.replace('grade_', 'Grade ')}
+                        {question.class_level?.replace('grade_', 'Grade ') || '-'}
                       </TableCell>
                       <TableCell>
                         {question.page_number || '-'}
@@ -574,14 +561,14 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                 <div className="space-y-2">
                   <Label>Correct Answer</Label>
                   <Select 
-                    value={editingQuestion.correct_answer} 
+                    value={editingQuestion.correct_answer?.toLowerCase()} 
                     onValueChange={(value: 'a' | 'b' | 'c' | 'd') => setEditingQuestion({
                       ...editingQuestion,
                       correct_answer: value
                     })}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select correct answer" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="a">Option A</SelectItem>

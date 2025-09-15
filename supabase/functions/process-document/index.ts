@@ -368,7 +368,6 @@ Return ONLY valid JSON in this exact format:
 
     // Insert questions into database
     const questionsToInsert = questions.map((q: any) => ({
-      document_id: documentId,
       question_text: q.question_text,
       option_a: q.option_a,
       option_b: q.option_b,

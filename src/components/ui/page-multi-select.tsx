@@ -58,6 +58,28 @@ export const PageMultiSelect: React.FC<PageMultiSelectProps> = ({
     ? `${selectedPages.length} page${selectedPages.length > 1 ? 's' : ''} selected`
     : 'Choose pages';
 
+  const formatPageRanges = (pages: number[]) => {
+    if (!pages || pages.length === 0) return 'None';
+    const sorted = [...new Set(pages)].sort((a, b) => a - b);
+    const ranges: string[] = [];
+    let start = sorted[0];
+    let end = sorted[0];
+    for (let i = 1; i < sorted.length; i++) {
+      const p = sorted[i];
+      if (p === end + 1) end = p;
+      else {
+        ranges.push(start === end ? `${start}` : `${start}-${end}`);
+        start = end = p;
+      }
+    }
+    ranges.push(start === end ? `${start}` : `${start}-${end}`);
+    return ranges.join(', ');
+  };
+
+  const selectedSummary = formatPageRanges(selectedPages);
+  // Sort pages in ascending order
+  const sortedCurrentWindowPages = [...currentWindowPages].sort((a, b) => a - b);
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -67,22 +89,21 @@ export const PageMultiSelect: React.FC<PageMultiSelectProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="z-50 bg-background border shadow-md w-72 p-0">
+        <div className="border-b px-3 py-2 text-xs text-muted-foreground">
+          <span className="font-medium">Selected:</span> {selectedSummary}
+        </div>
         <div className="border-b px-3 py-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Checkbox id="select-all-pages" checked={allWindowSelected} onCheckedChange={(v) => toggleAll(!!v)} />
             <label htmlFor="select-all-pages" className="text-sm">Select Window</label>
           </div>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => setStart(Math.max(minPage, start - windowSize))} disabled={!canPrev}>Prev</Button>
-            <div className="text-xs text-muted-foreground">
-              {availablePages.length ? `Pages ${start}–${end}` : 'No pages'}
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => setStart(Math.min(Math.max(minPage, maxPage - windowSize + 1), start + windowSize))} disabled={!canNext}>Next</Button>
+          <div className="text-xs text-muted-foreground">
+            {availablePages.length ? `Pages ${start}–${end}` : 'No pages'}
           </div>
         </div>
         <ScrollArea className="max-h-64">
           <div className="grid grid-cols-3 gap-2 p-3">
-            {currentWindowPages.map((page) => (
+            {sortedCurrentWindowPages.map((page) => (
               <label key={page} className="flex items-center gap-2 text-sm">
                 <Checkbox
                   id={`page-${page}`}
@@ -94,6 +115,28 @@ export const PageMultiSelect: React.FC<PageMultiSelectProps> = ({
             ))}
           </div>
         </ScrollArea>
+        <div className="border-t px-3 py-2 flex items-center justify-between">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setStart(Math.max(minPage, start - windowSize))}
+            disabled={!canPrev}
+            aria-label="Previous pages"
+          >
+            Prev
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setStart(Math.min(Math.max(minPage, maxPage - windowSize + 1), start + windowSize))}
+            disabled={!canNext}
+            aria-label="Next pages"
+          >
+            Next
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );

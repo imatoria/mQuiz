@@ -23,7 +23,8 @@ import {
   Save,
   Check,
   Shield,
-  Maximize
+  Maximize,
+  Pause
 } from 'lucide-react';
 
 interface Question {
@@ -680,6 +681,35 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     await handleSubmit('auto', 'Time expired - automatic submission', true);
   };
 
+  const handlePause = async () => {
+    if (!testAttemptId || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Save current progress
+      await debouncedSave(true, false);
+      
+      toast({
+        title: "Test Paused",
+        description: "Your progress has been saved. You can resume this test later.",
+        variant: "default"
+      });
+      
+      // Exit the test
+      onComplete();
+    } catch (error) {
+      console.error('Error pausing test:', error);
+      toast({
+        title: "Pause Error",
+        description: "Failed to save progress while pausing. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleGoFullscreen = async () => {
     try {
       await document.documentElement.requestFullscreen();
@@ -1100,6 +1130,16 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                 className="w-full bg-quiz hover:bg-quiz/90"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Test'}
+              </Button>
+              
+              <Button
+                onClick={handlePause}
+                disabled={isSubmitting}
+                variant="outline"
+                className="w-full mt-3"
+              >
+                <Pause className="w-4 h-4 mr-2" />
+                {isSubmitting ? 'Pausing...' : 'Pause Test'}
               </Button>
               
               <div className="mt-4 text-xs text-muted-foreground text-center space-y-1">

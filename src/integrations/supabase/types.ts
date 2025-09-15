@@ -667,6 +667,185 @@ export type Database = {
         }
         Relationships: []
       }
+      paper_assignments: {
+        Row: {
+          assigned_to_user_id: string
+          created_at: string | null
+          id: string
+          paper_id: string
+        }
+        Insert: {
+          assigned_to_user_id: string
+          created_at?: string | null
+          id?: string
+          paper_id: string
+        }
+        Update: {
+          assigned_to_user_id?: string
+          created_at?: string | null
+          id?: string
+          paper_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_assignments_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "question_papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paper_attempts: {
+        Row: {
+          answers: Json | null
+          attempt_number: number | null
+          completed_at: string | null
+          current_question_index: number | null
+          feedback: string | null
+          id: string
+          is_paused: boolean | null
+          last_activity_at: string | null
+          paper_id: string
+          progress_percentage: number | null
+          score: number | null
+          show_results: boolean | null
+          started_at: string | null
+          time_remaining: number | null
+          total_questions: number | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          attempt_number?: number | null
+          completed_at?: string | null
+          current_question_index?: number | null
+          feedback?: string | null
+          id?: string
+          is_paused?: boolean | null
+          last_activity_at?: string | null
+          paper_id: string
+          progress_percentage?: number | null
+          score?: number | null
+          show_results?: boolean | null
+          started_at?: string | null
+          time_remaining?: number | null
+          total_questions?: number | null
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          attempt_number?: number | null
+          completed_at?: string | null
+          current_question_index?: number | null
+          feedback?: string | null
+          id?: string
+          is_paused?: boolean | null
+          last_activity_at?: string | null
+          paper_id?: string
+          progress_percentage?: number | null
+          score?: number | null
+          show_results?: boolean | null
+          started_at?: string | null
+          time_remaining?: number | null
+          total_questions?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_attempts_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "question_papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paper_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          is_active: boolean | null
+          last_ping: string | null
+          paper_attempt_id: string
+          started_at: string | null
+          updated_at: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          last_ping?: string | null
+          paper_attempt_id: string
+          started_at?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          last_ping?: string | null
+          paper_attempt_id?: string
+          started_at?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_sessions_paper_attempt_id_fkey"
+            columns: ["paper_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "paper_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paper_violations: {
+        Row: {
+          auto_resolved: boolean | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          occurred_at: string | null
+          paper_attempt_id: string
+          severity: string | null
+          violation_type: string
+        }
+        Insert: {
+          auto_resolved?: boolean | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          occurred_at?: string | null
+          paper_attempt_id: string
+          severity?: string | null
+          violation_type: string
+        }
+        Update: {
+          auto_resolved?: boolean | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          occurred_at?: string | null
+          paper_attempt_id?: string
+          severity?: string | null
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_violations_paper_attempt_id_fkey"
+            columns: ["paper_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "paper_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_child_relationships: {
         Row: {
           child_id: string
@@ -807,13 +986,20 @@ export type Database = {
       }
       question_papers: {
         Row: {
+          assign_to_all: boolean | null
           class_level: Database["public"]["Enums"]["class_level"]
           created_at: string
           difficulty_filter:
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
+          end_time: string | null
           id: string
+          is_scheduled: boolean | null
+          max_attempts: number | null
+          show_results: boolean | null
+          start_time: string | null
           subject_id: string
+          time_limit_hours: number | null
           time_limit_minutes: number
           title: string
           total_questions: number
@@ -821,13 +1007,20 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assign_to_all?: boolean | null
           class_level: Database["public"]["Enums"]["class_level"]
           created_at?: string
           difficulty_filter?:
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
+          end_time?: string | null
           id?: string
+          is_scheduled?: boolean | null
+          max_attempts?: number | null
+          show_results?: boolean | null
+          start_time?: string | null
           subject_id: string
+          time_limit_hours?: number | null
           time_limit_minutes: number
           title: string
           total_questions: number
@@ -835,13 +1028,20 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assign_to_all?: boolean | null
           class_level?: Database["public"]["Enums"]["class_level"]
           created_at?: string
           difficulty_filter?:
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
+          end_time?: string | null
           id?: string
+          is_scheduled?: boolean | null
+          max_attempts?: number | null
+          show_results?: boolean | null
+          start_time?: string | null
           subject_id?: string
+          time_limit_hours?: number | null
           time_limit_minutes?: number
           title?: string
           total_questions?: number
@@ -865,7 +1065,6 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"]
-          document_id: string | null
           id: string
           is_deleted: boolean
           option_a: string
@@ -884,7 +1083,6 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"]
-          document_id?: string | null
           id?: string
           is_deleted?: boolean
           option_a: string
@@ -903,7 +1101,6 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
-          document_id?: string | null
           id?: string
           is_deleted?: boolean
           option_a?: string
@@ -916,15 +1113,7 @@ export type Database = {
           topic?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "questions_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       rate_limits: {
         Row: {
@@ -961,62 +1150,6 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
-      }
-      scheduled_tests: {
-        Row: {
-          assign_to_all: boolean
-          created_at: string
-          creator_id: string
-          end_time: string
-          id: string
-          max_attempts: number
-          question_paper_id: string
-          show_results: boolean | null
-          start_time: string
-          time_limit_hours: number | null
-          time_limit_minutes: number | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          assign_to_all?: boolean
-          created_at?: string
-          creator_id: string
-          end_time: string
-          id?: string
-          max_attempts?: number
-          question_paper_id: string
-          show_results?: boolean | null
-          start_time: string
-          time_limit_hours?: number | null
-          time_limit_minutes?: number | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          assign_to_all?: boolean
-          created_at?: string
-          creator_id?: string
-          end_time?: string
-          id?: string
-          max_attempts?: number
-          question_paper_id?: string
-          show_results?: boolean | null
-          start_time?: string
-          time_limit_hours?: number | null
-          time_limit_minutes?: number | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scheduled_tests_question_paper_id_fkey"
-            columns: ["question_paper_id"]
-            isOneToOne: false
-            referencedRelation: "question_papers"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       security_events: {
         Row: {
@@ -1090,185 +1223,6 @@ export type Database = {
         }
         Relationships: []
       }
-      test_assignments: {
-        Row: {
-          assigned_to_user_id: string
-          created_at: string
-          id: string
-          scheduled_test_id: string
-        }
-        Insert: {
-          assigned_to_user_id: string
-          created_at?: string
-          id?: string
-          scheduled_test_id: string
-        }
-        Update: {
-          assigned_to_user_id?: string
-          created_at?: string
-          id?: string
-          scheduled_test_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_assignments_scheduled_test_id_fkey"
-            columns: ["scheduled_test_id"]
-            isOneToOne: false
-            referencedRelation: "scheduled_tests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      test_attempts: {
-        Row: {
-          answers: Json | null
-          attempt_number: number
-          completed_at: string | null
-          current_question_index: number | null
-          feedback: string | null
-          id: string
-          is_paused: boolean | null
-          last_activity_at: string | null
-          progress_percentage: number | null
-          scheduled_test_id: string
-          score: number | null
-          show_results: boolean
-          started_at: string
-          time_remaining: number | null
-          total_questions: number | null
-          user_id: string
-        }
-        Insert: {
-          answers?: Json | null
-          attempt_number?: number
-          completed_at?: string | null
-          current_question_index?: number | null
-          feedback?: string | null
-          id?: string
-          is_paused?: boolean | null
-          last_activity_at?: string | null
-          progress_percentage?: number | null
-          scheduled_test_id: string
-          score?: number | null
-          show_results?: boolean
-          started_at?: string
-          time_remaining?: number | null
-          total_questions?: number | null
-          user_id: string
-        }
-        Update: {
-          answers?: Json | null
-          attempt_number?: number
-          completed_at?: string | null
-          current_question_index?: number | null
-          feedback?: string | null
-          id?: string
-          is_paused?: boolean | null
-          last_activity_at?: string | null
-          progress_percentage?: number | null
-          scheduled_test_id?: string
-          score?: number | null
-          show_results?: boolean
-          started_at?: string
-          time_remaining?: number | null
-          total_questions?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_attempts_scheduled_test_id_fkey"
-            columns: ["scheduled_test_id"]
-            isOneToOne: false
-            referencedRelation: "scheduled_tests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      test_sessions: {
-        Row: {
-          created_at: string
-          id: string
-          ip_address: unknown | null
-          is_active: boolean
-          last_ping: string
-          started_at: string
-          test_attempt_id: string
-          updated_at: string
-          user_agent: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          ip_address?: unknown | null
-          is_active?: boolean
-          last_ping?: string
-          started_at?: string
-          test_attempt_id: string
-          updated_at?: string
-          user_agent?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          ip_address?: unknown | null
-          is_active?: boolean
-          last_ping?: string
-          started_at?: string
-          test_attempt_id?: string
-          updated_at?: string
-          user_agent?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_sessions_test_attempt_id_fkey"
-            columns: ["test_attempt_id"]
-            isOneToOne: false
-            referencedRelation: "test_attempts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      test_violations: {
-        Row: {
-          auto_resolved: boolean | null
-          created_at: string
-          details: Json | null
-          id: string
-          occurred_at: string
-          severity: string
-          test_attempt_id: string
-          violation_type: string
-        }
-        Insert: {
-          auto_resolved?: boolean | null
-          created_at?: string
-          details?: Json | null
-          id?: string
-          occurred_at?: string
-          severity?: string
-          test_attempt_id: string
-          violation_type: string
-        }
-        Update: {
-          auto_resolved?: boolean | null
-          created_at?: string
-          details?: Json | null
-          id?: string
-          occurred_at?: string
-          severity?: string
-          test_attempt_id?: string
-          violation_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_violations_test_attempt_id_fkey"
-            columns: ["test_attempt_id"]
-            isOneToOne: false
-            referencedRelation: "test_attempts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_ai_provider_keys: {
         Row: {
           ai_provider_id: string
@@ -1333,28 +1287,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_attempt_test: {
-        Args: { test_id_param: string; user_id_param: string }
+      can_attempt_paper: {
+        Args: { paper_id_param: string; user_id_param: string }
         Returns: Json
       }
-      can_view_scheduled_test: {
-        Args: { test_id: string; user_id_param: string }
+      can_view_scheduled_paper: {
+        Args: { paper_id: string; user_id_param: string }
         Returns: boolean
       }
-      cleanup_old_test_sessions: {
+      cleanup_old_paper_sessions: {
         Args: Record<PropertyKey, never>
         Returns: number
-      }
-      create_scheduled_test: {
-        Args: {
-          p_assign_to_all: boolean
-          p_end_time: string
-          p_max_attempts: number
-          p_question_paper_id: string
-          p_start_time: string
-          p_title: string
-        }
-        Returns: string
       }
       debug_auth_context: {
         Args: Record<PropertyKey, never>
@@ -1365,23 +1308,35 @@ export type Database = {
         Returns: Json
       }
       detect_multiple_sessions: {
-        Args: { test_attempt_id_param: string }
+        Args: { paper_attempt_id_param: string }
         Returns: Json
       }
-      get_active_test_attempt: {
-        Args: { test_id_param: string; user_id_param: string }
+      get_active_paper_attempt: {
+        Args: { paper_id_param: string; user_id_param: string }
         Returns: Json
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      log_test_violation: {
+      log_paper_violation: {
         Args: {
           details_param?: Json
+          paper_attempt_id_param: string
           severity_param?: string
-          test_attempt_id_param: string
           violation_type_param: string
+        }
+        Returns: string
+      }
+      schedule_paper: {
+        Args: {
+          p_assign_to_all?: boolean
+          p_end_time: string
+          p_max_attempts?: number
+          p_paper_id: string
+          p_start_time: string
+          p_time_limit_hours?: number
+          p_time_limit_minutes?: number
         }
         Returns: string
       }

@@ -319,7 +319,6 @@ Note: For true/false questions, use only option_a and option_b. For fill-in-the-
 
     // Insert questions into database
     const questionsToInsert = questions.map((q: any) => ({
-      document_id: config.document_id || null,
       question_text: q.question_text,
       option_a: q.option_a,
       option_b: q.option_b,
