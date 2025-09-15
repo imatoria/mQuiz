@@ -370,338 +370,338 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         activeTabIcon={activeItem?.icon}
       />
       <div className="flex w-full pt-[57px] md:pt-[64px]">
-      <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
-        <SidebarContent className="h-full overflow-y-auto">
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {menuItems.map((item) => (
-                  <SidebarMenuItem key={item.value}>
-                  <SidebarMenuButton
-                    isActive={activeTab === item.value}
-                    onClick={() => {
-                      setActiveTab(item.value);
-                      onActiveTabChange?.(item.label, item.icon);
-                    }}
-                    tooltip={item.label}
-                  >
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
+        <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
+          <SidebarContent className="h-full overflow-y-auto">
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.map((item) => (
+                    <SidebarMenuItem key={item.value}>
+                    <SidebarMenuButton
+                      isActive={activeTab === item.value}
+                      onClick={() => {
+                        setActiveTab(item.value);
+                        onActiveTabChange?.(item.label, item.icon);
+                      }}
+                      tooltip={item.label}
+                    >
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
 
-      <SidebarInset>
-        {/* Mobile Tab Header */}
-        <div className="md:hidden bg-card border-b p-4 flex items-center space-x-3">
-          {activeTab && (() => {
-            const item = menuItems.find(i => i.value === activeTab);
-            return item ? (
-              <>
-                <item.icon className="w-5 h-5 text-muted-foreground" />
-                <span className="text-lg font-medium text-foreground">{item.label}</span>
-              </>
-            ) : null;
-          })()}
-        </div>
-        
-        <div className="min-h-screen bg-gradient-subtle">
-          <div className="p-3 sm:p-4 md:p-6">
-          <Tabs value={activeTab} onValueChange={(value) => {
-            setActiveTab(value);
-            const item = menuItems.find(i => i.value === value);
-            if (item) {
-              onActiveTabChange?.(item.label, item.icon);
-            }
-          }} className="space-y-6">
-            <TabsContent value="tests" className="space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tests Available</CardTitle>
-                <PlayCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{availableTests.length}</div>
-                <p className="text-xs text-muted-foreground">Ready to attempt</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{completedTests.length}</div>
-                <p className="text-xs text-muted-foreground">Tests taken</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-                <Trophy className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {completedTests.length > 0 
-                    ? Math.round(completedTests.reduce((sum, test) => {
-                        const lastAttempt = test.test_attempts[test.test_attempts.length - 1];
-                        return sum + (lastAttempt?.score || 0);
-                      }, 0) / completedTests.length) + '%'
-                    : 'N/A'
-                  }
-                </div>
-                <p className="text-xs text-muted-foreground">Overall performance</p>
-              </CardContent>
-            </Card>
+        <SidebarInset>
+          {/* Mobile Tab Header */}
+          <div className="md:hidden bg-card border-b p-4 flex items-center space-x-3">
+            {activeTab && (() => {
+              const item = menuItems.find(i => i.value === activeTab);
+              return item ? (
+                <>
+                  <item.icon className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-lg font-medium text-foreground">{item.label}</span>
+                </>
+              ) : null;
+            })()}
           </div>
+          
+          <div className="min-h-screen bg-gradient-subtle">
+            <div className="p-3 sm:p-4 md:p-6">
+            <Tabs value={activeTab} onValueChange={(value) => {
+              setActiveTab(value);
+              const item = menuItems.find(i => i.value === value);
+              if (item) {
+                onActiveTabChange?.(item.label, item.icon);
+              }
+            }} className="space-y-6">
+              <TabsContent value="tests" className="space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Tests Available</CardTitle>
+                  <PlayCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{availableTests.length}</div>
+                  <p className="text-xs text-muted-foreground">Ready to attempt</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{completedTests.length}</div>
+                  <p className="text-xs text-muted-foreground">Tests taken</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Average Score</CardTitle>
+                  <Trophy className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {completedTests.length > 0 
+                      ? Math.round(completedTests.reduce((sum, test) => {
+                          const lastAttempt = test.test_attempts[test.test_attempts.length - 1];
+                          return sum + (lastAttempt?.score || 0);
+                        }, 0) / completedTests.length) + '%'
+                      : 'N/A'
+                    }
+                  </div>
+                  <p className="text-xs text-muted-foreground">Overall performance</p>
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* Active Tests */}
-          {activeTests.length > 0 && (
-            <Card className="border-l-4 border-l-quiz">
+            {/* Active Tests */}
+            {activeTests.length > 0 && (
+              <Card className="border-l-4 border-l-quiz">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Pause className="w-5 h-5 mr-2 text-quiz" />
+                    Active Tests
+                  </CardTitle>
+                  <CardDescription>
+                    Tests you have started and can resume
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {activeTests.map((test) => {
+                      if (!test.question_papers) return null;
+                      
+                      const activeAttempt = test.test_attempts.find(attempt => !attempt.completed_at);
+                      if (!activeAttempt) return null;
+
+                      // For now use placeholder values until database columns are added
+                      const progress = 0; // activeAttempt.progress_percentage || 0;
+                      const currentQuestion = 1; // (activeAttempt.current_question_index || 0) + 1;
+                      const totalQuestions = test.question_papers.total_questions;
+                      const timeRemaining = formatTimeRemaining(test.end_time);
+                      
+                      return (
+                        <div key={test.id} className="p-4 bg-quiz/5 border border-quiz/20 rounded-lg">
+                          <div className="flex flex-col space-y-3 sm:space-y-0">
+                            <div className="flex flex-row gap-2 min-w-0">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {test.question_papers.subjects?.name} • Question {currentQuestion} of {totalQuestions}
+                                </p>
+                              </div>
+                              
+                              <div className="flex-shrink-0 w-auto">
+                                <Button 
+                                  onClick={() => resumeTest(test)}
+                                  className="w-full sm:w-auto bg-quiz hover:bg-quiz/90"
+                                  size="sm"
+                                >
+                                  Resume Test
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span>Progress</span>
+                                <span>{progress}%</span>
+                              </div>
+                              <Progress value={progress} className="h-2" />
+                              
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span className="flex items-center">
+                                  <Timer className="w-3 h-3 mr-1" />
+                                  {timeRemaining}
+                                </span>
+                                <span className="flex items-center">
+                                  <User className="w-3 h-3 mr-1" />
+                                  Attempt {activeAttempt.attempt_number}
+                                </span>
+                              </div>
+                            </div>
+                            
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Available Tests */}
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Pause className="w-5 h-5 mr-2 text-quiz" />
-                  Active Tests
+                  <PlayCircle className="w-5 h-5 mr-2" />
+                  Available Tests
                 </CardTitle>
                 <CardDescription>
-                  Tests you have started and can resume
+                  Tests ready for you to attempt
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {activeTests.map((test) => {
-                    if (!test.question_papers) return null;
-                    
-                    const activeAttempt = test.test_attempts.find(attempt => !attempt.completed_at);
-                    if (!activeAttempt) return null;
-
-                    // For now use placeholder values until database columns are added
-                    const progress = 0; // activeAttempt.progress_percentage || 0;
-                    const currentQuestion = 1; // (activeAttempt.current_question_index || 0) + 1;
-                    const totalQuestions = test.question_papers.total_questions;
-                    const timeRemaining = formatTimeRemaining(test.end_time);
-                    
-                    return (
-                      <div key={test.id} className="p-4 bg-quiz/5 border border-quiz/20 rounded-lg">
-                        <div className="flex flex-col space-y-3 sm:space-y-0">
-                          <div className="flex flex-row gap-2 min-w-0">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {test.question_papers.subjects?.name} • Question {currentQuestion} of {totalQuestions}
+                {loading ? (
+                  <LoadingState text="Loading tests..." />
+                ) : availableTests.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No tests available at the moment</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {availableTests.map((test) => {
+                      if (!test.question_papers) {
+                        console.warn('Test missing question_papers:', test.id);
+                        return null;
+                      }
+                      
+                      const difficulty = getDifficultyBadge(test.question_papers.total_questions);
+                      const status = getTestStatus(test);
+                      const attemptsLeft = test.max_attempts - (test.test_attempts?.length || 0);
+                      const timeUntilStart = formatTimeUntilStart(test.start_time);
+                      const timeRemaining = formatTimeRemaining(test.end_time);
+                      
+                      return (
+                        <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow space-y-3 sm:space-y-0">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium truncate pr-2">{test.title}</h4>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {test.question_papers.subjects?.name || 'No subject'} • {test.question_papers.total_questions} questions • {(test.time_limit_hours || 1)}h {(test.time_limit_minutes || 0)}m
                               </p>
-                            </div>
-                            
-                            <div className="flex-shrink-0 w-auto">
-                              <Button 
-                                onClick={() => resumeTest(test)}
-                                className="w-full sm:w-auto bg-quiz hover:bg-quiz/90"
-                                size="sm"
-                              >
-                                Resume Test
-                              </Button>
+                            <div className="flex flex-wrap items-center mt-2 gap-2">
+                              <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
+                              
+                              {status === 'scheduled' && timeUntilStart && (
+                                <Badge variant="outline" className="text-xs">
+                                  {timeUntilStart}
+                                </Badge>
+                              )}
+                              
+                              {status === 'active' && (
+                                <Badge variant="default" className="text-xs bg-quiz">
+                                  {timeRemaining} remaining
+                                </Badge>
+                              )}
+                              
+                              {status === 'expired' && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Expired
+                                </Badge>
+                              )}
+                              
+                              {attemptsLeft < test.max_attempts && (
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} left
+                                </span>
+                              )}
+                              
+                              {/* Show Submitted badge if any attempt has been completed */}
+                              {test.test_attempts.some(attempt => attempt.completed_at) && (
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                  Submitted
+                                </Badge>
+                              )}
                             </div>
                           </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-xs">
-                              <span>Progress</span>
-                              <span>{progress}%</span>
-                            </div>
-                            <Progress value={progress} className="h-2" />
-                            
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center">
-                                <Timer className="w-3 h-3 mr-1" />
-                                {timeRemaining}
-                              </span>
-                              <span className="flex items-center">
-                                <User className="w-3 h-3 mr-1" />
-                                Attempt {activeAttempt.attempt_number}
-                              </span>
-                            </div>
+                          <div className="flex-shrink-0 w-full sm:w-auto">
+                            <Button 
+                              onClick={() => startTest(test)}
+                              disabled={status !== 'active' || attemptsLeft === 0}
+                              className={cn(
+                                'w-full sm:w-auto',
+                                status === 'active' ? 'bg-quiz hover:bg-quiz/90' : ''
+                              )}
+                              size="sm"
+                            >
+                              {status === 'active' ? 'Start Test' : 
+                                status === 'scheduled' ? 'Not Available' : 'Expired'}
+                            </Button>
                           </div>
-                          
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    }).filter(Boolean)}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          )}
 
-          {/* Available Tests */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <PlayCircle className="w-5 h-5 mr-2" />
-                Available Tests
-              </CardTitle>
-              <CardDescription>
-                Tests ready for you to attempt
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <LoadingState text="Loading tests..." />
-              ) : availableTests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No tests available at the moment</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {availableTests.map((test) => {
-                    if (!test.question_papers) {
-                      console.warn('Test missing question_papers:', test.id);
-                      return null;
-                    }
-                    
-                    const difficulty = getDifficultyBadge(test.question_papers.total_questions);
-                    const status = getTestStatus(test);
-                    const attemptsLeft = test.max_attempts - (test.test_attempts?.length || 0);
-                    const timeUntilStart = formatTimeUntilStart(test.start_time);
-                    const timeRemaining = formatTimeRemaining(test.end_time);
-                    
-                    return (
-                      <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow space-y-3 sm:space-y-0">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium truncate pr-2">{test.title}</h4>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {test.question_papers.subjects?.name || 'No subject'} • {test.question_papers.total_questions} questions • {(test.time_limit_hours || 1)}h {(test.time_limit_minutes || 0)}m
+            {/* Recent Results */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Results</CardTitle>
+                <CardDescription>Your latest test performances</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {completedTests.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No completed tests yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {completedTests.slice(0, 5).map((test) => {
+                      const lastAttempt = test.test_attempts[test.test_attempts.length - 1];
+                      const score = lastAttempt?.score || 0;
+                      const scoreColor = score >= 80 ? 'text-success' : score >= 60 ? 'text-warning' : 'text-destructive';
+                      const scoreBadge = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs Improvement';
+                      
+                      return (
+                        <div key={test.id} className="flex flex-row justify-between p-3 bg-muted rounded-lg gap-2">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm font-medium truncate pr-2">{test.title}</h4>
+                            <p className="text-xs text-muted-foreground truncate">
+                              Completed {lastAttempt?.completed_at ? new Date(lastAttempt.completed_at).toLocaleDateString() : 'N/A'}
                             </p>
-                          <div className="flex flex-wrap items-center mt-2 gap-2">
-                            <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
-                            
-                            {status === 'scheduled' && timeUntilStart && (
-                              <Badge variant="outline" className="text-xs">
-                                {timeUntilStart}
-                              </Badge>
-                            )}
-                            
-                            {status === 'active' && (
-                              <Badge variant="default" className="text-xs bg-quiz">
-                                {timeRemaining} remaining
-                              </Badge>
-                            )}
-                            
-                            {status === 'expired' && (
-                              <Badge variant="destructive" className="text-xs">
-                                Expired
-                              </Badge>
-                            )}
-                            
-                            {attemptsLeft < test.max_attempts && (
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} left
-                              </span>
-                            )}
-                            
-                            {/* Show Submitted badge if any attempt has been completed */}
-                            {test.test_attempts.some(attempt => attempt.completed_at) && (
-                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                Submitted
-                              </Badge>
-                            )}
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className={`text-base leading-none font-bold ${scoreColor}`}>{score}%</div>
+                            <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs py-0 px-2">
+                              {scoreBadge}
+                            </Badge>
                           </div>
                         </div>
-                        <div className="flex-shrink-0 w-full sm:w-auto">
-                          <Button 
-                            onClick={() => startTest(test)}
-                            disabled={status !== 'active' || attemptsLeft === 0}
-                            className={cn(
-                              'w-full sm:w-auto',
-                              status === 'active' ? 'bg-quiz hover:bg-quiz/90' : ''
-                            )}
-                            size="sm"
-                          >
-                            {status === 'active' ? 'Start Test' : 
-                              status === 'scheduled' ? 'Not Available' : 'Expired'}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  }).filter(Boolean)}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+              </TabsContent>
 
-          {/* Recent Results */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Results</CardTitle>
-              <CardDescription>Your latest test performances</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {completedTests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No completed tests yet</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {completedTests.slice(0, 5).map((test) => {
-                    const lastAttempt = test.test_attempts[test.test_attempts.length - 1];
-                    const score = lastAttempt?.score || 0;
-                    const scoreColor = score >= 80 ? 'text-success' : score >= 60 ? 'text-warning' : 'text-destructive';
-                    const scoreBadge = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs Improvement';
-                    
-                    return (
-                      <div key={test.id} className="flex flex-row justify-between p-3 bg-muted rounded-lg gap-2">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-medium truncate pr-2">{test.title}</h4>
-                          <p className="text-xs text-muted-foreground truncate">
-                            Completed {lastAttempt?.completed_at ? new Date(lastAttempt.completed_at).toLocaleDateString() : 'N/A'}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className={`text-base leading-none font-bold ${scoreColor}`}>{score}%</div>
-                          <Badge variant={score >= 80 ? 'default' : 'outline'} className="text-xs py-0 px-2">
-                            {scoreBadge}
-                          </Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-            </TabsContent>
+              <TabsContent value="results">
+                <TestResults />
+              </TabsContent>
 
-            <TabsContent value="results">
-              <TestResults />
-            </TabsContent>
-
-            <TabsContent value="analytics">
-              <PerformanceAnalytics />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="analytics">
+                <PerformanceAnalytics />
+              </TabsContent>
+            </Tabs>
+            </div>
           </div>
-        </div>
-      </SidebarInset>
-      
-      {/* Pre-Test Warning Modal */}
-      {selectedTest && (
-        <PreTestWarningModal
-          open={showPreTestModal}
-          onClose={handlePreTestCancel}
-          onProceed={handlePreTestProceed}
-          test={selectedTest}
-        />
-      )}
-    </div>
+        </SidebarInset>
+        
+        {/* Pre-Test Warning Modal */}
+        {selectedTest && (
+          <PreTestWarningModal
+            open={showPreTestModal}
+            onClose={handlePreTestCancel}
+            onProceed={handlePreTestProceed}
+            test={selectedTest}
+          />
+        )}
+      </div>
     </SidebarProvider>
   );
 };
