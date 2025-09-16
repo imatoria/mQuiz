@@ -1292,7 +1292,7 @@ export type Database = {
         Returns: Json
       }
       can_view_scheduled_paper: {
-        Args: { paper_id: string; user_id_param: string }
+        Args: { paper_id: string; user_id: string }
         Returns: boolean
       }
       cleanup_old_paper_sessions: {

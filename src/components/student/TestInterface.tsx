@@ -636,7 +636,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       // Use the complete-paper-attempt edge function for proper submission
       const { data, error } = await supabase.functions.invoke('complete-paper-attempt', {
         body: {
-          testAttemptId,
+          paperAttemptId: testAttemptId,
           completionType: type,
           completionReason: reason,
           answers: answers,

@@ -229,14 +229,16 @@ export const TestResults = () => {
   };
 
   const calculateAverage = () => {
-    if (attempts.length === 0) return 0;
-    return Math.round(attempts.reduce((sum, attempt) => sum + attempt.score, 0) / attempts.length);
+    const approvedAttempts = attempts.filter(attempt => attempt.show_results);
+    if (approvedAttempts.length === 0) return 0;
+    return Math.round(approvedAttempts.reduce((sum, attempt) => sum + attempt.score, 0) / approvedAttempts.length);
   };
 
   const getPerformanceTrend = () => {
-    if (attempts.length < 2) return null;
-    const recent = attempts.slice(0, 3).reverse();
-    const older = attempts.slice(3, 6).reverse();
+    const approvedAttempts = attempts.filter(attempt => attempt.show_results);
+    if (approvedAttempts.length < 2) return null;
+    const recent = approvedAttempts.slice(0, 3).reverse();
+    const older = approvedAttempts.slice(3, 6).reverse();
     
     if (older.length === 0) return null;
     
@@ -271,9 +273,11 @@ export const TestResults = () => {
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{calculateAverage()}%</div>
+            <div className="text-2xl font-bold">
+              {attempts.filter(a => a.show_results).length > 0 ? `${calculateAverage()}%` : 'N/A'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Grade: {getGrade(calculateAverage())}
+              {attempts.filter(a => a.show_results).length > 0 ? `Grade: ${getGrade(calculateAverage())}` : 'No approved results'}
             </p>
           </CardContent>
         </Card>
@@ -339,10 +343,12 @@ export const TestResults = () => {
             // Results List
             <div className="space-y-4">
               {attempts.map((attempt) => (
-                <Card key={attempt.id} className="cursor-pointer hover:bg-muted/50 transition-colors"
+                <Card key={attempt.id} className={`${attempt.show_results ? 'cursor-pointer hover:bg-muted/50' : ''} transition-colors`}
                       onClick={() => {
-                        setSelectedAttempt(attempt);
-                        loadQuestionBreakdown(attempt.id, attempt.answers);
+                        if (attempt.show_results) {
+                          setSelectedAttempt(attempt);
+                          loadQuestionBreakdown(attempt.id, attempt.answers);
+                        }
                       }}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -357,19 +363,36 @@ export const TestResults = () => {
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <div className={`text-2xl font-bold ${getScoreColor(attempt.score)}`}>
-                          {attempt.score}%
-                        </div>
-                        <Badge variant={attempt.score >= 70 ? "default" : "destructive"}>
-                          {getGrade(attempt.score)}
-                        </Badge>
-                        <div className="text-xs text-muted-foreground">
-                          {Math.round((attempt.score / 100) * attempt.total_questions)}/{attempt.total_questions} correct
-                        </div>
+                        {attempt.show_results ? (
+                          <>
+                            <div className={`text-2xl font-bold ${getScoreColor(attempt.score)}`}>
+                              {attempt.score}%
+                            </div>
+                            <Badge variant={attempt.score >= 70 ? "default" : "destructive"}>
+                              {getGrade(attempt.score)}
+                            </Badge>
+                            <div className="text-xs text-muted-foreground">
+                              {Math.round((attempt.score / 100) * attempt.total_questions)}/{attempt.total_questions} correct
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center text-muted-foreground">
+                              <EyeOff className="w-4 h-4 mr-1" />
+                              <span className="text-sm">Pending Approval</span>
+                            </div>
+                            <Badge variant="secondary">
+                              Results Pending
+                            </Badge>
+                            <div className="text-xs text-muted-foreground">
+                              {attempt.total_questions} questions
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                     <Progress 
-                      value={attempt.score} 
+                      value={attempt.show_results ? attempt.score : 0} 
                       className="mt-4 h-2"
                     />
                   </CardContent>
