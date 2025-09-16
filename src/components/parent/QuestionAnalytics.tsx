@@ -44,7 +44,7 @@ export default function QuestionAnalytics() {
     try {
       setIsLoading(true);
       
-      // Mock data for question analytics since we need test_attempts data structure
+      // Mock data for question analytics since we need paper_attempts data structure
       const mockQuestionStats: QuestionStats[] = [
         {
           question_id: '1',

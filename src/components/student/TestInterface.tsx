@@ -486,7 +486,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
           variant: "default"
         });
       } else {
-        // Create new test attempt
+        // Create new paper attempt
         const attemptNumber = (test.test_attempts?.length || 0) + 1;
         const startTime = new Date();
         

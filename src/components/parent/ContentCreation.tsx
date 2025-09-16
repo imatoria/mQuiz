@@ -61,7 +61,8 @@ export const ContentCreation = () => {
         subjects(name)
       `)
       .eq('user_id', user.user.id)
-      .eq('is_scheduled', true)
+      .neq('start_time', null)
+      .neq('end_time', null)
       .order('created_at', { ascending: false });
 
     setDocuments(docsData || []);

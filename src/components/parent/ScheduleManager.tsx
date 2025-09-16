@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { TestEditModal } from './TestEditModal';
+
 import { useToast } from '@/components/ui/use-toast';
 import { Edit, Trash2, Users, Clock, Calendar } from 'lucide-react';
 
@@ -44,7 +44,8 @@ export const ScheduleManager = () => {
         subjects(name)
       `)
       .eq('user_id', user.user.id)
-      .eq('is_scheduled', true)
+      .neq('start_time', null)
+      .neq('end_time', null)
       .order('created_at', { ascending: false });
 
     setScheduledTests(testsData || []);
@@ -65,17 +66,14 @@ export const ScheduleManager = () => {
         .delete()
         .eq('paper_id', testId);
 
-      // Then unschedule the paper (set is_scheduled to false)
+      // Then unschedule the paper (remove scheduling)
       const { error } = await supabase
         .from('question_papers')
         .update({ 
-          is_scheduled: false,
           start_time: null,
           end_time: null,
           max_attempts: 1,
-          assign_to_all: true,
-          time_limit_hours: null,
-          time_limit_minutes: null
+          assign_to_all: true
         })
         .eq('id', testId);
 
@@ -213,16 +211,6 @@ export const ScheduleManager = () => {
           </div>
         </CardContent>
       </Card>
-
-      <TestEditModal
-        test={editingTest}
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingTest(null);
-        }}
-        onTestUpdated={handleRefresh}
-      />
     </div>
   );
 };

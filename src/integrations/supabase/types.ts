@@ -989,17 +989,17 @@ export type Database = {
           assign_to_all: boolean | null
           class_level: Database["public"]["Enums"]["class_level"]
           created_at: string
+          deleted_at: string | null
           difficulty_filter:
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
           end_time: string | null
           id: string
-          is_scheduled: boolean | null
+          is_deleted: boolean | null
           max_attempts: number | null
           show_results: boolean | null
           start_time: string | null
           subject_id: string
-          time_limit_hours: number | null
           time_limit_minutes: number
           title: string
           total_questions: number
@@ -1010,17 +1010,17 @@ export type Database = {
           assign_to_all?: boolean | null
           class_level: Database["public"]["Enums"]["class_level"]
           created_at?: string
+          deleted_at?: string | null
           difficulty_filter?:
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
           end_time?: string | null
           id?: string
-          is_scheduled?: boolean | null
+          is_deleted?: boolean | null
           max_attempts?: number | null
           show_results?: boolean | null
           start_time?: string | null
           subject_id: string
-          time_limit_hours?: number | null
           time_limit_minutes: number
           title: string
           total_questions: number
@@ -1031,17 +1031,17 @@ export type Database = {
           assign_to_all?: boolean | null
           class_level?: Database["public"]["Enums"]["class_level"]
           created_at?: string
+          deleted_at?: string | null
           difficulty_filter?:
             | Database["public"]["Enums"]["difficulty_level"][]
             | null
           end_time?: string | null
           id?: string
-          is_scheduled?: boolean | null
+          is_deleted?: boolean | null
           max_attempts?: number | null
           show_results?: boolean | null
           start_time?: string | null
           subject_id?: string
-          time_limit_hours?: number | null
           time_limit_minutes?: number
           title?: string
           total_questions?: number
@@ -1060,7 +1060,7 @@ export type Database = {
       }
       questions: {
         Row: {
-          class_level: string | null
+          class_level: Database["public"]["Enums"]["class_level"] | null
           correct_answer: string
           created_at: string
           deleted_at: string | null
@@ -1078,7 +1078,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          class_level?: string | null
+          class_level?: Database["public"]["Enums"]["class_level"] | null
           correct_answer: string
           created_at?: string
           deleted_at?: string | null
@@ -1096,7 +1096,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          class_level?: string | null
+          class_level?: Database["public"]["Enums"]["class_level"] | null
           correct_answer?: string
           created_at?: string
           deleted_at?: string | null
@@ -1339,6 +1339,14 @@ export type Database = {
           p_time_limit_minutes?: number
         }
         Returns: string
+      }
+      soft_delete_paper: {
+        Args: { paper_id: string }
+        Returns: undefined
+      }
+      user_owns_paper: {
+        Args: { paper_id_param: string }
+        Returns: boolean
       }
       validate_role_change: {
         Args: { new_role: string; target_user_id: string }

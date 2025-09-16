@@ -42,7 +42,6 @@ interface QuestionPaper {
   class_level: string;
   created_at: string;
   updated_at: string;
-  is_scheduled: boolean;
   start_time?: string;
   end_time?: string;
   max_attempts: number;
@@ -134,13 +133,13 @@ export const EnhancedPaperManager = () => {
   };
 
   const getPaperStatus = (paper: QuestionPaper): PaperStatus => {
-    if (!paper.is_scheduled) {
+    if (!paper.start_time || !paper.end_time) {
       return 'draft';
     }
     
     const now = new Date();
-    const startTime = paper.start_time ? new Date(paper.start_time) : null;
-    const endTime = paper.end_time ? new Date(paper.end_time) : null;
+    const startTime = new Date(paper.start_time);
+    const endTime = new Date(paper.end_time);
     
     if (endTime && now > endTime) {
       return 'expired';
@@ -344,7 +343,7 @@ export const EnhancedPaperManager = () => {
                         <div className="space-y-1">
                           <div className="font-medium">{paper.title}</div>
                           <div className="text-sm text-muted-foreground">
-                            {paper.subjects.name} • Grade {paper.class_level} • {paper.total_questions} questions
+                            {paper.subjects.name} • Class {paper.class_level} • {paper.total_questions} questions
                           </div>
                           <div className="flex items-center text-xs text-muted-foreground">
                             <Clock className="w-3 h-3 mr-1" />
@@ -358,13 +357,11 @@ export const EnhancedPaperManager = () => {
                       </TableCell>
                       
                       <TableCell>
-                        {paper.is_scheduled ? (
+                        {paper.start_time && paper.end_time ? (
                           <div className="space-y-1">
-                            {paper.start_time && (
-                              <div className="text-sm">
-                                <span className="text-muted-foreground">Start:</span> {format(new Date(paper.start_time), 'MMM d, HH:mm')}
-                              </div>
-                            )}
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Start:</span> {format(new Date(paper.start_time), 'MMM d, HH:mm')}
+                            </div>
                             {paper.end_time && (
                               <div className="text-sm">
                                 <span className="text-muted-foreground">End:</span> {format(new Date(paper.end_time), 'MMM d, HH:mm')}
@@ -429,13 +426,13 @@ export const EnhancedPaperManager = () => {
                               <Edit className="mr-2 h-4 w-4" />
                               Edit Paper
                             </DropdownMenuItem>
-                            {paper.is_scheduled && (
+                            {paper.start_time && paper.end_time && (
                               <DropdownMenuItem onClick={() => window.location.href = `/papers/${paper.id}/schedule`}>
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 Edit Schedule
                               </DropdownMenuItem>
                             )}
-                            {!paper.is_scheduled && (
+                            {(!paper.start_time || !paper.end_time) && (
                               <DropdownMenuItem onClick={() => window.location.href = `/papers/${paper.id}/schedule`}>
                                 <Calendar className="mr-2 h-4 w-4" />
                                 Schedule Test

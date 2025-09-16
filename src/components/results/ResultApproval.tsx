@@ -93,8 +93,7 @@ export const ResultApproval = () => {
       const { data: parentTests, error: testsError } = await supabase
         .from('question_papers')
         .select('id')
-        .eq('user_id', user?.id)
-        .eq('is_scheduled', true);
+        .eq('user_id', user?.id);
 
       if (testsError) throw testsError;
 

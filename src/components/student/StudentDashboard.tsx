@@ -32,26 +32,19 @@ import {
   User
 } from 'lucide-react';
 
-interface ScheduledTest {
+interface ScheduledPaper {
   id: string;
   title: string;
   start_time: string;
   end_time: string;
   max_attempts: number;
-  question_paper_id: string;
-  time_limit_hours?: number;
-  time_limit_minutes?: number;
-  question_papers: {
-    id?: string;
-    title: string;
-    total_questions: number;
-    time_limit_minutes: number;
-    subjects: { name: string };
-  } | null;
-  test_attempts: TestAttempt[];
+  time_limit_minutes: number;
+  total_questions: number;
+  subjects: { name: string };
+  paper_attempts: PaperAttempt[];
 }
 
-interface TestAttempt {
+interface PaperAttempt {
   id: string;
   attempt_number: number;
   score: number | null;
@@ -69,13 +62,13 @@ interface StudentDashboardProps {
 }
 
 export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) => {
-  const [availableTests, setAvailableTests] = useState<ScheduledTest[]>([]);
-  const [completedTests, setCompletedTests] = useState<ScheduledTest[]>([]);
-  const [activeTests, setActiveTests] = useState<ScheduledTest[]>([]);
-  const [currentTest, setCurrentTest] = useState<ScheduledTest | null>(null);
+  const [availableTests, setAvailableTests] = useState<ScheduledPaper[]>([]);
+  const [completedTests, setCompletedTests] = useState<ScheduledPaper[]>([]);
+  const [activeTests, setActiveTests] = useState<ScheduledPaper[]>([]);
+  const [currentTest, setCurrentTest] = useState<ScheduledPaper | null>(null);
   const [activeTab, setActiveTab] = useState('tests');
   const [showPreTestModal, setShowPreTestModal] = useState(false);
-  const [selectedTest, setSelectedTest] = useState<ScheduledTest | null>(null);
+  const [selectedTest, setSelectedTest] = useState<ScheduledPaper | null>(null);
   const [testDisplayMode, setTestDisplayMode] = useState<'single' | 'all'>('single');
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user, profile, signOut } = useAuth();
@@ -117,11 +110,15 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
   const fetchTests = async () => {
     return executeAsync(async () => {
       
+      console.log('Fetching tests with new schema...');
+      
       // Get current user info
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) {
         throw new Error('User not authenticated');
       }
+
+      console.log('User authenticated, fetching scheduled papers...');
 
       // Fetch all scheduled papers that the current user can view
       const { data: scheduledPapers, error } = await supabase
@@ -138,8 +135,11 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
             user_id
           )
         `)
-        .eq('is_scheduled', true)
+        .neq('start_time', null)
+        .neq('end_time', null)
         .order('start_time', { ascending: true });
+
+      console.log('Query executed, scheduledPapers:', scheduledPapers, 'error:', error);
 
       if (error) {
         console.error('Error fetching tests:', error);
@@ -153,20 +153,20 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
       })) || [];
 
       const now = new Date();
-      const available: ScheduledTest[] = [];
-      const completed: ScheduledTest[] = [];
-      const active: ScheduledTest[] = [];
+      const available: ScheduledPaper[] = [];
+      const completed: ScheduledPaper[] = [];
+      const active: ScheduledPaper[] = [];
 
-      // Function to check if a test attempt has exceeded its time limit
-      const isAttemptTimeExpired = (attempt: TestAttempt, timeLimitMinutes: number) => {
+      // Function to check if a paper attempt has exceeded its time limit
+      const isAttemptTimeExpired = (attempt: PaperAttempt, timeLimitMinutes: number) => {
         const attemptStart = new Date(attempt.started_at);
         const timeLimitMs = timeLimitMinutes * 60 * 1000;
         const attemptEndTime = new Date(attemptStart.getTime() + timeLimitMs);
         return now > attemptEndTime;
       };
 
-      // Process tests and handle expired attempts
-      const expiredAttemptData: Array<{ attemptId: string; scheduledTestId: string }> = [];
+      // Process papers and handle expired attempts
+      const expiredAttemptData: Array<{ attemptId: string; paperId: string }> = [];
 
       papersWithUserAttempts.forEach((paper) => {
         const paperStart = new Date(paper.start_time);
@@ -178,7 +178,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         const validActiveAttempts = inProgressAttempts.filter(attempt => {
           const isExpired = isAttemptTimeExpired(attempt, timeLimitMinutes);
           if (isExpired) {
-            expiredAttemptData.push({ attemptId: attempt.id, scheduledTestId: paper.id });
+            expiredAttemptData.push({ attemptId: attempt.id, paperId: paper.id });
           }
           return !isExpired;
         });
@@ -189,23 +189,16 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         const totalAttempts = paper.paper_attempts?.length || 0;
         const hasRemainingAttempts = totalAttempts < paper.max_attempts;
         
-        const mappedPaper: ScheduledTest = {
+        const mappedPaper: ScheduledPaper = {
           id: paper.id,
           title: paper.title,
           start_time: paper.start_time,
           end_time: paper.end_time,
           max_attempts: paper.max_attempts,
-          question_paper_id: paper.id,
-          time_limit_hours: paper.time_limit_hours,
           time_limit_minutes: paper.time_limit_minutes,
-          question_papers: {
-            id: paper.id,
-            title: paper.title,
-            total_questions: paper.total_questions,
-            time_limit_minutes: paper.time_limit_minutes,
-            subjects: paper.subjects
-          },
-          test_attempts: paper.paper_attempts?.map(attempt => ({
+          total_questions: paper.total_questions,
+          subjects: paper.subjects,
+          paper_attempts: paper.paper_attempts?.map(attempt => ({
             id: attempt.id,
             attempt_number: attempt.attempt_number,
             score: attempt.score,
@@ -236,7 +229,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
       // Auto-submit expired attempts
       if (expiredAttemptData.length > 0) {
         
-        for (const { attemptId, scheduledTestId } of expiredAttemptData) {
+        for (const { attemptId, paperId } of expiredAttemptData) {
           try {
             const { error: submitError } = await supabase.functions.invoke('complete-paper-attempt', {
               body: {
@@ -285,12 +278,12 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
     });
   };
 
-  const startTest = (test: ScheduledTest) => {
+  const startTest = (test: ScheduledPaper) => {
     setSelectedTest(test);
     setShowPreTestModal(true);
   };
 
-  const resumeTest = (test: ScheduledTest) => {
+  const resumeTest = (test: ScheduledPaper) => {
     setCurrentTest(test);
   };
 
@@ -315,7 +308,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
     return new Date(dateString).toLocaleString();
   };
 
-  const getTestStatus = (test: ScheduledTest) => {
+  const getTestStatus = (test: ScheduledPaper) => {
     const now = new Date();
     const testStart = new Date(test.start_time);
     const testEnd = new Date(test.end_time);
@@ -362,7 +355,37 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
   };
 
   if (currentTest) {
-    return <TestInterface test={currentTest} onComplete={handleTestComplete} displayMode={testDisplayMode} />;
+    // Transform the ScheduledPaper back to the format expected by TestInterface
+    const testForInterface = {
+      id: currentTest.id,
+      title: currentTest.title,
+      start_time: currentTest.start_time,
+      end_time: currentTest.end_time,
+      max_attempts: currentTest.max_attempts,
+      question_paper_id: currentTest.id,
+      time_limit_minutes: currentTest.time_limit_minutes,
+      question_papers: {
+        id: currentTest.id,
+        title: currentTest.title,
+        total_questions: currentTest.total_questions,
+        time_limit_minutes: currentTest.time_limit_minutes,
+        subjects: currentTest.subjects
+      },
+      test_attempts: currentTest.paper_attempts?.map(attempt => ({
+        id: attempt.id,
+        attempt_number: attempt.attempt_number,
+        score: attempt.score,
+        completed_at: attempt.completed_at,
+        started_at: attempt.started_at,
+        current_question_index: attempt.current_question_index,
+        total_questions: attempt.total_questions,
+        time_remaining: attempt.time_remaining,
+        answers: attempt.answers,
+        progress_percentage: attempt.progress_percentage
+      })) || []
+    };
+    
+    return <TestInterface test={testForInterface} onComplete={handleTestComplete} displayMode={testDisplayMode} />;
   }
 
   if (error) {
@@ -468,7 +491,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
                   <div className="text-2xl font-bold">
                     {completedTests.length > 0 
                       ? Math.round(completedTests.reduce((sum, test) => {
-                          const lastAttempt = test.test_attempts[test.test_attempts.length - 1];
+                          const lastAttempt = test.paper_attempts[test.paper_attempts.length - 1];
                           return sum + (lastAttempt?.score || 0);
                         }, 0) / completedTests.length) + '%'
                       : 'N/A'
@@ -493,16 +516,14 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {activeTests.map((test) => {
-                      if (!test.question_papers) return null;
-                      
-                      const activeAttempt = test.test_attempts.find(attempt => !attempt.completed_at);
+                     {activeTests.map((test) => {
+                      const activeAttempt = test.paper_attempts.find(attempt => !attempt.completed_at);
                       if (!activeAttempt) return null;
 
                       // For now use placeholder values until database columns are added
                       const progress = 0; // activeAttempt.progress_percentage || 0;
                       const currentQuestion = 1; // (activeAttempt.current_question_index || 0) + 1;
-                      const totalQuestions = test.question_papers.total_questions;
+                      const totalQuestions = test.total_questions;
                       const timeRemaining = formatTimeRemaining(test.end_time);
                       
                       return (
@@ -512,7 +533,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
                                 <p className="text-sm text-muted-foreground mb-2">
-                                  {test.question_papers.subjects?.name} • Question {currentQuestion} of {totalQuestions}
+                                  {test.subjects?.name} • Question {currentQuestion} of {totalQuestions}
                                 </p>
                               </div>
                               
@@ -575,59 +596,54 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
                     <p>No tests available at the moment</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {availableTests.map((test) => {
-                      if (!test.question_papers) {
-                        console.warn('Test missing question_papers:', test.id);
-                        return null;
-                      }
-                      
-                      const difficulty = getDifficultyBadge(test.question_papers.total_questions);
-                      const status = getTestStatus(test);
-                      const attemptsLeft = test.max_attempts - (test.test_attempts?.length || 0);
-                      const timeUntilStart = formatTimeUntilStart(test.start_time);
-                      const timeRemaining = formatTimeRemaining(test.end_time);
-                      
-                      return (
-                        <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow space-y-3 sm:space-y-0">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium truncate pr-2">{test.title}</h4>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {test.question_papers.subjects?.name || 'No subject'} • {test.question_papers.total_questions} questions • {(test.time_limit_hours || 1)}h {(test.time_limit_minutes || 0)}m
-                              </p>
-                            <div className="flex flex-wrap items-center mt-2 gap-2">
-                              <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
-                              
-                              {status === 'scheduled' && timeUntilStart && (
-                                <Badge variant="outline" className="text-xs">
-                                  {timeUntilStart}
-                                </Badge>
-                              )}
-                              
-                              {status === 'active' && (
-                                <Badge variant="default" className="text-xs bg-quiz">
-                                  {timeRemaining} remaining
-                                </Badge>
-                              )}
-                              
-                              {status === 'expired' && (
-                                <Badge variant="destructive" className="text-xs">
-                                  Expired
-                                </Badge>
-                              )}
-                              
-                              {attemptsLeft < test.max_attempts && (
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} left
-                                </span>
-                              )}
-                              
-                              {/* Show Submitted badge if any attempt has been completed */}
-                              {test.test_attempts.some(attempt => attempt.completed_at) && (
-                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                  Submitted
-                                </Badge>
-                              )}
+                   <div className="space-y-4">
+                     {availableTests.map((test) => {
+                       const difficulty = getDifficultyBadge(test.total_questions);
+                       const status = getTestStatus(test);
+                       const attemptsLeft = test.max_attempts - (test.paper_attempts?.length || 0);
+                       const timeUntilStart = formatTimeUntilStart(test.start_time);
+                       const timeRemaining = formatTimeRemaining(test.end_time);
+                       
+                       return (
+                         <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow space-y-3 sm:space-y-0">
+                           <div className="flex-1 min-w-0">
+                             <h4 className="font-medium truncate pr-2">{test.title}</h4>
+                               <p className="text-sm text-muted-foreground truncate">
+                                 {test.subjects?.name || 'No subject'} • {test.total_questions} questions • {test.time_limit_minutes}m
+                               </p>
+                             <div className="flex flex-wrap items-center mt-2 gap-2">
+                               <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
+                               
+                               {status === 'scheduled' && timeUntilStart && (
+                                 <Badge variant="outline" className="text-xs">
+                                   {timeUntilStart}
+                                 </Badge>
+                               )}
+                               
+                               {status === 'active' && (
+                                 <Badge variant="default" className="text-xs bg-quiz">
+                                   {timeRemaining} remaining
+                                 </Badge>
+                               )}
+                               
+                               {status === 'expired' && (
+                                 <Badge variant="destructive" className="text-xs">
+                                   Expired
+                                 </Badge>
+                               )}
+                               
+                               {attemptsLeft < test.max_attempts && (
+                                 <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                   {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} left
+                                 </span>
+                               )}
+                               
+                               {/* Show Submitted badge if any attempt has been completed */}
+                               {test.paper_attempts.some(attempt => attempt.completed_at) && (
+                                 <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                   Submitted
+                                 </Badge>
+                               )}
                             </div>
                           </div>
                           <div className="flex-shrink-0 w-full sm:w-auto">
@@ -672,7 +688,15 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
             open={showPreTestModal}
             onClose={handlePreTestCancel}
             onProceed={handlePreTestProceed}
-            test={selectedTest}
+            test={{
+              title: selectedTest.title,
+              time_limit_minutes: selectedTest.time_limit_minutes,
+              question_papers: {
+                total_questions: selectedTest.total_questions,
+                time_limit_minutes: selectedTest.time_limit_minutes,
+                subjects: selectedTest.subjects
+              }
+            }}
           />
         )}
       </div>

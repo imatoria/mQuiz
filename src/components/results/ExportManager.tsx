@@ -73,8 +73,7 @@ export const ExportManager = () => {
       // Fetch tests
       let testQuery = supabase
         .from('question_papers')
-        .select('id, title, user_id')
-        .eq('is_scheduled', true);
+        .select('id, title, user_id');
 
       if (profile?.role === 'parent') {
         testQuery = testQuery.eq('user_id', profile.user_id);

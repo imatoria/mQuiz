@@ -1,65 +1,209 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from '@/hooks/usePagination';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { 
   FileText, 
   Calendar as CalendarIcon, 
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Users,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react';
+import { PageMultiSelect } from '@/components/ui/page-multi-select';
 
 interface Subject {
   id: string;
   name: string;
 }
 
+interface Child {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+}
+
+interface Question {
+  id: string;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_answer: string;
+  difficulty: 'easy' | 'medium' | 'difficult';
+  topic?: string;
+  page_number?: number;
+  created_at: string;
+}
+
 interface PaperFormData {
   title: string;
   subject_id: string;
-  class_level: string;
+  class_level: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '';
   total_questions: number;
   time_limit_minutes: number;
-  is_scheduled: boolean;
   start_time?: Date;
   end_time?: Date;
   max_attempts: number;
   assign_to_all: boolean;
+  show_results: boolean;
+  difficulty_filter?: string[];
+  difficulty?: string;
+  selected_children?: string[];
+  selected_questions?: string[];
 }
 
-export const UnifiedPaperCreator = () => {
+interface UnifiedPaperCreatorProps {
+  onRefresh?: () => void;
+  editingPaper?: any;
+  onPaperCreated?: () => void;
+}
+
+export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefresh, editingPaper, onPaperCreated }) => {
   const [formData, setFormData] = useState<PaperFormData>({
     title: '',
     subject_id: '',
     class_level: '',
     total_questions: 10,
     time_limit_minutes: 60,
-    is_scheduled: false,
     max_attempts: 1,
-    assign_to_all: true
+    assign_to_all: true,
+    show_results: false,
+    difficulty_filter: ['easy', 'medium', 'difficult'], // Default to all difficulties selected
+    difficulty: '',
+    selected_children: [],
+    selected_questions: []
   });
   
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [children, setChildren] = useState<Child[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [questionFilters, setQuestionFilters] = useState({
+    search: '',
+    difficulty: '',
+    topic: '',
+    page_numbers: [] as number[]
+  });
+  const [availablePages, setAvailablePages] = useState<number[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
+  const [questionTabValue, setQuestionTabValue] = useState<string>('');
+  
+  // Refs for popovers
+  const startTimePopoverRef = useRef<{ close: () => void } | null>(null);
+  const endTimePopoverRef = useRef<{ close: () => void } | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
 
   React.useEffect(() => {
     loadSubjects();
-  }, []);
+    if (user?.id) {
+      loadChildren();
+    }
+  }, [user?.id]);
+
+  // Effect to populate form when editing
+  React.useEffect(() => {
+    if (editingPaper) {
+      // First load subjects to ensure they're available when setting subject_id
+      if (subjects.length === 0) {
+        loadSubjects();
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        title: editingPaper.title || '',
+        subject_id: editingPaper.subject_id || '',
+        class_level: editingPaper.class_level || '',
+        total_questions: editingPaper.total_questions || 10,
+        time_limit_minutes: editingPaper.time_limit_minutes || 60,
+        start_time: editingPaper.start_time ? new Date(editingPaper.start_time) : undefined,
+        end_time: editingPaper.end_time ? new Date(editingPaper.end_time) : undefined,
+        max_attempts: editingPaper.max_attempts || 1,
+        assign_to_all: editingPaper.assign_to_all ?? true,
+        show_results: editingPaper.show_results || false,
+        difficulty_filter: editingPaper.difficulty_filter || ['easy', 'medium', 'difficult'],
+      }));
+      
+      // Set default tab based on editing vs creating
+      setQuestionTabValue(editingPaper ? 'selected' : 'unselected');
+      
+      // Load selected questions for editing
+      if (editingPaper.id) {
+        loadSelectedQuestions(editingPaper.id);
+      }
+    } else {
+      // For new papers, default to unselected tab
+      setQuestionTabValue('unselected');
+    }
+  }, [editingPaper, subjects.length]);
+
+  React.useEffect(() => {
+    if (formData.subject_id && formData.class_level) {
+      loadAvailablePages();
+    } else {
+      setAvailablePages([]);
+    }
+  }, [formData.subject_id, formData.class_level]);
+
+  React.useEffect(() => {
+    if (formData.subject_id && formData.class_level && questionFilters.difficulty) {
+      loadQuestions();
+    } else {
+      setQuestions([]);
+      setFilteredQuestions([]);
+    }
+  }, [formData.subject_id, formData.class_level, questionFilters.difficulty]);
+
+  // Effect to handle criteria changes and update selected questions visibility
+  React.useEffect(() => {
+    if (selectedQuestions.length > 0 && formData.subject_id && formData.class_level) {
+      // Filter out questions that no longer meet the current criteria
+      const validQuestions = selectedQuestions.filter(question => {
+        const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(question.difficulty);
+        return matchesDifficulty;
+      });
+
+      // Update selected questions to only include valid ones
+      const validQuestionIds = validQuestions.map(q => q.id);
+      if (validQuestionIds.length !== formData.selected_questions?.length) {
+        setSelectedQuestions(validQuestions);
+        setFormData(prev => ({
+          ...prev,
+          selected_questions: validQuestionIds
+        }));
+      }
+    }
+  }, [formData.difficulty_filter]);
+
+  React.useEffect(() => {
+    applyQuestionFilters();
+  }, [questions, questionFilters]);
 
   const loadSubjects = async () => {
     try {
@@ -75,6 +219,162 @@ export const UnifiedPaperCreator = () => {
     }
   };
 
+  const loadChildren = async () => {
+    if (!user?.id) {
+      console.log('No user ID available, skipping children load');
+      return;
+    }
+    
+    try {
+      console.log('Loading children for user:', user.id);
+      // Get child IDs first
+      const { data: relationships, error: relError } = await supabase
+        .from('parent_child_relationships')
+        .select('child_id')
+        .eq('parent_id', user.id);
+      
+      if (relError) throw relError;
+      
+      if (!relationships || relationships.length === 0) {
+        setChildren([]);
+        return;
+      }
+      
+      // Get children profiles
+      const childIds = relationships.map(r => r.child_id);
+      const { data: childProfiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name, email')
+        .in('user_id', childIds);
+      
+      if (profileError) throw profileError;
+      
+      setChildren(childProfiles || []);
+    } catch (error) {
+      console.error('Error loading children:', error);
+    }
+  };
+
+  const loadQuestions = async () => {
+    if (!formData.subject_id || !formData.class_level || !questionFilters.difficulty) return;
+    
+    setIsLoadingQuestions(true);
+    try {
+      let query = supabase
+        .from('questions')
+        .select('*')
+        .eq('subject_id', formData.subject_id)
+        .eq('class_level', formData.class_level)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+
+      // Handle difficulty filter - if "all" is selected, don't filter by difficulty
+      if (questionFilters.difficulty !== 'all') {
+        query = query.eq('difficulty', questionFilters.difficulty as 'easy' | 'medium' | 'difficult');
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      // If "all" was selected, filter by the currently selected difficulties in the form
+      let questions = data || [];
+      if (questionFilters.difficulty === 'all' && formData.difficulty_filter?.length) {
+        questions = questions.filter(q => formData.difficulty_filter!.includes(q.difficulty));
+      }
+      
+      setQuestions(questions);
+    } catch (error) {
+      console.error('Error loading questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load questions",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
+  const loadSelectedQuestions = async (paperId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('question_paper_questions')
+        .select(`
+          questions (
+            id,
+            question_text,
+            option_a,
+            option_b,
+            option_c,
+            option_d,
+            correct_answer,
+            difficulty,
+            topic,
+            page_number,
+            created_at
+          )
+        `)
+        .eq('question_paper_id', paperId);
+      
+      if (error) throw error;
+      
+      const questionsList = data?.map(item => item.questions).filter(Boolean) || [];
+      setSelectedQuestions(questionsList);
+      setFormData(prev => ({
+        ...prev,
+        selected_questions: questionsList.map(q => q.id)
+      }));
+    } catch (error) {
+      console.error('Error loading selected questions:', error);
+    }
+  };
+
+  const loadAvailablePages = async () => {
+    if (!formData.subject_id || !formData.class_level) return;
+    
+    try {
+      // Get unique page numbers for the selected subject and class level
+      const { data, error } = await supabase
+        .from('questions')
+        .select('page_number')
+        .eq('subject_id', formData.subject_id)
+        .eq('class_level', formData.class_level)
+        .eq('is_deleted', false)
+        .not('page_number', 'is', null)
+        .order('page_number');
+      
+      if (error) throw error;
+      
+      const uniquePages = [...new Set(data?.map(q => q.page_number).filter(Boolean) || [])] as number[];
+      setAvailablePages(uniquePages.sort((a, b) => a - b));
+    } catch (error) {
+      console.error('Error loading available pages:', error);
+      setAvailablePages([]);
+    }
+  };
+
+  const applyQuestionFilters = () => {
+    let filtered = [...questions];
+    
+    if (questionFilters.search) {
+      filtered = filtered.filter(q => 
+        q.question_text.toLowerCase().includes(questionFilters.search.toLowerCase()) ||
+        q.topic?.toLowerCase().includes(questionFilters.search.toLowerCase()) ||
+        q.option_a.toLowerCase().includes(questionFilters.search.toLowerCase()) ||
+        q.option_b.toLowerCase().includes(questionFilters.search.toLowerCase()) ||
+        q.option_c.toLowerCase().includes(questionFilters.search.toLowerCase()) ||
+        q.option_d.toLowerCase().includes(questionFilters.search.toLowerCase())
+      );
+    }
+    
+    if (questionFilters.page_numbers.length > 0) {
+      filtered = filtered.filter(q => q.page_number && questionFilters.page_numbers.includes(q.page_number));
+    }
+    
+    setFilteredQuestions(filtered);
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
@@ -82,12 +382,8 @@ export const UnifiedPaperCreator = () => {
     if (!formData.subject_id) newErrors.subject_id = 'Subject is required';
     if (!formData.class_level) newErrors.class_level = 'Class level is required';
     
-    if (formData.is_scheduled) {
-      if (!formData.start_time) newErrors.start_time = 'Start time is required';
-      if (!formData.end_time) newErrors.end_time = 'End time is required';
-      if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
-        newErrors.end_time = 'End time must be after start time';
-      }
+    if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
+      newErrors.end_time = 'End time must be after start time';
     }
     
     setErrors(newErrors);
@@ -105,48 +401,118 @@ export const UnifiedPaperCreator = () => {
       const paperData = {
         title: formData.title,
         subject_id: formData.subject_id,
-        class_level: formData.class_level as "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12",
+        class_level: formData.class_level as '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12',
         total_questions: formData.total_questions,
         time_limit_minutes: formData.time_limit_minutes,
         user_id: user?.id,
-        is_scheduled: formData.is_scheduled,
-        start_time: formData.is_scheduled ? formData.start_time?.toISOString() : null,
-        end_time: formData.is_scheduled ? formData.end_time?.toISOString() : null,
+        start_time: formData.start_time?.toISOString() || null,
+        end_time: formData.end_time?.toISOString() || null,
         max_attempts: formData.max_attempts,
-        assign_to_all: formData.assign_to_all
+        assign_to_all: formData.assign_to_all,
+        show_results: formData.show_results,
+        difficulty_filter: formData.difficulty_filter as ("easy" | "medium" | "difficult")[] || []
       };
       
-      const { error } = await supabase
-        .from('question_papers')
-        .insert(paperData);
+      let paperId: string;
       
-      if (error) throw error;
+      if (editingPaper) {
+        // Update existing paper
+        const { error } = await supabase
+          .from('question_papers')
+          .update(paperData)
+          .eq('id', editingPaper.id);
+        
+        if (error) throw error;
+        paperId = editingPaper.id;
+        
+        // Delete existing assignments for this paper
+        await supabase
+          .from('paper_assignments')
+          .delete()
+          .eq('paper_id', paperId);
+      } else {
+        // Create new paper
+        const { data: insertedPaper, error } = await supabase
+          .from('question_papers')
+          .insert(paperData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        paperId = insertedPaper.id;
+      }
+
+      // Handle selected questions - delete existing and insert new ones
+      if (formData.selected_questions && formData.selected_questions.length > 0) {
+        // Delete existing question-paper relationships if editing
+        if (editingPaper) {
+          const { error: deleteError } = await supabase
+            .from('question_paper_questions')
+            .delete()
+            .eq('question_paper_id', paperId);
+
+          if (deleteError) throw deleteError;
+        }
+
+        // Insert new question-paper relationships
+        const questionPaperQuestions = formData.selected_questions.map((questionId, index) => ({
+          question_paper_id: paperId,
+          question_id: questionId,
+          question_order: index + 1
+        }));
+
+        const { error: questionsError } = await supabase
+          .from('question_paper_questions')
+          .insert(questionPaperQuestions);
+
+        if (questionsError) throw questionsError;
+      }
+
+      // If not assigning to all children, create individual assignments
+      if (!formData.assign_to_all && formData.selected_children && formData.selected_children.length > 0) {
+        const assignments = formData.selected_children.map(childId => ({
+          paper_id: paperId,
+          assigned_to_user_id: childId
+        }));
+
+        const { error: assignmentError } = await supabase
+          .from('paper_assignments')
+          .insert(assignments);
+
+        if (assignmentError) throw assignmentError;
+      }
       
       toast({
         title: "Success",
-        description: formData.is_scheduled 
-          ? "Paper created and scheduled successfully!" 
-          : "Paper created successfully!",
+        description: editingPaper ? "Paper updated successfully!" : "Paper created successfully!",
         variant: "default"
       });
       
-      // Reset form
-      setFormData({
-        title: '',
-        subject_id: '',
-        class_level: '',
-        total_questions: 10,
-        time_limit_minutes: 60,
-        is_scheduled: false,
-        max_attempts: 1,
-        assign_to_all: true
-      });
+      // Reset form only if not editing
+      if (!editingPaper) {
+        setFormData({
+          title: '',
+          subject_id: '',
+          class_level: '',
+          total_questions: 10,
+          time_limit_minutes: 60,
+          max_attempts: 1,
+          assign_to_all: true,
+          show_results: false,
+          difficulty_filter: ['easy', 'medium', 'difficult'],
+          selected_children: [],
+          selected_questions: []
+        });
+      }
+      
+      // Call success callback
+      onPaperCreated?.();
       
     } catch (error) {
-      console.error('Error creating paper:', error);
+      console.error('Error saving paper:', error);
       toast({
         title: "Error",
-        description: "Failed to create paper",
+        description: editingPaper ? "Failed to update paper" : "Failed to create paper",
         variant: "destructive"
       });
     } finally {
@@ -154,151 +520,673 @@ export const UnifiedPaperCreator = () => {
     }
   };
 
+  const { paginatedData: paginatedQuestions, ...pagination } = usePagination({
+    data: filteredQuestions,
+    itemsPerPage: 10
+  });
+
+  const handleSelectAllVisible = () => {
+    const availableToSelect = Math.min(
+      paginatedQuestions.length,
+      formData.total_questions - (formData.selected_questions?.length || 0)
+    );
+    
+    if (availableToSelect === 0) {
+      toast({
+        title: "Selection Limit",
+        description: `You can only select ${formData.total_questions} questions total`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newSelections = paginatedQuestions
+      .slice(0, availableToSelect)
+      .filter(q => !formData.selected_questions?.includes(q.id))
+      .map(q => q.id);
+    
+    setFormData(prev => ({
+      ...prev,
+      selected_questions: [...(prev.selected_questions || []), ...newSelections]
+    }));
+  };
+
+  const handleQuestionSelect = (questionId: string, checked: boolean) => {
+    if (checked) {
+      if ((formData.selected_questions?.length || 0) >= formData.total_questions) {
+        toast({
+          title: "Selection Limit",
+          description: `You can only select ${formData.total_questions} questions`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Find the question in filteredQuestions to add to selectedQuestions
+      const question = filteredQuestions.find(q => q.id === questionId);
+      if (question) {
+        setSelectedQuestions(prev => [...prev, question]);
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        selected_questions: [...(prev.selected_questions || []), questionId]
+      }));
+    } else {
+      // Remove from selectedQuestions
+      setSelectedQuestions(prev => prev.filter(q => q.id !== questionId));
+      
+      setFormData(prev => ({
+        ...prev,
+        selected_questions: prev.selected_questions?.filter(id => id !== questionId) || []
+      }));
+    }
+  };
+
+  const handleRemoveSelectedQuestion = (questionId: string) => {
+    setSelectedQuestions(prev => prev.filter(q => q.id !== questionId));
+    setFormData(prev => ({
+      ...prev,
+      selected_questions: prev.selected_questions?.filter(id => id !== questionId) || []
+    }));
+  };
+
+  const getDifficultyBadgeVariant = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy': return 'secondary';
+      case 'medium': return 'default';
+      case 'difficult': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center">
           <FileText className="w-5 h-5 mr-2" />
-          Create Question Paper
+          {editingPaper ? 'Edit Question Paper' : 'Create Question Paper'}
         </CardTitle>
         <CardDescription>
-          Create a new question paper with optional test scheduling
+          {editingPaper ? 'Update your existing question paper configuration' : 'Create a new question paper with all configuration options'}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="basic">Basic Information</TabsTrigger>
-              <TabsTrigger value="scheduling">
-                <CalendarIcon className="w-4 h-4 mr-2" />
-                Test Scheduling
-              </TabsTrigger>
-            </TabsList>
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="title">Paper Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Enter paper title"
+                className={cn(errors.title && "border-destructive")}
+              />
+              {errors.title && (
+                <p className="text-sm text-destructive flex items-center">
+                  <AlertCircle className="w-3 h-3 mr-1" />
+                  {errors.title}
+                </p>
+              )}
+            </div>
             
-            <TabsContent value="basic" className="space-y-4">
+            <div className="space-y-2">
+              <Label>Subject *</Label>
+              <Select 
+                value={formData.subject_id} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, subject_id: value }))}
+                disabled={!!editingPaper}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Class Level *</Label>
+              <Select 
+                value={formData.class_level} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, class_level: value as '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '' }))}
+                disabled={!!editingPaper}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((classLevel) => (
+                    <SelectItem key={classLevel} value={classLevel.toString()}>
+                      Class {classLevel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Total Questions</Label>
+              <Input
+                type="number"
+                value={formData.total_questions}
+                onChange={(e) => setFormData(prev => ({ ...prev, total_questions: parseInt(e.target.value) || 10 }))}
+                min="1"
+                max="100"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Time Limit (Minutes)</Label>
+              <Input
+                type="number"
+                value={formData.time_limit_minutes}
+                onChange={(e) => setFormData(prev => ({ ...prev, time_limit_minutes: parseInt(e.target.value) || 60 }))}
+                min="5"
+                max="600"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Max Attempts</Label>
+              <Input
+                type="number"
+                value={formData.max_attempts}
+                onChange={(e) => setFormData(prev => ({ ...prev, max_attempts: parseInt(e.target.value) || 1 }))}
+                min="1"
+                max="10"
+              />
+            </div>
+            
+              <div className="space-y-3">
+              <Label>Difficulty Level</Label>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="select-all-difficulty"
+                    checked={formData.difficulty_filter?.length === 3}
+                    disabled={!!editingPaper}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setFormData(prev => ({
+                          ...prev,
+                          difficulty_filter: ['easy', 'medium', 'difficult']
+                        }));
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          difficulty_filter: []
+                        }));
+                      }
+                    }}
+                  />
+                  <Label htmlFor="select-all-difficulty" className="text-sm font-medium">
+                    Select All
+                  </Label>
+                </div>
+                {['easy', 'medium', 'difficult'].map((level) => (
+                  <div key={level} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={level}
+                      checked={formData.difficulty_filter?.includes(level) || false}
+                      disabled={!!editingPaper}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            difficulty_filter: [...(prev.difficulty_filter || []), level]
+                          }));
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            difficulty_filter: prev.difficulty_filter?.filter(d => d !== level) || []
+                          }));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={level} className="text-sm capitalize">
+                      {level}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Scheduling Section */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <h3 className="font-medium">Test Scheduling (Optional)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Paper Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Enter paper title"
-                  className={cn(errors.title && "border-destructive")}
-                />
-                {errors.title && (
-                  <p className="text-sm text-destructive flex items-center">
-                    <AlertCircle className="w-3 h-3 mr-1" />
-                    {errors.title}
-                  </p>
-                )}
+                <Label>Start Time</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.start_time ? format(formData.start_time, "PPP") : "Pick date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.start_time}
+                      onSelect={(date) => {
+                        setFormData(prev => ({ ...prev, start_time: date }));
+                        // Close popover immediately
+                        setTimeout(() => {
+                          const popoverTrigger = document.querySelector('[data-radix-popper-content-wrapper]');
+                          if (popoverTrigger) {
+                            const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+                            document.dispatchEvent(escapeEvent);
+                          }
+                        }, 100);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Subject *</Label>
-                  <Select 
-                    value={formData.subject_id} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, subject_id: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id}>
-                          {subject.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Class Level *</Label>
-                  <Select 
-                    value={formData.class_level} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, class_level: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map((grade) => (
-                        <SelectItem key={grade} value={grade.toString()}>
-                          Grade {grade}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label>End Time</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.end_time ? format(formData.end_time, "PPP") : "Pick date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.end_time}
+                      onSelect={(date) => {
+                        setFormData(prev => ({ ...prev, end_time: date }));
+                        // Close popover immediately
+                        setTimeout(() => {
+                          const popoverTrigger = document.querySelector('[data-radix-popper-content-wrapper]');
+                          if (popoverTrigger) {
+                            const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+                            document.dispatchEvent(escapeEvent);
+                          }
+                        }, 100);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="scheduling" className="space-y-4">
+            </div>
+          </div>
+          
+          {/* Settings Section */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <h3 className="font-medium">Assignment & Results Settings</h3>
+            <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <Switch
-                  checked={formData.is_scheduled}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_scheduled: checked }))}
+                  checked={formData.assign_to_all}
+                  onCheckedChange={(checked) => setFormData(prev => ({ 
+                    ...prev, 
+                    assign_to_all: checked,
+                    selected_children: checked ? [] : prev.selected_children
+                  }))}
                 />
-                <Label>Schedule as Test</Label>
+                <Label>Assign to All Children</Label>
               </div>
               
-              {formData.is_scheduled && (
-                <div className="space-y-4 p-4 border rounded-lg">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Start Time *</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {formData.start_time ? format(formData.start_time, "PPP") : "Pick date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={formData.start_time}
-                            onSelect={(date) => setFormData(prev => ({ ...prev, start_time: date }))}
+              {!formData.assign_to_all && (
+                <div className="space-y-3">
+                  <Label className="flex items-center">
+                    <Users className="w-4 h-4 mr-2" />
+                    Select Children to Assign
+                  </Label>
+                  {children.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No children found. Add children to your account first.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {children.map((child) => (
+                        <div key={child.id} className="flex items-center space-x-2 p-2 border rounded">
+                          <Checkbox
+                            id={child.id}
+                            checked={formData.selected_children?.includes(child.user_id) || false}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  selected_children: [...(prev.selected_children || []), child.user_id]
+                                }));
+                              } else {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  selected_children: prev.selected_children?.filter(id => id !== child.user_id) || []
+                                }));
+                              }
+                            }}
                           />
-                        </PopoverContent>
-                      </Popover>
+                          <Label htmlFor={child.id} className="text-sm">
+                            {child.full_name || child.email}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-3">
+                <Switch
+                  checked={formData.show_results}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_results: checked }))}
+                />
+                <Label>Auto-approve Results</Label>
+              </div>
+            </div>
+          </div>
+          
+          {/* Question Selection Section */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium flex items-center">
+                <Search className="w-4 h-4 mr-2" />
+                Select Questions
+              </h3>
+            </div>
+              
+              <Tabs value={questionTabValue} onValueChange={setQuestionTabValue} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="selected" className="flex items-center gap-2">
+                    Selected Questions
+                    {selectedQuestions.length > 0 && (
+                      <Badge variant="secondary" className="ml-1">
+                        {selectedQuestions.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="unselected" className="flex items-center gap-2">
+                    Unselected Questions
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="selected" className="space-y-4">
+                  {selectedQuestions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        No questions selected yet. Go to "Unselected Questions" tab to add questions.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-12">Remove</TableHead>
+                              <TableHead>Question</TableHead>
+                              <TableHead className="w-24">Difficulty</TableHead>
+                              <TableHead className="w-32">Topic</TableHead>
+                              <TableHead className="w-20">Page</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                        <TableBody>
+                          {selectedQuestions.map((question) => {
+                            // Check if question matches current difficulty filter
+                            const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(question.difficulty);
+                            const isValid = matchesDifficulty;
+                            
+                            return (
+                              <TableRow 
+                                key={question.id} 
+                                className={cn(!isValid && "opacity-50 bg-muted/50")}
+                              >
+                                <TableCell>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveSelectedQuestion(question.id)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                                <TableCell className="max-w-md">
+                                  <div className="truncate" title={question.question_text}>
+                                    {question.question_text}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1 grid grid-cols-2 gap-1">
+                                    <div>A) {question.option_a}</div>
+                                    <div>B) {question.option_b}</div>
+                                    <div>C) {question.option_c}</div>
+                                    <div>D) {question.option_d}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
+                                    {question.difficulty}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm">{question.topic || 'N/A'}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm">{question.page_number || '-'}</span>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                      {selectedQuestions.some(q => {
+                        const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(q.difficulty);
+                        return !matchesDifficulty;
+                      }) && (
+                        <div className="p-3 bg-amber-50 border-amber-200 border rounded text-sm text-amber-800">
+                          <AlertCircle className="w-4 h-4 inline mr-2" />
+                          Some selected questions don't match current difficulty criteria and will be excluded from the paper.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="unselected" className="space-y-4">
+                  {/* Question Selection Filters */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Search Questions</Label>
+                      <Input
+                        placeholder="Search by question text, options, or topic..."
+                        value={questionFilters.search}
+                        onChange={(e) => setQuestionFilters(prev => ({ ...prev, search: e.target.value }))}
+                      />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label>End Time *</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {formData.end_time ? format(formData.end_time, "PPP") : "Pick date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={formData.end_time}
-                            onSelect={(date) => setFormData(prev => ({ ...prev, end_time: date }))}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <Label>Difficulty Filter</Label>
+                      <Select 
+                        value={questionFilters.difficulty} 
+                        onValueChange={(value) => setQuestionFilters(prev => ({ ...prev, difficulty: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select difficulty" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Select All</SelectItem>
+                          {formData.difficulty_filter?.map((difficulty) => (
+                            <SelectItem key={difficulty} value={difficulty}>
+                              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Filter by Pages</Label>
+                      <PageMultiSelect
+                        label="Select Pages"
+                        availablePages={availablePages}
+                        selectedPages={questionFilters.page_numbers}
+                        onChange={(pages) => setQuestionFilters(prev => ({ ...prev, page_numbers: pages }))}
+                        disabled={availablePages.length === 0}
+                        className="w-full"
+                      />
                     </div>
                   </div>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-          
-          <div className="flex justify-end space-x-4">
+
+                  <div className="flex items-center justify-between">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setQuestionFilters(prev => ({ 
+                        ...prev, 
+                        search: '', 
+                        page_numbers: [],
+                        difficulty: ''
+                      }))}
+                    >
+                      Clear Filters
+                    </Button>
+                    
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleSelectAllVisible}
+                      disabled={
+                        paginatedQuestions.length === 0 || 
+                        (formData.selected_questions?.length || 0) >= formData.total_questions
+                      }
+                    >
+                      Select All Visible
+                    </Button>
+                  </div>
+                  
+                  {!formData.subject_id || !formData.class_level || !formData.difficulty_filter?.length ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        Please select Subject, Class Level, and at least one Difficulty level to view questions.
+                      </p>
+                    </div>
+                  ) : !questionFilters.difficulty ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        Please select a Difficulty filter to view questions.
+                      </p>
+                    </div>
+                  ) : isLoadingQuestions ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Loading questions...</p>
+                    </div>
+                  ) : filteredQuestions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        No questions found for the selected criteria.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Questions Table */}
+                      <div className="border rounded-lg">
+                        <Table>
+                          <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">Select</TableHead>
+                            <TableHead>Question</TableHead>
+                            <TableHead className="w-24">Difficulty</TableHead>
+                            <TableHead className="w-32">Topic</TableHead>
+                            <TableHead className="w-20">Page</TableHead>
+                          </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedQuestions.map((question) => (
+                              <TableRow key={question.id}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={formData.selected_questions?.includes(question.id) || false}
+                                    onCheckedChange={(checked) => handleQuestionSelect(question.id, !!checked)}
+                                    disabled={(formData.selected_questions?.length || 0) >= formData.total_questions && !formData.selected_questions?.includes(question.id)}
+                                  />
+                                </TableCell>
+                                <TableCell className="max-w-md">
+                                  <div className="truncate" title={question.question_text}>
+                                    {question.question_text}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1 grid grid-cols-2 gap-1">
+                                    <div>A) {question.option_a}</div>
+                                    <div>B) {question.option_b}</div>
+                                    <div>C) {question.option_c}</div>
+                                    <div>D) {question.option_d}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
+                                    {question.difficulty}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm">{question.topic || 'N/A'}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm">{question.page_number || '-'}</span>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      
+                      {/* Pagination */}
+                      {pagination.totalPages > 1 && (
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            Showing {pagination.startItem} to {pagination.endItem} of {pagination.totalItems} questions
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={pagination.previousPage}
+                          disabled={!pagination.canGoPrevious}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                          Previous
+                        </Button>
+                        <span className="text-sm">
+                          Page {pagination.currentPage} of {pagination.totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={pagination.nextPage}
+                          disabled={!pagination.canGoNext}
+                        >
+                          Next
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                       </div>
+                     </div>
+                   )}
+                 </>
+               )}
+             </TabsContent>
+           </Tabs>
+          </div>
+        
+        <div className="flex justify-end space-x-4">
             <Button type="button" variant="outline">Cancel</Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
-                <>Creating...</>
+                <>{editingPaper ? 'Updating...' : 'Creating...'}</>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  {formData.is_scheduled ? 'Create & Schedule' : 'Create Paper'}
+                  {editingPaper ? 'Update Paper' : 'Create Paper'}
                 </>
               )}
             </Button>

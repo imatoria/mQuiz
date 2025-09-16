@@ -138,7 +138,7 @@ export const ProgressReport = () => {
         if (attempt.completed_at) {
           progress.completed_tests++;
           progress.recent_tests.push({
-            test_title: attempt.scheduled_tests.title,
+            test_title: attempt.question_papers?.title || 'Unknown Test',
             score: attempt.score || 0,
             completed_at: attempt.completed_at,
             total_questions: attempt.total_questions || 0

@@ -50,7 +50,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const classLevels = ['grade_1', 'grade_2', 'grade_3', 'grade_4', 'grade_5', 'grade_6', 'grade_7', 'grade_8', 'grade_9', 'grade_10', 'grade_11', 'grade_12'];
+  const classLevels = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
   const difficulties = ['easy', 'medium', 'difficult'];
 
   useEffect(() => {
@@ -319,7 +319,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                   <SelectItem value="all">All Classes</SelectItem>
                   {classLevels.map((level) => (
                     <SelectItem key={level} value={level}>
-                      {level.replace('grade_', 'Grade ')}
+                      Class {level}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -453,7 +453,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {question.class_level?.replace('grade_', 'Grade ') || '-'}
+                        {question.class_level ? `Class ${question.class_level}` : '-'}
                       </TableCell>
                       <TableCell>
                         {question.page_number || '-'}
