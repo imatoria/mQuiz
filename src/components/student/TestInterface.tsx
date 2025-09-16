@@ -247,7 +247,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
       timeRemaining: Math.max(0, timeLeft), // Ensure non-negative
       flaggedQuestions: Array.from(flaggedQuestions),
-      scheduledTestId: test.id
+      paperId: test.id
     };
 
     if (!isOnline && !forceSync && !isGracePeriod) {
@@ -398,7 +398,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
             progressPercentage: 0,
             timeRemaining: 0,
             flaggedQuestions: [],
-            scheduledTestId: test.id
+            paperId: test.id
           }
         });
         
@@ -644,7 +644,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
           currentQuestionIndex,
           progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
           timeRemaining: Math.max(0, timeLeft),
-          scheduledTestId: test.id
+          paperId: test.id
         }
       });
 

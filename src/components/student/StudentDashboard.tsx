@@ -109,172 +109,96 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
 
   const fetchTests = async () => {
     return executeAsync(async () => {
-      
       console.log('Fetching tests with new schema...');
       
-      // Get current user info
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        throw new Error('User not authenticated');
-      }
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (!authData.user) throw new Error('User not authenticated');
 
-      console.log('User authenticated, fetching scheduled papers...');
-
-      // Fetch all scheduled papers that the current user can view
-      const { data: scheduledPapers, error } = await supabase
-        .from('question_papers')
-        .select(`
-          *,
-          subjects!inner (name),
-          paper_attempts (
-            id,
-            attempt_number,
-            score,
-            completed_at,
-            started_at,
-            user_id
-          )
-        `)
-        .neq('start_time', null)
-        .neq('end_time', null)
-        .order('start_time', { ascending: true });
-
-      console.log('Query executed, scheduledPapers:', scheduledPapers, 'error:', error);
-
-      if (error) {
-        console.error('Error fetching tests:', error);
+        const userId = authData.user.id;
+        
+        // Fetch scheduled papers with explicit query
+        const { data: papers, error } = await supabase
+          .from('question_papers')
+          .select(`
+            *,
+            subjects!inner (
+              id,
+              name
+            )
+          `)
+          .eq('assign_to_all', true)
+          .not('start_time', 'is', null)
+          .not('end_time', 'is', null);
+        
+        if (error) throw error;
+        
+        const validPapers = papers || [];
+        
+        // Get attempts for current user
+        const { data: attemptsData, error: attemptsError } = await supabase
+          .from('paper_attempts')
+          .select('*')
+          .eq('user_id', userId);
+        
+        if (attemptsError) throw attemptsError;
+        
+        const attemptsMap: Record<string, any[]> = {};
+        (attemptsData || []).forEach(a => {
+          if (!attemptsMap[a.paper_id]) attemptsMap[a.paper_id] = [];
+          attemptsMap[a.paper_id].push(a);
+        });
+        
+        const processedPapers: ScheduledPaper[] = validPapers.map(p => ({
+          id: p.id,
+          title: p.title,
+          start_time: p.start_time,
+          end_time: p.end_time,
+          max_attempts: p.max_attempts || 1,
+          time_limit_minutes: p.time_limit_minutes || 60,
+          total_questions: p.total_questions || 0,
+          subjects: p.subjects || {name: 'Unknown'},
+          paper_attempts: (attemptsMap[p.id] || []).map(a => ({
+            id: a.id,
+            attempt_number: a.attempt_number,
+            score: a.score,
+            completed_at: a.completed_at,
+            started_at: a.started_at,
+            current_question_index: a.current_question_index || 0,
+            total_questions: p.total_questions || 0,
+            time_remaining: a.time_remaining || 0,
+            answers: a.answers || {},
+            progress_percentage: a.progress_percentage || 0
+          }))
+        }));
+        
+        // Categorize papers
+        const now = new Date();
+        const categorized = { available: [] as ScheduledPaper[], completed: [] as ScheduledPaper[], active: [] as ScheduledPaper[] };
+        
+        processedPapers.forEach(paper => {
+          const start = new Date(paper.start_time);
+          const end = new Date(paper.end_time);
+          const inProgress = paper.paper_attempts.filter(a => !a.completed_at);
+          const hasCompleted = paper.paper_attempts.some(a => a.completed_at);
+          const hasRemaining = paper.paper_attempts.length < paper.max_attempts;
+          
+          if (inProgress.length > 0) {
+            categorized.active.push(paper);
+          } else if (end < now || (hasCompleted && !hasRemaining)) {
+            categorized.completed.push(paper);
+          } else {
+            categorized.available.push(paper);
+          }
+        });
+        
+        setAvailableTests(categorized.available);
+        setCompletedTests(categorized.completed);
+        setActiveTests(categorized.active);
+      } catch (error) {
+        console.error('Error in fetchTests:', error);
         throw error;
       }
-
-      // Filter paper attempts to only include current user's attempts
-      const papersWithUserAttempts = scheduledPapers?.map(paper => ({
-        ...paper,
-        paper_attempts: paper.paper_attempts?.filter(attempt => attempt.user_id === authUser.id) || []
-      })) || [];
-
-      const now = new Date();
-      const available: ScheduledPaper[] = [];
-      const completed: ScheduledPaper[] = [];
-      const active: ScheduledPaper[] = [];
-
-      // Function to check if a paper attempt has exceeded its time limit
-      const isAttemptTimeExpired = (attempt: PaperAttempt, timeLimitMinutes: number) => {
-        const attemptStart = new Date(attempt.started_at);
-        const timeLimitMs = timeLimitMinutes * 60 * 1000;
-        const attemptEndTime = new Date(attemptStart.getTime() + timeLimitMs);
-        return now > attemptEndTime;
-      };
-
-      // Process papers and handle expired attempts
-      const expiredAttemptData: Array<{ attemptId: string; paperId: string }> = [];
-
-      papersWithUserAttempts.forEach((paper) => {
-        const paperStart = new Date(paper.start_time);
-        const paperEnd = new Date(paper.end_time);
-        const timeLimitMinutes = paper.time_limit_minutes || 60;
-        
-        // Check for in-progress attempts and validate time limits
-        const inProgressAttempts = paper.paper_attempts?.filter(attempt => !attempt.completed_at) || [];
-        const validActiveAttempts = inProgressAttempts.filter(attempt => {
-          const isExpired = isAttemptTimeExpired(attempt, timeLimitMinutes);
-          if (isExpired) {
-            expiredAttemptData.push({ attemptId: attempt.id, paperId: paper.id });
-          }
-          return !isExpired;
-        });
-
-        const hasValidInProgressAttempt = validActiveAttempts.length > 0;
-        const completedAttempts = paper.paper_attempts?.filter(attempt => attempt.completed_at) || [];
-        const hasCompletedAttempt = completedAttempts.length > 0;
-        const totalAttempts = paper.paper_attempts?.length || 0;
-        const hasRemainingAttempts = totalAttempts < paper.max_attempts;
-        
-        const mappedPaper: ScheduledPaper = {
-          id: paper.id,
-          title: paper.title,
-          start_time: paper.start_time,
-          end_time: paper.end_time,
-          max_attempts: paper.max_attempts,
-          time_limit_minutes: paper.time_limit_minutes,
-          total_questions: paper.total_questions,
-          subjects: paper.subjects,
-          paper_attempts: paper.paper_attempts?.map(attempt => ({
-            id: attempt.id,
-            attempt_number: attempt.attempt_number,
-            score: attempt.score,
-            completed_at: attempt.completed_at,
-            started_at: attempt.started_at,
-            current_question_index: 0,
-            total_questions: paper.total_questions,
-            time_remaining: 0,
-            answers: {},
-            progress_percentage: 0
-          })) || []
-        };
-        
-        if (hasValidInProgressAttempt) {
-          active.push(mappedPaper);
-        } else if (paperEnd < now || (hasCompletedAttempt && !hasRemainingAttempts)) {
-          // Test expired OR all attempts used (and at least one completed)
-          completed.push(mappedPaper);
-        } else if (paperStart <= now && paperEnd >= now && hasRemainingAttempts) {
-          // Test is currently active and student has remaining attempts
-          available.push(mappedPaper);
-        } else if (paperStart > now) {
-          // Future tests go to available with appropriate status
-          available.push(mappedPaper);
-        }
-      });
-
-      // Auto-submit expired attempts
-      if (expiredAttemptData.length > 0) {
-        
-        for (const { attemptId, paperId } of expiredAttemptData) {
-          try {
-            const { error: submitError } = await supabase.functions.invoke('complete-paper-attempt', {
-              body: {
-                paperAttemptId: attemptId,
-                completionType: 'auto',
-                completionReason: 'time_expired',
-                answers: {},
-                flaggedQuestions: [],
-                currentQuestionIndex: 0,
-                progressPercentage: 0,
-                timeRemaining: 0
-              }
-            });
-            
-            if (submitError) {
-              console.error(`Failed to auto-submit attempt ${attemptId}:`, submitError);
-            }
-          } catch (error) {
-            console.error(`Error auto-submitting attempt ${attemptId}:`, error);
-          }
-        }
-
-        // Show notification to user about expired attempts
-        if (expiredAttemptData.length > 0) {
-          toast({
-            title: "Test Attempts Expired",
-            description: `${expiredAttemptData.length} test attempt(s) have been automatically submitted due to time limit expiration.`,
-            variant: "destructive"
-          });
-        }
-
-        // Re-fetch tests to get updated state after auto-submission
-        // Use a flag to prevent multiple concurrent fetches
-        setTimeout(() => {
-          if (document.hasFocus()) {
-            fetchTests();
-          }
-        }, 1000);
-        
-        return; // Exit early to avoid setting stale data
-      }
-
-      setAvailableTests(available);
-      setCompletedTests(completed);
-      setActiveTests(active);
     });
   };
 
