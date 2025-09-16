@@ -86,12 +86,10 @@ serve(async (req) => {
       .select(`
         end_time,
         start_time,
-        time_limit_hours,
         time_limit_minutes,
         id
       `)
       .eq('id', paperId)
-      .eq('is_scheduled', true)
       .single();
 
     if (paperError) {
@@ -131,7 +129,7 @@ serve(async (req) => {
     const attemptStartTime = new Date(attemptData.started_at);
     
     // Determine effective time limit: prefer paper override, fallback to paper
-    const scheduledMinutes = ((paperData.time_limit_hours ?? 0) * 60) + (paperData.time_limit_minutes ?? 0);
+    const scheduledMinutes = (paperData.time_limit_minutes ?? 0);
     const effectiveMinutes = scheduledMinutes > 0 ? scheduledMinutes : 0;
     const timeLimitMs = effectiveMinutes * 60 * 1000;
     const attemptEndTime = timeLimitMs > 0 ? new Date(attemptStartTime.getTime() + timeLimitMs) : null;

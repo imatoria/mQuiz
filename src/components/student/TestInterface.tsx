@@ -241,7 +241,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     if (!testAttemptId || (isSubmitting && !isGracePeriod)) return;
 
     const progressData = {
-      testAttemptId,
+      paperAttemptId: testAttemptId,
       answers,
       currentQuestionIndex,
       progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
@@ -392,7 +392,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       try {
         const { data } = await supabase.functions.invoke('save-paper-progress', {
           body: {
-            testAttemptId: 'sync-time',
+            paperAttemptId: 'sync-time',
             answers: {},
             currentQuestionIndex: 0,
             progressPercentage: 0,
