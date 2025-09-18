@@ -220,8 +220,7 @@ export const DocumentUpload = ({
           .insert({
             document_id: documentData.id,
             page_number: i,
-            content: pageText,
-            markdown_content: `## Page ${i}\n\n${pageText}`
+            content: pageText
           });
         
         if (pageError) throw pageError;

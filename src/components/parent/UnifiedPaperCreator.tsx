@@ -107,7 +107,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     search: '',
     difficulty: '',
     topic: '',
-    page_numbers: [] as number[]
+    page_numbers: [] as number[],
+    dateRange: { from: undefined as Date | undefined, to: undefined as Date | undefined }
   });
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
@@ -370,6 +371,16 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     
     if (questionFilters.page_numbers.length > 0) {
       filtered = filtered.filter(q => q.page_number && questionFilters.page_numbers.includes(q.page_number));
+    }
+    
+    // Date range filtering
+    if (questionFilters.dateRange.from || questionFilters.dateRange.to) {
+      filtered = filtered.filter(q => {
+        const questionDate = new Date(q.created_at);
+        const matchesFrom = !questionFilters.dateRange.from || questionDate >= questionFilters.dateRange.from;
+        const matchesTo = !questionFilters.dateRange.to || questionDate <= questionFilters.dateRange.to;
+        return matchesFrom && matchesTo;
+      });
     }
     
     setFilteredQuestions(filtered);
@@ -996,7 +1007,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
                 <TabsContent value="unselected" className="space-y-4">
                   {/* Question Selection Filters */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <Label>Search Questions</Label>
                       <Input
@@ -1037,6 +1048,52 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                         className="w-full"
                       />
                     </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Date Range</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !questionFilters.dateRange.from && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {questionFilters.dateRange?.from ? (
+                              questionFilters.dateRange.to ? (
+                                <>
+                                  {format(questionFilters.dateRange.from, "LLL dd, y")} -{" "}
+                                  {format(questionFilters.dateRange.to, "LLL dd, y")}
+                                </>
+                              ) : (
+                                format(questionFilters.dateRange.from, "LLL dd, y")
+                              )
+                            ) : (
+                              <span>Pick date range</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={questionFilters.dateRange?.from}
+                            selected={{ from: questionFilters.dateRange.from, to: questionFilters.dateRange.to }}
+                            onSelect={(range) => setQuestionFilters(prev => ({ 
+                              ...prev, 
+                              dateRange: { 
+                                from: range?.from, 
+                                to: range?.to 
+                              }
+                            }))}
+                            numberOfMonths={2}
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1047,7 +1104,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                         ...prev, 
                         search: '', 
                         page_numbers: [],
-                        difficulty: ''
+                        difficulty: '',
+                        dateRange: { from: undefined, to: undefined }
                       }))}
                     >
                       Clear Filters

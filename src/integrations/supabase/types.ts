@@ -154,82 +154,12 @@ export type Database = {
         }
         Relationships: []
       }
-      backup_schedules: {
-        Row: {
-          backup_type: string
-          created_at: string
-          frequency: string
-          id: string
-          is_active: boolean
-          last_backup_at: string | null
-          next_backup_at: string | null
-          retention_days: number
-          schedule_name: string
-          updated_at: string
-        }
-        Insert: {
-          backup_type: string
-          created_at?: string
-          frequency: string
-          id?: string
-          is_active?: boolean
-          last_backup_at?: string | null
-          next_backup_at?: string | null
-          retention_days?: number
-          schedule_name: string
-          updated_at?: string
-        }
-        Update: {
-          backup_type?: string
-          created_at?: string
-          frequency?: string
-          id?: string
-          is_active?: boolean
-          last_backup_at?: string | null
-          next_backup_at?: string | null
-          retention_days?: number
-          schedule_name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      data_encryption_keys: {
-        Row: {
-          created_at: string
-          encrypted_key: string
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          key_name: string
-          key_version: number
-        }
-        Insert: {
-          created_at?: string
-          encrypted_key: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          key_name: string
-          key_version?: number
-        }
-        Update: {
-          created_at?: string
-          encrypted_key?: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          key_name?: string
-          key_version?: number
-        }
-        Relationships: []
-      }
       document_pages: {
         Row: {
           content: string | null
           created_at: string
           document_id: string
           id: string
-          markdown_content: string | null
           page_number: number
         }
         Insert: {
@@ -237,7 +167,6 @@ export type Database = {
           created_at?: string
           document_id: string
           id?: string
-          markdown_content?: string | null
           page_number: number
         }
         Update: {
@@ -245,7 +174,6 @@ export type Database = {
           created_at?: string
           document_id?: string
           id?: string
-          markdown_content?: string | null
           page_number?: number
         }
         Relationships: [
@@ -654,51 +582,6 @@ export type Database = {
           created_at?: string
           id?: string
           parent_id?: string
-        }
-        Relationships: []
-      }
-      privacy_settings: {
-        Row: {
-          analytics_consent: boolean | null
-          coppa_compliant: boolean | null
-          created_at: string
-          data_deletion_requested: boolean | null
-          data_export_requested: boolean | null
-          data_retention_period: number | null
-          id: string
-          marketing_consent: boolean | null
-          parental_consent_verified: boolean | null
-          third_party_sharing: boolean | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          analytics_consent?: boolean | null
-          coppa_compliant?: boolean | null
-          created_at?: string
-          data_deletion_requested?: boolean | null
-          data_export_requested?: boolean | null
-          data_retention_period?: number | null
-          id?: string
-          marketing_consent?: boolean | null
-          parental_consent_verified?: boolean | null
-          third_party_sharing?: boolean | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          analytics_consent?: boolean | null
-          coppa_compliant?: boolean | null
-          created_at?: string
-          data_deletion_requested?: boolean | null
-          data_export_requested?: boolean | null
-          data_retention_period?: number | null
-          id?: string
-          marketing_consent?: boolean | null
-          parental_consent_verified?: boolean | null
-          third_party_sharing?: boolean | null
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }

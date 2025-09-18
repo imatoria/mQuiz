@@ -22,7 +22,7 @@ export const ContentCreation = () => {
   const [questionPapers, setQuestionPapers] = useState<any[]>([]);
   const [scheduledTests, setScheduledTests] = useState<any[]>([]);
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerDoc, setViewerDoc] = useState<{ file_path: string; title: string; markdown_content?: string } | null>(null);
+  const [viewerDoc, setViewerDoc] = useState<{ file_path: string; title: string; content?: string } | null>(null);
 
   React.useEffect(() => {
     fetchData();
@@ -136,16 +136,16 @@ export const ContentCreation = () => {
                         // Fetch all pages content for this document
                         const { data: pages } = await supabase
                           .from('document_pages')
-                          .select('page_number, markdown_content')
+                          .select('page_number, content')
                           .eq('document_id', doc.id)
                           .order('page_number');
                         
-                        const combinedContent = pages?.map(p => p.markdown_content).join('\n\n') || '';
+                        const combinedContent = pages?.map(p => p.content).join('\n\n') || '';
                         
                         setViewerDoc({ 
                           file_path: '', 
                           title: doc.title, 
-                          markdown_content: combinedContent 
+                          content: combinedContent 
                         });
                         setViewerOpen(true);
                       }}
@@ -188,7 +188,7 @@ export const ContentCreation = () => {
       <MarkdownViewerModal
         open={viewerOpen}
         onOpenChange={setViewerOpen}
-        content={viewerDoc?.markdown_content}
+        content={viewerDoc?.content}
         title={viewerDoc?.title}
       />
     </div>

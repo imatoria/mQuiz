@@ -9,7 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Edit, Trash2, Plus, Filter, BookOpen, BarChart3 } from 'lucide-react';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Search, Edit, Trash2, Plus, Filter, BookOpen, BarChart3, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
@@ -27,6 +31,7 @@ interface Question {
   page_number?: number;
   subject_id: string;
   class_level: string;
+  created_at: string;
 }
 
 interface Subject {
@@ -45,6 +50,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -98,7 +104,12 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     const matchesDifficulty = selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
     const matchesClass = selectedClass === 'all' || question.class_level === selectedClass;
     
-    return matchesSearch && matchesSubject && matchesDifficulty && matchesClass;
+    // Date range filtering
+    const questionDate = new Date(question.created_at);
+    const matchesDateRange = (!dateRange.from || questionDate >= dateRange.from) && 
+                            (!dateRange.to || questionDate <= dateRange.to);
+    
+    return matchesSearch && matchesSubject && matchesDifficulty && matchesClass && matchesDateRange;
   });
 
   const {
@@ -260,7 +271,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label htmlFor="search">Search Questions</Label>
               <div className="relative">
@@ -325,6 +336,63 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label>Date Range</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateRange.from && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={{ from: dateRange.from, to: dateRange.to }}
+                    onSelect={(range) => setDateRange(range || {})}
+                    numberOfMonths={2}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedSubject('all');
+                setSelectedDifficulty('all');
+                setSelectedClass('all');
+                setDateRange({});
+              }}
+            >
+              Clear All Filters
+            </Button>
           </div>
         </CardContent>
       </Card>
