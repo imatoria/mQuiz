@@ -193,75 +193,6 @@ export type Database = {
         }
         Relationships: []
       }
-      book_documents: {
-        Row: {
-          book_id: string
-          chapter_number: number
-          chapter_title: string | null
-          created_at: string
-          document_id: string
-          id: string
-          order_index: number
-        }
-        Insert: {
-          book_id: string
-          chapter_number: number
-          chapter_title?: string | null
-          created_at?: string
-          document_id: string
-          id?: string
-          order_index: number
-        }
-        Update: {
-          book_id?: string
-          chapter_number?: number
-          chapter_title?: string | null
-          created_at?: string
-          document_id?: string
-          id?: string
-          order_index?: number
-        }
-        Relationships: []
-      }
-      books: {
-        Row: {
-          author_id: string
-          class_level: Database["public"]["Enums"]["class_level"]
-          cover_image_url: string | null
-          created_at: string
-          description: string | null
-          id: string
-          is_published: boolean
-          subject_id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          author_id: string
-          class_level: Database["public"]["Enums"]["class_level"]
-          cover_image_url?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_published?: boolean
-          subject_id: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          author_id?: string
-          class_level?: Database["public"]["Enums"]["class_level"]
-          cover_image_url?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_published?: boolean
-          subject_id?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       data_encryption_keys: {
         Row: {
           created_at: string
@@ -292,57 +223,13 @@ export type Database = {
         }
         Relationships: []
       }
-      document_page_selections: {
-        Row: {
-          class_level: Database["public"]["Enums"]["class_level"]
-          created_at: string
-          document_id: string
-          id: string
-          page_number: number
-          subject_id: string
-          user_id: string
-        }
-        Insert: {
-          class_level: Database["public"]["Enums"]["class_level"]
-          created_at?: string
-          document_id: string
-          id?: string
-          page_number: number
-          subject_id: string
-          user_id: string
-        }
-        Update: {
-          class_level?: Database["public"]["Enums"]["class_level"]
-          created_at?: string
-          document_id?: string
-          id?: string
-          page_number?: number
-          subject_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_page_selections_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_page_selections_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       document_pages: {
         Row: {
           content: string | null
           created_at: string
           document_id: string
           id: string
+          markdown_content: string | null
           page_number: number
         }
         Insert: {
@@ -350,6 +237,7 @@ export type Database = {
           created_at?: string
           document_id: string
           id?: string
+          markdown_content?: string | null
           page_number: number
         }
         Update: {
@@ -357,6 +245,7 @@ export type Database = {
           created_at?: string
           document_id?: string
           id?: string
+          markdown_content?: string | null
           page_number?: number
         }
         Relationships: [
@@ -369,134 +258,35 @@ export type Database = {
           },
         ]
       }
-      document_shares: {
-        Row: {
-          created_at: string
-          document_id: string
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          permission_level: string
-          shared_by: string
-          shared_with: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          document_id: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          permission_level?: string
-          shared_by: string
-          shared_with: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          document_id?: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          permission_level?: string
-          shared_by?: string
-          shared_with?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      document_tags: {
-        Row: {
-          created_at: string
-          document_id: string
-          id: string
-          tag_id: string
-        }
-        Insert: {
-          created_at?: string
-          document_id: string
-          id?: string
-          tag_id: string
-        }
-        Update: {
-          created_at?: string
-          document_id?: string
-          id?: string
-          tag_id?: string
-        }
-        Relationships: []
-      }
-      document_versions: {
-        Row: {
-          changes_description: string | null
-          created_at: string
-          created_by: string
-          document_id: string
-          file_path: string
-          id: string
-          title: string
-          version_number: number
-        }
-        Insert: {
-          changes_description?: string | null
-          created_at?: string
-          created_by: string
-          document_id: string
-          file_path: string
-          id?: string
-          title: string
-          version_number: number
-        }
-        Update: {
-          changes_description?: string | null
-          created_at?: string
-          created_by?: string
-          document_id?: string
-          file_path?: string
-          id?: string
-          title?: string
-          version_number?: number
-        }
-        Relationships: []
-      }
       documents: {
         Row: {
           class_level: Database["public"]["Enums"]["class_level"]
           created_at: string
-          current_version: number | null
-          file_path: string
           id: string
           processing_status: string | null
           subject_id: string
           title: string
           total_pages: number | null
-          updated_at: string
           user_id: string
         }
         Insert: {
           class_level: Database["public"]["Enums"]["class_level"]
           created_at?: string
-          current_version?: number | null
-          file_path: string
           id?: string
           processing_status?: string | null
           subject_id: string
           title: string
           total_pages?: number | null
-          updated_at?: string
           user_id: string
         }
         Update: {
           class_level?: Database["public"]["Enums"]["class_level"]
           created_at?: string
-          current_version?: number | null
-          file_path?: string
           id?: string
           processing_status?: string | null
           subject_id?: string
           title?: string
           total_pages?: number | null
-          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1115,42 +905,6 @@ export type Database = {
         }
         Relationships: []
       }
-      rate_limits: {
-        Row: {
-          blocked_until: string | null
-          created_at: string
-          endpoint: string
-          id: string
-          ip_address: unknown | null
-          request_count: number
-          updated_at: string
-          user_id: string | null
-          window_start: string
-        }
-        Insert: {
-          blocked_until?: string | null
-          created_at?: string
-          endpoint: string
-          id?: string
-          ip_address?: unknown | null
-          request_count?: number
-          updated_at?: string
-          user_id?: string | null
-          window_start?: string
-        }
-        Update: {
-          blocked_until?: string | null
-          created_at?: string
-          endpoint?: string
-          id?: string
-          ip_address?: unknown | null
-          request_count?: number
-          updated_at?: string
-          user_id?: string | null
-          window_start?: string
-        }
-        Relationships: []
-      }
       security_events: {
         Row: {
           created_at: string
@@ -1199,30 +953,6 @@ export type Database = {
         }
         Relationships: []
       }
-      tags: {
-        Row: {
-          color: string | null
-          created_at: string
-          created_by: string
-          id: string
-          name: string
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string
-          created_by: string
-          id?: string
-          name: string
-        }
-        Update: {
-          color?: string | null
-          created_at?: string
-          created_by?: string
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
       user_ai_provider_keys: {
         Row: {
           ai_provider_id: string
@@ -1257,30 +987,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_subjects: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
     }
     Views: {

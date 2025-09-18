@@ -65,23 +65,8 @@ export const DocumentLibrary = () => {
       setDocuments(documentsData || []);
       setSubjects(subjectsData || []);
 
-      // Fetch selected pages per document (ordered desc)
-      const docIds = (documentsData || []).map((d: any) => d.id);
-      if (docIds.length > 0) {
-        const { data: selections } = await supabase
-          .from('document_page_selections')
-          .select('document_id, page_number')
-          .in('document_id', docIds)
-          .order('page_number', { ascending: false });
-        const map: Record<string, number[]> = {};
-        (selections || []).forEach((row: any) => {
-          if (!map[row.document_id]) map[row.document_id] = [];
-          map[row.document_id].push(row.page_number);
-        });
-        setPageSelections(map);
-      } else {
-        setPageSelections({});
-      }
+      // No longer using page selections - all pages are available from document_pages
+      setPageSelections({});
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({

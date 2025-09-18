@@ -49,54 +49,19 @@ export const DocumentUpload = ({
   }, []);
   const fetchSubjects = async () => {
     try {
-      const {
-        data: user
-      } = await supabase.auth.getUser();
-      if (!user.user) return;
-
-      // Fetch both global subjects and user's custom subjects
-      const [globalSubjects, userSubjects] = await Promise.all([supabase.from('subjects').select('*').order('name'), (supabase as any).from('user_subjects').select('*').eq('user_id', user.user.id).order('name')]);
-      const allSubjects = [...(globalSubjects.data || []), ...(userSubjects.data || [])];
-      setSubjects(allSubjects);
+      // Fetch only global subjects (user_subjects table removed)
+      const { data: globalSubjects } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('name');
+      
+      setSubjects(globalSubjects || []);
     } catch (error) {
       console.error('Error fetching subjects:', error);
     }
   };
-  const fetchUsedPages = async () => {
-    if (!subject || !classLevel) {
-      setUsedPages([]);
-      return;
-    }
-    try {
-      setLoadingUsedPages(true);
-      const {
-        data: auth
-      } = await supabase.auth.getUser();
-      if (!auth.user) {
-        setUsedPages([]);
-        return;
-      }
-      const {
-        data,
-        error
-      } = await supabase.from('document_page_selections').select('page_number').eq('user_id', auth.user.id).eq('subject_id', subject).eq('class_level', classLevel as any);
-      if (error) {
-        console.error('Error fetching used pages', error);
-        setUsedPages([]);
-      } else {
-        const pages = Array.from(new Set((data || []).map((d: any) => d.page_number)));
-        setUsedPages(pages);
-      }
-    } finally {
-      setLoadingUsedPages(false);
-    }
-  };
-  React.useEffect(() => {
-    fetchUsedPages();
-  }, [subject, classLevel]);
-  React.useEffect(() => {
-    // No-op: allow selecting pages even if previously used
-  }, [usedPages]);
+  // Removed fetchUsedPages - no longer using document_page_selections
+  // Removed page selection logic
   const generateTitleWithPages = () => {
     if (!originalFileName) return '';
     const baseName = originalFileName.replace(/\.pdf$/i, '');
@@ -215,168 +180,58 @@ export const DocumentUpload = ({
       return;
     }
 
-    // Allow adjusting existing page mappings for this subject & class
     setIsUploading(true);
     try {
       const {
         data: user
       } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
-      const fileName = `${user.user.id}/${Date.now()}-${file.name}`;
 
-      // Upload file to storage
-      const {
-        error: uploadError
-      } = await supabase.storage.from('documents').upload(fileName, file);
-      if (uploadError) throw uploadError;
+      // Extract text directly from PDF without storing original file
+      const buf = await file.arrayBuffer();
+      const doc = await (pdfjs as any).getDocument({
+        data: new Uint8Array(buf)
+      }).promise;
 
-      // Save document metadata (without processing status for question generation)
+      // Save document metadata (no file storage, no markdown_content)
       const {
         data: documentData,
         error: dbError
       } = await supabase.from('documents').insert({
         user_id: user.user.id,
         title,
-        file_path: fileName,
         subject_id: subject,
         class_level: classLevel as any,
-        processing_status: 'stored' // Just store, don't generate questions
+        processing_status: 'completed',
+        total_pages: doc.numPages
       }).select().single();
       if (dbError) throw dbError;
 
-      // Save selected page associations (ensure mapping and cleanup)
-      if (selectedPages.length > 0) {
-        // Fetch all current selections for this subject/class
-        const { data: currentSelections, error: curSelErr } = await supabase
-          .from('document_page_selections')
-          .select('id, page_number, document_id')
-          .eq('user_id', user.user.id)
-          .eq('subject_id', subject)
-          .eq('class_level', classLevel as any);
-
-        if (curSelErr) throw curSelErr;
-
-        const currentByPage = new Map<number, { id: string; document_id: string }>(
-          (currentSelections || []).map((s: any) => [s.page_number, { id: s.id, document_id: s.document_id }])
-        );
-
-        // Insert any missing pages
-        const missingToInsert = selectedPages
-          .filter((p) => !currentByPage.has(p))
-          .map((p) => ({
-            user_id: user.user.id,
-            document_id: documentData.id,
-            subject_id: subject,
-            class_level: classLevel as any,
-            page_number: p,
-          }));
-
-        if (missingToInsert.length > 0) {
-          const { error: insertSelErr2 } = await supabase
-            .from('document_page_selections')
-            .insert(missingToInsert);
-          if (insertSelErr2) throw insertSelErr2;
-        }
-
-        // Update existing selected pages to point to this new document
-        const pagesToUpdate = selectedPages.filter((p) => {
-          const row = currentByPage.get(p);
-          return row && row.document_id !== documentData.id;
-        });
-        if (pagesToUpdate.length > 0) {
-          const { error: updErr } = await supabase
-            .from('document_page_selections')
-            .update({ document_id: documentData.id })
-            .eq('user_id', user.user.id)
-            .eq('subject_id', subject)
-            .eq('class_level', classLevel as any)
-            .in('page_number', pagesToUpdate);
-          if (updErr) throw updErr;
-        }
-
-        // Delete any pages that are no longer selected
-        const toDeleteIds = (currentSelections || [])
-          .filter((s: any) => !selectedPages.includes(s.page_number))
-          .map((s: any) => s.id);
-        if (toDeleteIds.length > 0) {
-          const { error: delSelErr } = await supabase
-            .from('document_page_selections')
-            .delete()
-            .in('id', toDeleteIds);
-          if (delSelErr) throw delSelErr;
-        }
-      }
-
-      // Create/replace Book for this subject + class with these pages
-      try {
-        // Delete existing book (if any)
-        const { data: existingBook } = await supabase
-          .from('books')
-          .select('id')
-          .eq('author_id', user.user.id)
-          .eq('subject_id', subject)
-          .eq('class_level', classLevel as any)
-          .maybeSingle();
-
-        if (existingBook?.id) {
-          // Remove existing book_documents first
-          await supabase.from('book_documents').delete().eq('book_id', existingBook.id);
-          await supabase.from('books').delete().eq('id', existingBook.id);
-        }
-
-        // Build a friendly title
-        const { data: subjRow } = await supabase
-          .from('subjects')
-          .select('name')
-          .eq('id', subject)
-          .maybeSingle();
-
-        const bookTitle = `${subjRow?.name || 'Subject'} - Class ${classLevel} - Pages Book`;
-
-        const { data: newBook, error: bookErr } = await supabase
-          .from('books')
+      // Store each page's content individually in document_pages
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        
+        const { error: pageError } = await supabase
+          .from('document_pages')
           .insert({
-            title: bookTitle,
-            author_id: user.user.id,
-            subject_id: subject,
-            class_level: classLevel as any,
-            is_published: false,
-          })
-          .select()
-          .single();
-        if (bookErr) throw bookErr;
-
-        // Create book_documents ordered by selected page numbers
-        const pagesSorted = [...selectedPages].sort((a, b) => a - b);
-        const bookDocs = pagesSorted.map((p, idx) => ({
-          book_id: newBook.id,
-          document_id: documentData.id,
-          chapter_number: p,
-          order_index: idx + 1,
-          chapter_title: `Page ${p}`,
-        }));
-
-        if (bookDocs.length > 0) {
-          const { error: bdErr } = await supabase.from('book_documents').insert(bookDocs);
-          if (bdErr) throw bdErr;
-        }
-      } catch (bookFlowErr) {
-        console.warn('Book creation flow warning:', bookFlowErr);
+            document_id: documentData.id,
+            page_number: i,
+            content: pageText,
+            markdown_content: `## Page ${i}\n\n${pageText}`
+          });
+        
+        if (pageError) throw pageError;
       }
 
-      // Extract and save document content without generating questions
-      const { error: processError } = await supabase.functions.invoke('process-document', {
-        body: {
-          documentId: documentData.id,
-          onlyExtract: true, // Flag to only extract content, not generate questions
-        },
-      });
-      if (processError) {
-        console.warn('Content extraction failed, but pages were uploaded:', processError);
-      }
+      // Removed page selection and book creation logic
+
       toast({
-        title: "Pages uploaded successfully",
-        description: "Your pages were stored, mappings updated, and the book was rebuilt.",
+        title: "Document uploaded successfully",
+        description: "Your document has been processed and each page stored individually.",
       });
 
       // Reset form

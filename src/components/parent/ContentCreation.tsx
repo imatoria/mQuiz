@@ -7,7 +7,6 @@ import { DocumentProcessingStatus } from './DocumentProcessingStatus';
 import { QuestionPaperGenerator } from './QuestionPaperGenerator';
 
 import { ChildrenManagement } from './ChildrenManagement';
-import { BookManagement } from './BookManagement';
 import { AIProviderSettings } from './AIProviderSettings';
 import { AIQuestionGenerator } from './AIQuestionGenerator';
 import QuestionBank from './QuestionBank';
@@ -15,7 +14,7 @@ import QuestionAnalytics from './QuestionAnalytics';
 import BulkQuestionOperations from './BulkQuestionOperations';
 import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import PdfViewerModal from '@/components/ui/pdf-viewer-modal';
+import MarkdownViewerModal from '@/components/ui/markdown-viewer-modal';
 
 export const ContentCreation = () => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -23,7 +22,7 @@ export const ContentCreation = () => {
   const [questionPapers, setQuestionPapers] = useState<any[]>([]);
   const [scheduledTests, setScheduledTests] = useState<any[]>([]);
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerDoc, setViewerDoc] = useState<{ file_path: string; title: string } | null>(null);
+  const [viewerDoc, setViewerDoc] = useState<{ file_path: string; title: string; markdown_content?: string } | null>(null);
 
   React.useEffect(() => {
     fetchData();
@@ -110,9 +109,8 @@ export const ContentCreation = () => {
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="upload">Upload</TabsTrigger>
-          <TabsTrigger value="books">Books</TabsTrigger>
           <TabsTrigger value="ai-generator">AI Generator</TabsTrigger>
           <TabsTrigger value="bulk">Bulk Ops</TabsTrigger>
         </TabsList>
@@ -134,8 +132,21 @@ export const ContentCreation = () => {
                     <div
                       key={doc.id}
                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted cursor-pointer"
-                      onClick={() => {
-                        setViewerDoc({ file_path: doc.file_path, title: doc.title });
+                      onClick={async () => {
+                        // Fetch all pages content for this document
+                        const { data: pages } = await supabase
+                          .from('document_pages')
+                          .select('page_number, markdown_content')
+                          .eq('document_id', doc.id)
+                          .order('page_number');
+                        
+                        const combinedContent = pages?.map(p => p.markdown_content).join('\n\n') || '';
+                        
+                        setViewerDoc({ 
+                          file_path: '', 
+                          title: doc.title, 
+                          markdown_content: combinedContent 
+                        });
                         setViewerOpen(true);
                       }}
                     >
@@ -165,9 +176,6 @@ export const ContentCreation = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="books" className="space-y-6 mt-6">
-          <BookManagement onBooksUpdate={handleRefresh} />
-        </TabsContent>
 
         <TabsContent value="ai-generator" className="space-y-6 mt-6">
           <AIQuestionGenerator />
@@ -177,10 +185,10 @@ export const ContentCreation = () => {
           <BulkQuestionOperations />
         </TabsContent>
       </Tabs>
-      <PdfViewerModal
+      <MarkdownViewerModal
         open={viewerOpen}
         onOpenChange={setViewerOpen}
-        filePath={viewerDoc?.file_path}
+        content={viewerDoc?.markdown_content}
         title={viewerDoc?.title}
       />
     </div>

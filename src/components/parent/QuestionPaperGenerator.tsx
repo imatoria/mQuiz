@@ -56,15 +56,25 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       setSelectedPages([]);
       return;
     }
-    const { data } = await supabase
-      .from('document_page_selections')
-      .select('page_number')
+    
+    // Fetch all pages for documents in this subject/class
+    const { data: documents } = await supabase
+      .from('documents')
+      .select('id, total_pages')
       .eq('user_id', user.user.id)
       .eq('subject_id', subject)
-      .eq('class_level', classLevel as any)
-      .order('page_number', { ascending: false });
-    const pages = Array.from(new Set((data || []).map((r: any) => r.page_number)));
-    setAvailablePages(pages);
+      .eq('class_level', classLevel as any);
+    
+    // Get all page numbers from all documents
+    const allPages: number[] = [];
+    (documents || []).forEach(doc => {
+      for (let i = 1; i <= (doc.total_pages || 0); i++) {
+        allPages.push(i);
+      }
+    });
+    
+    const uniquePages = Array.from(new Set(allPages)).sort((a, b) => a - b);
+    setAvailablePages(uniquePages);
     setSelectedPages([]);
   };
 

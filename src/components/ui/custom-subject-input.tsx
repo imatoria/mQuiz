@@ -42,11 +42,26 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
 
-      // Check if subject already exists for this user
-      const { data: existingSubjects } = await (supabase as any)
-        .from('user_subjects')
-        .select('*')
+      // Check user permissions (admin or parent only can create global subjects)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, is_approved')
         .eq('user_id', user.user.id)
+        .single();
+
+      if (!profile || !['admin', 'parent'].includes(profile.role) || !profile.is_approved) {
+        toast({
+          title: 'Permission denied',
+          description: 'Only approved parents and admins can create subjects.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check if subject already exists globally
+      const { data: existingSubjects } = await supabase
+        .from('subjects')
+        .select('*')
         .eq('name', newSubjectName.trim());
 
       if (existingSubjects && existingSubjects.length > 0) {
@@ -58,10 +73,9 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
         return;
       }
 
-      const { data: newSubject, error } = await (supabase as any)
-        .from('user_subjects')
+      const { data: newSubject, error } = await supabase
+        .from('subjects')
         .insert({
-          user_id: user.user.id,
           name: newSubjectName.trim(),
         })
         .select()
@@ -71,7 +85,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
 
       toast({
         title: 'Subject created',
-        description: `${newSubjectName} has been added to your subjects.`,
+        description: `${newSubjectName} has been added to the global subjects.`,
       });
 
       setNewSubjectName('');
