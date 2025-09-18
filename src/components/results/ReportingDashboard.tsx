@@ -50,19 +50,19 @@ export const ReportingDashboard = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="progress" className="mt-6">
+        <TabsContent value="progress">
           <ProgressReport />
         </TabsContent>
 
-        <TabsContent value="export" className="mt-6">
+        <TabsContent value="export">
           <ExportManager />
         </TabsContent>
 
-        <TabsContent value="custom" className="mt-6">
+        <TabsContent value="custom">
           <CustomReports />
         </TabsContent>
 
-        <TabsContent value="compare" className="mt-6">
+        <TabsContent value="compare">
           <ComparativeAnalysis />
         </TabsContent>
       </Tabs>

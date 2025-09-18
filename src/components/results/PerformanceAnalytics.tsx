@@ -207,7 +207,7 @@ export const PerformanceAnalytics = () => {
         </Select>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="subjects">By Subject</TabsTrigger>

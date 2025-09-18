@@ -18,7 +18,7 @@ export const CommunicationHub = () => {
         <NotificationCenter />
       </div>
 
-      <Tabs defaultValue="messages" className="space-y-6">
+      <Tabs defaultValue="messages">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="messages" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />

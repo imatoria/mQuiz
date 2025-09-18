@@ -115,7 +115,7 @@ export const ContentCreation = () => {
           <TabsTrigger value="bulk">Bulk Ops</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="upload" className="space-y-6 mt-6">
+        <TabsContent value="upload" className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
             <DocumentUpload onDocumentUploaded={handleRefresh} />
             
@@ -177,11 +177,11 @@ export const ContentCreation = () => {
         </TabsContent>
 
 
-        <TabsContent value="ai-generator" className="space-y-6 mt-6">
+        <TabsContent value="ai-generator" className="space-y-6">
           <AIQuestionGenerator />
         </TabsContent>
 
-        <TabsContent value="bulk" className="space-y-6 mt-6">
+        <TabsContent value="bulk" className="space-y-6">
           <BulkQuestionOperations />
         </TabsContent>
       </Tabs>

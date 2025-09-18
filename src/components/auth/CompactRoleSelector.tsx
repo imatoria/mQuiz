@@ -59,11 +59,11 @@ export const CompactRoleSelector = ({
         
         <Tabs value={selectedRole || ''} onValueChange={value => onRoleSelect(value as any)}>
           <TabsList className="grid w-full grid-cols-3 h-auto">
-            {Object.entries(roleInfo).map(([role, info]) => <Tooltip key={role}>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value={role} className="px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground py-[8px]">
-                    <span className="text-xs font-medium">{info.title}</span>
-                  </TabsTrigger>
+            {Object.entries(roleInfo).map(([role, info]) => <TabsTrigger value={role} className="text-xs sm:text-sm flex flex-row gap-2">
+              <Tooltip key={role}>
+                <span className="text-xs font-medium">{info.title}</span>
+                <TooltipTrigger>
+                    <Info className="w-4 h-4 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
                   <div className="space-y-2">
@@ -78,12 +78,9 @@ export const CompactRoleSelector = ({
                     {role === 'admin' && <p className="text-xs text-warning">⚠️ Admin accounts require manual approval</p>}
                   </div>
                 </TooltipContent>
-              </Tooltip>)}
+              </Tooltip>
+            </TabsTrigger>)}
           </TabsList>
-          
-          {Object.entries(roleInfo).map(([role, info]) => <TabsContent key={role} value={role} className="mt-3">
-              
-            </TabsContent>)}
         </Tabs>
       </div>
     </TooltipProvider>;

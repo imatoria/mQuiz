@@ -16,35 +16,13 @@ interface AuthPageProps {
   onAuthSuccess: () => void;
 }
 type UserRole = 'admin' | 'parent' | 'child';
-const roleInfo = {
-  admin: {
-    title: 'Administrator',
-    description: 'Full system access and configuration',
-    icon: Shield,
-    gradient: 'bg-gradient-primary',
-    note: 'Admin accounts require manual approval'
-  },
-  parent: {
-    title: 'Parent/Teacher',
-    description: 'Create and manage question papers',
-    icon: Users,
-    gradient: 'bg-gradient-success',
-    note: 'Start creating content immediately'
-  },
-  child: {
-    title: 'Student',
-    description: 'Take tests and view results',
-    icon: User,
-    gradient: 'bg-quiz',
-    note: 'Join tests assigned by teachers'
-  }
-};
+
 export const AuthPage = ({
   onAuthSuccess
 }: AuthPageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>('child');
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset'>('signin');
   const [formData, setFormData] = useState({
     email: '',
@@ -223,7 +201,7 @@ export const AuthPage = ({
                 <TabsTrigger value="reset" className="text-xs sm:text-sm">Reset</TabsTrigger>
               </TabsList>
               
-              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {authMode === 'signup' && <RoleSelector />}
                 
                 {authMode === 'signup' && <div className="space-y-2">
