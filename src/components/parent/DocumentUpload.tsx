@@ -284,7 +284,7 @@ export const DocumentUpload = ({
 
         <CustomSubjectInput subjects={subjects} value={subject} onChange={setSubject} onSubjectsUpdate={fetchSubjects} />
 
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="class">Class</Label>
           <div className="flex gap-2">
             <Select value={classLevel} onValueChange={setClassLevel}>
