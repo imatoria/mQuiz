@@ -236,7 +236,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, [isSecurityActive, addViolation, toast]);
 
-  // Enhanced auto-save functionality with grace period handling
+  // Phase 1: Optimized auto-save with proper 30-second debouncing
   const debouncedSave = useCallback(async (forceSync = false, isGracePeriod = false) => {
     if (!testAttemptId || (isSubmitting && !isGracePeriod)) return;
 
@@ -245,17 +245,35 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       answers,
       currentQuestionIndex,
       progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
-      timeRemaining: Math.max(0, timeLeft), // Ensure non-negative
+      timeRemaining: Math.max(0, timeLeft),
       flaggedQuestions: Array.from(flaggedQuestions),
       paperId: test.id
     };
 
     if (!isOnline && !forceSync && !isGracePeriod) {
-      // Queue the save for when we're back online (except during grace period)
       setSaveQueue(prev => [...prev, progressData]);
       return;
     }
 
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Don't debounce forced syncs or grace period saves
+    if (forceSync || isGracePeriod) {
+      await performSave(progressData);
+      return;
+    }
+
+    // Debounce regular saves by 30 seconds
+    saveTimeoutRef.current = setTimeout(() => {
+      performSave(progressData);
+    }, 30000);
+  }, [testAttemptId, answers, currentQuestionIndex, timeLeft, flaggedQuestions, questions.length, test.id, isOnline, isSubmitting]);
+
+  // Separate save execution function
+  const performSave = async (progressData: any) => {
     setIsSaving(true);
     
     try {
@@ -314,7 +332,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       const isNetworkError = error.message?.includes('fetch') || error.message?.includes('network');
       const isTimeoutError = error.message?.includes('timeout');
       
-      if (isOnline || isGracePeriod) {
+      if (isOnline) {
         const errorMessage = isNetworkError ? 
           "Network error during save. Your progress may be lost." :
           isTimeoutError ? 
@@ -328,14 +346,14 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         });
       }
       
-      // Always queue for retry during grace period or if online
-      if (isGracePeriod || isOnline) {
+      // Queue for retry if online
+      if (isOnline) {
         setSaveQueue(prev => [...prev, progressData]);
       }
     } finally {
       setIsSaving(false);
     }
-  }, [testAttemptId, answers, currentQuestionIndex, timeLeft, flaggedQuestions, questions.length, test.id, isOnline, isSubmitting]);
+  };
 
   // Enhanced timer countdown with grace period and warnings
   useEffect(() => {
@@ -343,7 +361,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       setTimeLeft((prev) => {
         const newTime = prev - 1;
 
-        // Grace period warnings with enhanced messaging
+        // Grace period warnings - only save at critical times
         if (newTime === 300) { // 5 minutes
           toast({
             title: "⚠️ 5 Minutes Remaining",
@@ -351,17 +369,10 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
             variant: "destructive"
           });
           debouncedSave(true, true);
-        } else if (newTime === 60) { // 1 minute
+        } else if (newTime === 60) { // 1 minute - final save
           toast({
             title: "⚠️ FINAL WARNING: 1 Minute Left",
             description: "Test will auto-submit in 1 minute! Complete remaining questions now.",
-            variant: "destructive"
-          });
-          debouncedSave(true, true);
-        } else if (newTime === 30) { // 30 seconds
-          toast({
-            title: "🚨 30 SECONDS - AUTO-SUBMIT IMMINENT",
-            description: "Test submitting automatically in 30 seconds. This cannot be stopped!",
             variant: "destructive"
           });
           debouncedSave(true, true);
@@ -384,12 +395,15 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     return () => clearInterval(timer);
   }, []); // Removed debouncedSave from dependencies - timer should run independently
 
-  // Enhanced server time sync with reduced frequency during test
+  // Phase 2: Single server time sync at test start only
+  const [clientServerOffset, setClientServerOffset] = useState(0);
+  
   useEffect(() => {
-    if (!testAttemptId) return; // Only sync when test is active
+    if (!testAttemptId) return;
 
     const syncServerTime = async () => {
       try {
+        const clientTimeBefore = Date.now();
         const { data } = await supabase.functions.invoke('save-paper-progress', {
           body: {
             paperAttemptId: 'sync-time',
@@ -403,18 +417,24 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         });
         
         if (data?.serverTime) {
-          setServerTime(new Date(data.serverTime));
+          const serverTime = new Date(data.serverTime).getTime();
+          const clientTimeAfter = Date.now();
+          const clientTimeMidpoint = (clientTimeBefore + clientTimeAfter) / 2;
+          
+          // Calculate offset: positive means server is ahead
+          const offset = serverTime - clientTimeMidpoint;
+          setClientServerOffset(offset);
+          setServerTime(new Date(serverTime));
+          
+          console.log('Time sync complete. Offset:', offset, 'ms');
         }
       } catch (error) {
         console.log('Time sync failed:', error);
       }
     };
 
-    // Reduce sync frequency to every 1 minute during test to minimize API calls
-    const interval = setInterval(syncServerTime, 60000);
-    syncServerTime(); // Initial sync
-
-    return () => clearInterval(interval);
+    // Sync only once at test start
+    syncServerTime();
   }, [testAttemptId, test.id]);
 
   const initializeTest = async () => {

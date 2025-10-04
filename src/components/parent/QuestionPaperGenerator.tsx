@@ -9,6 +9,8 @@ import { FileQuestion, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import PageMultiSelect from '@/components/ui/page-multi-select';
 import { supabase } from '@/integrations/supabase/client';
+import { useChildSubjects } from '@/hooks/useChildSubjects';
+import { useChildClasses } from '@/hooks/useChildClasses';
 
 interface QuestionPaperGeneratorProps {
   onPaperGenerated: () => void;
@@ -23,16 +25,15 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   const [minQuestionsPerPage, setMinQuestionsPerPage] = useState('1');
   const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState('10');
   const [difficulties, setDifficulties] = useState<('easy' | 'medium' | 'difficult')[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
   const [availableQuestions, setAvailableQuestions] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
+  // Use child assignments hooks
+  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
 
   useEffect(() => {
     if (subject && classLevel && difficulties.length > 0) {
@@ -43,11 +44,6 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   useEffect(() => {
     fetchAvailablePages();
   }, [subject, classLevel]);
-
-  const fetchSubjects = async () => {
-    const { data } = await supabase.from('subjects').select('*').order('name');
-    setSubjects(data || []);
-  };
 
   const fetchAvailablePages = async () => {
     const { data: user } = await supabase.auth.getUser();
@@ -251,11 +247,17 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
                 <SelectValue placeholder="Select subject" />
               </SelectTrigger>
               <SelectContent>
-                {subjects.map((subj) => (
-                  <SelectItem key={subj.id} value={subj.id}>
-                    {subj.name}
-                  </SelectItem>
-                ))}
+                {loadingSubjects ? (
+                  <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
+                ) : uniqueSubjects.length === 0 ? (
+                  <SelectItem value="_no_subjects" disabled>No subjects assigned to children</SelectItem>
+                ) : (
+                  uniqueSubjects.map((subj) => (
+                    <SelectItem key={subj.id} value={subj.id}>
+                      {subj.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -267,11 +269,17 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
               <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                  <SelectItem key={num} value={num.toString()}>
-                    Class {num}
-                  </SelectItem>
-                ))}
+                {loadingClasses ? (
+                  <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
+                ) : uniqueClasses.length === 0 ? (
+                  <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
+                ) : (
+                  uniqueClasses.map((cls) => (
+                    <SelectItem key={cls} value={cls}>
+                      {cls.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

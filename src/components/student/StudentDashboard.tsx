@@ -93,10 +93,47 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
     onError: (error) => console.error('Student dashboard error:', error)
   });
 
+  // Phase 4: Dashboard caching - only fetch on mount or explicit refresh
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   useEffect(() => {
     if (user) {
-      fetchTests();
+      const now = Date.now();
+      // Only fetch if cache is expired or first load
+      if (now - lastFetchTime > CACHE_DURATION || lastFetchTime === 0) {
+        fetchTests();
+        setLastFetchTime(now);
+      }
     }
+  }, [user]);
+
+  // Phase 4: Realtime subscription for reactive updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('paper_attempts_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'paper_attempts',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Paper attempt changed:', payload);
+          // Invalidate cache and refetch
+          setLastFetchTime(0);
+          fetchTests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   // Update current time every second for countdown timers
@@ -225,7 +262,9 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
 
   const handleTestComplete = () => {
     setCurrentTest(null);
-    fetchTests(); // Refresh to update completed tests
+    // Phase 4: Invalidate cache on test completion
+    setLastFetchTime(0);
+    fetchTests();
   };
 
   const formatDateTime = (dateString: string) => {

@@ -9,7 +9,8 @@ import { Upload, FileText, Loader2, Edit2, Plus, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PaginatedPageMultiSelect } from '@/components/ui/paginated-page-multi-select';
-import { CustomSubjectInput } from '@/components/ui/custom-subject-input';
+import { useChildSubjects } from '@/hooks/useChildSubjects';
+import { useChildClasses } from '@/hooks/useChildClasses';
 // @ts-ignore - Vite worker import provides a Worker constructor
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?worker';
 // pdf.js core
@@ -31,7 +32,6 @@ export const DocumentUpload = ({
   const [subject, setSubject] = useState('');
   const [classLevel, setClassLevel] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [subjects, setSubjects] = useState<any[]>([]);
   const {
     toast
   } = useToast();
@@ -39,27 +39,11 @@ export const DocumentUpload = ({
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [loadingPages, setLoadingPages] = useState(false);
-  const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
-  const [newClassName, setNewClassName] = useState('');
-  const [customClasses, setCustomClasses] = useState<string[]>([]);
-  const [usedPages, setUsedPages] = useState<number[]>([]);
-  const [loadingUsedPages, setLoadingUsedPages] = useState(false);
-  React.useEffect(() => {
-    fetchSubjects();
-  }, []);
-  const fetchSubjects = async () => {
-    try {
-      // Fetch only global subjects (user_subjects table removed)
-      const { data: globalSubjects } = await supabase
-        .from('subjects')
-        .select('*')
-        .order('name');
-      
-      setSubjects(globalSubjects || []);
-    } catch (error) {
-      console.error('Error fetching subjects:', error);
-    }
-  };
+  
+  // Use child assignments hooks
+  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
+  // Remove the fetch subjects effect since we're using hooks now
   // Removed fetchUsedPages - no longer using document_page_selections
   // Removed page selection logic
   const generateTitleWithPages = () => {
@@ -282,85 +266,48 @@ export const DocumentUpload = ({
           </div>
         </div>
 
-        <CustomSubjectInput subjects={subjects} value={subject} onChange={setSubject} onSubjectsUpdate={fetchSubjects} />
+        <div>
+          <Label htmlFor="subject">Subject</Label>
+          <Select value={subject} onValueChange={setSubject}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {loadingSubjects ? (
+                <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
+              ) : uniqueSubjects.length === 0 ? (
+                <SelectItem value="_no_subjects" disabled>No subjects assigned to children</SelectItem>
+              ) : (
+                uniqueSubjects.map((subj) => (
+                  <SelectItem key={subj.id} value={subj.id}>
+                    {subj.name}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="space-y-2">
           <Label htmlFor="class">Class</Label>
-          <div className="flex gap-2">
-            <Select value={classLevel} onValueChange={setClassLevel}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({
-                length: 12
-              }, (_, i) => i + 1).map(num => <SelectItem key={num} value={num.toString()}>
-                    Class {num}
-                  </SelectItem>)}
-                {customClasses.map(c => <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Dialog open={isClassDialogOpen} onOpenChange={setIsClassDialogOpen}>
-              <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="icon" aria-label="Add custom class level" className="h-10 w-10">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Custom Class Level</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="new-class-name">Class Level</Label>
-                    <Input id="new-class-name" value={newClassName} onChange={e => setNewClassName(e.target.value)} placeholder="e.g., 13 or A-Level" onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (!newClassName.trim()) {
-                        toast({
-                          title: 'Class level required',
-                          description: 'Please enter a class level.',
-                          variant: 'destructive'
-                        });
-                        return;
-                      }
-                      const name = newClassName.trim();
-                      setCustomClasses(prev => Array.from(new Set([...prev, name])));
-                      setClassLevel(name);
-                      setNewClassName('');
-                      setIsClassDialogOpen(false);
-                    }
-                  }} />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIsClassDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="button" onClick={() => {
-                    if (!newClassName.trim()) {
-                      toast({
-                        title: 'Class level required',
-                        description: 'Please enter a class level.',
-                        variant: 'destructive'
-                      });
-                      return;
-                    }
-                    const name = newClassName.trim();
-                    setCustomClasses(prev => Array.from(new Set([...prev, name])));
-                    setClassLevel(name);
-                    setNewClassName('');
-                    setIsClassDialogOpen(false);
-                  }}>
-                      Add Class
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <Select value={classLevel} onValueChange={setClassLevel}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select class" />
+            </SelectTrigger>
+            <SelectContent>
+              {loadingClasses ? (
+                <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
+              ) : uniqueClasses.length === 0 ? (
+                <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
+              ) : (
+                uniqueClasses.map((cls) => (
+                  <SelectItem key={cls} value={cls}>
+                    {cls.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
         </div>
 
         <div>

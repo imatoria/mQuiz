@@ -18,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationInfo } from "@/components/ui/pagination";
+import { useChildSubjects } from '@/hooks/useChildSubjects';
+import { useChildClasses } from '@/hooks/useChildClasses';
 
 interface Question {
   id: string;
@@ -45,7 +47,6 @@ interface QuestionBankProps {
 
 export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
@@ -56,7 +57,10 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const classLevels = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
+  // Use child assignments hooks
+  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
+
   const difficulties = ['easy', 'medium', 'difficult'];
 
   useEffect(() => {
@@ -67,16 +71,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     try {
       setIsLoading(true);
       
-      // Fetch subjects
-      const { data: subjectsData } = await supabase
-        .from('subjects')
-        .select('*')
-        .order('name');
-      
-      if (subjectsData) {
-        setSubjects(subjectsData);
-      }
-
       // Fetch questions directly (no longer using document relationships)
       const { data: questionsData } = await supabase
         .from('questions')
@@ -90,7 +84,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
       console.error('Error fetching data:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch questions and subjects.",
+        description: "Failed to fetch questions.",
         variant: "destructive",
       });
     } finally {
@@ -294,11 +288,15 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Subjects</SelectItem>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
+                  {loadingSubjects ? (
+                    <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
+                  ) : (
+                    uniqueSubjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -328,11 +326,15 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Classes</SelectItem>
-                  {classLevels.map((level) => (
-                    <SelectItem key={level} value={level}>
-                      Class {level}
-                    </SelectItem>
-                  ))}
+                  {loadingClasses ? (
+                    <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
+                  ) : (
+                    uniqueClasses.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {level.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -513,7 +515,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {subjects.find(s => s.id === question.subject_id)?.name || '-'}
+                        {uniqueSubjects.find(s => s.id === question.subject_id)?.name || '-'}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ChildAcademicProfile } from './ChildAcademicProfile';
 import { 
   Plus, 
   UserPlus, 
@@ -17,7 +18,9 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Key
+  Key,
+  Settings,
+  GraduationCap
 } from 'lucide-react';
 
 interface Child {
@@ -40,6 +43,7 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
   const [newChildEmail, setNewChildEmail] = useState('');
   const [newChildName, setNewChildName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedChildForProfile, setSelectedChildForProfile] = useState<Child | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -318,6 +322,15 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => setSelectedChildForProfile(child)}
+                    className="flex items-center gap-2"
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    Academic Profile
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleRemoveChild(child.user_id, child.full_name || child.email || 'Child')}
                     className="text-red-600 hover:text-red-700"
                   >
@@ -329,6 +342,15 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
           </div>
         )}
       </CardContent>
+
+      {selectedChildForProfile && (
+        <ChildAcademicProfile
+          isOpen={Boolean(selectedChildForProfile)}
+          onClose={() => setSelectedChildForProfile(null)}
+          childId={selectedChildForProfile.user_id}
+          childName={selectedChildForProfile.full_name || selectedChildForProfile.email || 'Child'}
+        />
+      )}
     </Card>
   );
 };

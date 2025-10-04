@@ -229,7 +229,7 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, [isSecurityActive, addViolation, toast]);
 
-  // Enhanced auto-save functionality with grace period handling
+  // Phase 1: Optimized auto-save with proper 30-second debouncing
   const debouncedSave = useCallback(async (forceSync = false, isGracePeriod = false) => {
     if (!paperAttemptId || (isSubmitting && !isGracePeriod)) return;
 
@@ -248,6 +248,25 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
       return;
     }
 
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Don't debounce forced syncs or grace period saves
+    if (forceSync || isGracePeriod) {
+      await performSave(progressData);
+      return;
+    }
+
+    // Debounce regular saves by 30 seconds
+    saveTimeoutRef.current = setTimeout(() => {
+      performSave(progressData);
+    }, 30000);
+  }, [paperAttemptId, answers, currentQuestionIndex, timeLeft, flaggedQuestions, questions.length, paper.id, isOnline, isSubmitting]);
+
+  // Separate save execution function
+  const performSave = async (progressData: any) => {
     setIsSaving(true);
     
     try {
@@ -302,7 +321,7 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
       const isNetworkError = error.message?.includes('fetch') || error.message?.includes('network');
       const isTimeoutError = error.message?.includes('timeout');
       
-      if (isOnline || isGracePeriod) {
+      if (isOnline) {
         const errorMessage = isNetworkError ? 
           "Network error during save. Your progress may be lost." :
           isTimeoutError ? 
@@ -316,13 +335,14 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
         });
       }
       
-      if (isGracePeriod || isOnline) {
+      // Queue for retry if online
+      if (isOnline) {
         setSaveQueue(prev => [...prev, progressData]);
       }
     } finally {
       setIsSaving(false);
     }
-  }, [paperAttemptId, answers, currentQuestionIndex, timeLeft, flaggedQuestions, questions.length, paper.id, isOnline, isSubmitting]);
+  };
 
   // Enhanced timer countdown with grace period and warnings
   useEffect(() => {
@@ -330,7 +350,7 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
       setTimeLeft((prev) => {
         const newTime = prev - 1;
 
-        // Grace period warnings with enhanced messaging
+        // Grace period warnings - only save at critical times
         if (newTime === 300) { // 5 minutes
           toast({
             title: "⚠️ 5 Minutes Remaining",
@@ -338,17 +358,10 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
             variant: "destructive"
           });
           debouncedSave(true, true);
-        } else if (newTime === 60) { // 1 minute
+        } else if (newTime === 60) { // 1 minute - final save
           toast({
             title: "⚠️ FINAL WARNING: 1 Minute Left",
             description: "Test will auto-submit in 1 minute! Complete remaining questions now.",
-            variant: "destructive"
-          });
-          debouncedSave(true, true);
-        } else if (newTime === 30) { // 30 seconds
-          toast({
-            title: "🚨 30 SECONDS - AUTO-SUBMIT IMMINENT",
-            description: "Test submitting automatically in 30 seconds. This cannot be stopped!",
             variant: "destructive"
           });
           debouncedSave(true, true);
@@ -371,12 +384,15 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
     return () => clearInterval(timer);
   }, []);
 
-  // Enhanced server time sync with reduced frequency during test
+  // Phase 2: Single server time sync at test start only
+  const [clientServerOffset, setClientServerOffset] = useState(0);
+  
   useEffect(() => {
     if (!paperAttemptId) return;
 
     const syncServerTime = async () => {
       try {
+        const clientTimeBefore = Date.now();
         const { data } = await supabase.functions.invoke('save-paper-progress', {
           body: {
             paperAttemptId: 'sync-time',
@@ -390,17 +406,24 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
         });
         
         if (data?.serverTime) {
-          setServerTime(new Date(data.serverTime));
+          const serverTime = new Date(data.serverTime).getTime();
+          const clientTimeAfter = Date.now();
+          const clientTimeMidpoint = (clientTimeBefore + clientTimeAfter) / 2;
+          
+          // Calculate offset: positive means server is ahead
+          const offset = serverTime - clientTimeMidpoint;
+          setClientServerOffset(offset);
+          setServerTime(new Date(serverTime));
+          
+          console.log('Time sync complete. Offset:', offset, 'ms');
         }
       } catch (error) {
         console.log('Time sync failed:', error);
       }
     };
 
-    const interval = setInterval(syncServerTime, 60000);
+    // Sync only once at test start
     syncServerTime();
-
-    return () => clearInterval(interval);
   }, [paperAttemptId, paper.id]);
 
   const initializePaper = async () => {

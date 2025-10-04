@@ -154,6 +154,80 @@ export type Database = {
         }
         Relationships: []
       }
+      child_class_assignments: {
+        Row: {
+          academic_year: string
+          child_id: string
+          class_level: Database["public"]["Enums"]["class_level_enum"]
+          created_at: string | null
+          id: string
+          is_current: boolean | null
+          parent_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          academic_year?: string
+          child_id: string
+          class_level: Database["public"]["Enums"]["class_level_enum"]
+          created_at?: string | null
+          id?: string
+          is_current?: boolean | null
+          parent_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          academic_year?: string
+          child_id?: string
+          class_level?: Database["public"]["Enums"]["class_level_enum"]
+          created_at?: string | null
+          id?: string
+          is_current?: boolean | null
+          parent_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      child_subject_assignments: {
+        Row: {
+          academic_year: string
+          child_id: string
+          created_at: string | null
+          id: string
+          is_current: boolean | null
+          parent_id: string
+          subject_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          academic_year?: string
+          child_id: string
+          created_at?: string | null
+          id?: string
+          is_current?: boolean | null
+          parent_id: string
+          subject_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          academic_year?: string
+          child_id?: string
+          created_at?: string | null
+          id?: string
+          is_current?: boolean | null
+          parent_id?: string
+          subject_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "child_subject_assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_pages: {
         Row: {
           content: string | null
@@ -956,6 +1030,19 @@ export type Database = {
         | "10"
         | "11"
         | "12"
+      class_level_enum:
+        | "grade_1"
+        | "grade_2"
+        | "grade_3"
+        | "grade_4"
+        | "grade_5"
+        | "grade_6"
+        | "grade_7"
+        | "grade_8"
+        | "grade_9"
+        | "grade_10"
+        | "grade_11"
+        | "grade_12"
       difficulty_level: "easy" | "medium" | "difficult"
     }
     CompositeTypes: {
@@ -1097,6 +1184,20 @@ export const Constants = {
         "10",
         "11",
         "12",
+      ],
+      class_level_enum: [
+        "grade_1",
+        "grade_2",
+        "grade_3",
+        "grade_4",
+        "grade_5",
+        "grade_6",
+        "grade_7",
+        "grade_8",
+        "grade_9",
+        "grade_10",
+        "grade_11",
+        "grade_12",
       ],
       difficulty_level: ["easy", "medium", "difficult"],
     },

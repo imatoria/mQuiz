@@ -56,6 +56,31 @@ export const useTestSecurity = ({
     }
   }, [testAttemptId]);
 
+  // Check for multiple sessions
+  const checkMultipleSessions = useCallback(async () => {
+    if (!testAttemptId) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('detect-multiple-sessions', {
+        body: { testAttemptId }
+      });
+
+      if (error) throw error;
+
+      if (data?.hasMultiple) {
+        toast({
+          title: "⚠️ Multiple Sessions Detected",
+          description: "This test is being accessed from another location. Test will be terminated.",
+          variant: "destructive"
+        });
+
+        onAutoSubmit('Multiple active sessions detected');
+      }
+    } catch (error) {
+      console.error('Failed to check sessions:', error);
+    }
+  }, [testAttemptId, onAutoSubmit, toast]);
+
   // Add violation and check for auto-submit
   const addViolation = useCallback((violation: SecurityViolation) => {
     setViolations(prev => [...prev, violation]);
@@ -64,6 +89,12 @@ export const useTestSecurity = ({
     
     // Log to database
     logViolation(violation);
+
+    // Phase 3: Check for multiple sessions only on high/critical violations (event-driven)
+    if (violation.severity === 'high' || violation.severity === 'critical') {
+      // Call check asynchronously without waiting
+      checkMultipleSessions();
+    }
 
     // Progressive warnings
     if (violationCountRef.current === 1) {
@@ -88,7 +119,7 @@ export const useTestSecurity = ({
       const reason = `Security violations exceeded (${violationCountRef.current}/${maxViolations})`;
       onAutoSubmit(reason);
     }
-  }, [logViolation, maxViolations, onAutoSubmit, toast]);
+  }, [logViolation, maxViolations, onAutoSubmit, toast, checkMultipleSessions]);
 
   // Tab switch detection
   const handleVisibilityChange = useCallback(() => {
@@ -253,42 +284,6 @@ export const useTestSecurity = ({
     }
   }, [sessionId, isSecurityActive]);
 
-  // Check for multiple sessions
-  const checkMultipleSessions = useCallback(async () => {
-    if (!testAttemptId) return;
-
-    try {
-      const { data, error } = await supabase.functions.invoke('detect-multiple-sessions', {
-        body: { testAttemptId }
-      });
-
-      if (error) throw error;
-
-      if (data?.hasMultiple) {
-        addViolation({
-          type: 'multiple_sessions',
-          severity: 'critical',
-          details: {
-            sessionCount: data.count,
-            sessions: data.sessions,
-            timestamp: new Date().toISOString()
-          },
-          timestamp: new Date()
-        });
-
-        toast({
-          title: "⚠️ Multiple Sessions Detected",
-          description: "This test is being accessed from another location. Test will be terminated.",
-          variant: "destructive"
-        });
-
-        onAutoSubmit('Multiple active sessions detected');
-      }
-    } catch (error) {
-      console.error('Failed to check sessions:', error);
-    }
-  }, [testAttemptId, addViolation, onAutoSubmit, toast]);
-
   // Simplified fullscreen enable - just return true, don't force fullscreen
   const enableFullscreen = useCallback(async () => {
     // Don't force fullscreen, just return success
@@ -314,13 +309,14 @@ export const useTestSecurity = ({
     document.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Start session monitoring with longer intervals to reduce API calls
-    const sessionInterval = setInterval(updateSession, 60000); // Increased to 60s
-    const multiSessionCheck = setInterval(checkMultipleSessions, 120000); // Increased to 2 minutes
+    // Phase 3: Optimized session monitoring with reduced frequency
+    const sessionInterval = setInterval(updateSession, 180000); // 3 minutes
+    
+    // Only check multiple sessions on violation, not continuously
+    // checkMultipleSessions will be called only when violations occur
 
     return () => {
       clearInterval(sessionInterval);
-      clearInterval(multiSessionCheck);
     };
   }, [
     enabled, 
