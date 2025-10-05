@@ -79,9 +79,7 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [saveQueue, setSaveQueue] = useState<any[]>([]);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [serverTime, setServerTime] = useState<Date>(new Date());
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -155,9 +153,10 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      setTimeout(() => {
-        processSaveQueue();
-      }, 100);
+      toast({
+        title: "Connection Restored",
+        description: "Your progress will now be saved automatically",
+      });
     };
 
     const handleOffline = () => {
@@ -244,7 +243,7 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
     };
 
     if (!isOnline && !forceSync && !isGracePeriod) {
-      setSaveQueue(prev => [...prev, progressData]);
+      // Don't save if offline - will retry when connection restored
       return;
     }
 
@@ -301,9 +300,6 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
       }
 
       setLastSaved(new Date());
-      if (data?.serverTime) {
-        setServerTime(new Date(data.serverTime));
-      }
 
       if (saveResponseTime > 10000 && timeLeft <= 60) {
         toast({
@@ -312,8 +308,6 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
           variant: "destructive"
         });
       }
-
-      setSaveQueue([]);
 
     } catch (error) {
       console.error('Save failed:', error);
@@ -333,11 +327,6 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
           description: errorMessage,
           variant: "destructive"
         });
-      }
-      
-      // Queue for retry if online
-      if (isOnline) {
-        setSaveQueue(prev => [...prev, progressData]);
       }
     } finally {
       setIsSaving(false);
@@ -384,47 +373,7 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
     return () => clearInterval(timer);
   }, []);
 
-  // Phase 2: Single server time sync at test start only
-  const [clientServerOffset, setClientServerOffset] = useState(0);
-  
-  useEffect(() => {
-    if (!paperAttemptId) return;
-
-    const syncServerTime = async () => {
-      try {
-        const clientTimeBefore = Date.now();
-        const { data } = await supabase.functions.invoke('save-paper-progress', {
-          body: {
-            paperAttemptId: 'sync-time',
-            answers: {},
-            currentQuestionIndex: 0,
-            progressPercentage: 0,
-            timeRemaining: 0,
-            flaggedQuestions: [],
-            paperId: paper.id
-          }
-        });
-        
-        if (data?.serverTime) {
-          const serverTime = new Date(data.serverTime).getTime();
-          const clientTimeAfter = Date.now();
-          const clientTimeMidpoint = (clientTimeBefore + clientTimeAfter) / 2;
-          
-          // Calculate offset: positive means server is ahead
-          const offset = serverTime - clientTimeMidpoint;
-          setClientServerOffset(offset);
-          setServerTime(new Date(serverTime));
-          
-          console.log('Time sync complete. Offset:', offset, 'ms');
-        }
-      } catch (error) {
-        console.log('Time sync failed:', error);
-      }
-    };
-
-    // Sync only once at test start
-    syncServerTime();
-  }, [paperAttemptId, paper.id]);
+  // Phase 2: Single server time sync at test start - done via initial save
 
   const initializePaper = async () => {
     try {
@@ -575,16 +524,7 @@ export const PaperInterface = ({ paper, onComplete, displayMode = 'single' }: Pa
     }
   };
 
-  const processSaveQueue = async () => {
-    if (saveQueue.length === 0 || !isOnline) return;
-    
-    const queue = [...saveQueue];
-    setSaveQueue([]);
-    
-    for (const item of queue) {
-      await debouncedSave(true);
-    }
-  };
+  // Auto-save is handled by 30-second debounce in debouncedSave function
 
   const handleAutoSubmit = async () => {
     if (isSubmitting) return;

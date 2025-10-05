@@ -84,9 +84,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [saveQueue, setSaveQueue] = useState<any[]>([]);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [serverTime, setServerTime] = useState<Date>(new Date());
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -160,10 +158,10 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      // Use a timeout to allow state to update before processing queue
-      setTimeout(() => {
-        processSaveQueue();
-      }, 100);
+      toast({
+        title: "Connection Restored",
+        description: "Your progress will now be saved automatically",
+      });
     };
 
     const handleOffline = () => {
@@ -251,7 +249,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     };
 
     if (!isOnline && !forceSync && !isGracePeriod) {
-      setSaveQueue(prev => [...prev, progressData]);
+      // Don't save if offline - will retry when connection restored
       return;
     }
 
@@ -309,9 +307,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       }
 
       setLastSaved(new Date());
-      if (data?.serverTime) {
-        setServerTime(new Date(data.serverTime));
-      }
 
       // Monitor save performance for grace period warnings
       if (saveResponseTime > 10000 && timeLeft <= 60) {
@@ -321,9 +316,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
           variant: "destructive"
         });
       }
-
-      // Clear the save queue if this was a successful save
-      setSaveQueue([]);
 
     } catch (error) {
       console.error('Save failed:', error);
@@ -344,11 +336,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
           description: errorMessage,
           variant: "destructive"
         });
-      }
-      
-      // Queue for retry if online
-      if (isOnline) {
-        setSaveQueue(prev => [...prev, progressData]);
       }
     } finally {
       setIsSaving(false);
@@ -395,47 +382,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     return () => clearInterval(timer);
   }, []); // Removed debouncedSave from dependencies - timer should run independently
 
-  // Phase 2: Single server time sync at test start only
-  const [clientServerOffset, setClientServerOffset] = useState(0);
-  
-  useEffect(() => {
-    if (!testAttemptId) return;
-
-    const syncServerTime = async () => {
-      try {
-        const clientTimeBefore = Date.now();
-        const { data } = await supabase.functions.invoke('save-paper-progress', {
-          body: {
-            paperAttemptId: 'sync-time',
-            answers: {},
-            currentQuestionIndex: 0,
-            progressPercentage: 0,
-            timeRemaining: 0,
-            flaggedQuestions: [],
-            paperId: test.id
-          }
-        });
-        
-        if (data?.serverTime) {
-          const serverTime = new Date(data.serverTime).getTime();
-          const clientTimeAfter = Date.now();
-          const clientTimeMidpoint = (clientTimeBefore + clientTimeAfter) / 2;
-          
-          // Calculate offset: positive means server is ahead
-          const offset = serverTime - clientTimeMidpoint;
-          setClientServerOffset(offset);
-          setServerTime(new Date(serverTime));
-          
-          console.log('Time sync complete. Offset:', offset, 'ms');
-        }
-      } catch (error) {
-        console.log('Time sync failed:', error);
-      }
-    };
-
-    // Sync only once at test start
-    syncServerTime();
-  }, [testAttemptId, test.id]);
+  // Phase 2: Single server time sync at test start - done via initial save
 
   const initializeTest = async () => {
     try {
@@ -583,32 +530,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     }
   };
 
-  const processSaveQueue = async () => {
-    if (saveQueue.length === 0 || !isOnline) return;
-    
-    // Get the latest save data (most recent)
-    const latestSave = saveQueue[saveQueue.length - 1];
-    setSaveQueue([]); // Clear queue
-    
-    await debouncedSave(true);
-  };
-
-  // Debounced auto-save trigger
-  useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      debouncedSave();
-    }, 500); // 500ms delay
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [answers, flaggedQuestions, currentQuestionIndex]); // Removed debouncedSave from dependencies
+  // Auto-save is handled by 30-second debounce in debouncedSave function
 
   const handleAnswer = (questionId: string, answer: string) => {
     setAnswers(prev => ({
@@ -882,13 +804,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                       <WifiOff className="w-4 h-4 mr-1" />
                       <span className="text-sm">Offline</span>
                     </div>
-                  )}
-                  
-                  {/* Queued Saves Indicator */}
-                  {saveQueue.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {saveQueue.length} pending
-                    </Badge>
                   )}
                 </div>
 
