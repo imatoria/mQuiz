@@ -982,6 +982,43 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_overall_analytics: {
+        Args: { parent_user_id: string; time_period_days?: number }
+        Returns: {
+          active_students: number
+          avg_completion_time: number
+          avg_success_rate: number
+          total_attempts: number
+          total_questions_used: number
+        }[]
+      }
+      get_paper_performance: {
+        Args: { parent_user_id: string; time_period_days?: number }
+        Returns: {
+          avg_score: number
+          completion_rate: number
+          paper_id: string
+          paper_title: string
+          total_attempts: number
+        }[]
+      }
+      get_question_analytics: {
+        Args: {
+          difficulty_filter?: string
+          parent_user_id: string
+          time_period_days?: number
+        }
+        Returns: {
+          avg_time_spent: number
+          correct_attempts: number
+          difficulty: string
+          question_id: string
+          question_text: string
+          subject_name: string
+          success_rate: number
+          total_attempts: number
+        }[]
+      }
       log_paper_violation: {
         Args: {
           details_param?: Json

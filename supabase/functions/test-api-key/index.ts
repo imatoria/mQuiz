@@ -33,40 +33,73 @@ async function testGemini(apiKey: string) {
 
   console.log('Gemini request body:', JSON.stringify(requestBody, null, 2));
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
-  });
+  const apiVersions = ['v1', 'v1beta'];
+  const modelCandidates = [
+    'gemini-1.5-flash-002',
+    'gemini-1.5-flash-001',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-latest'
+  ];
 
-  console.log('Gemini response status:', response.status);
-  console.log('Gemini response headers:', Object.fromEntries(response.headers.entries()));
+  let lastErrorText = '';
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Gemini API error response:', errorText);
+  for (const version of apiVersions) {
+    for (const model of modelCandidates) {
+      try {
+        console.log(`Trying Gemini model: ${model} on ${version}`);
+        const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`;
 
-    let errorData;
-    try {
-      errorData = JSON.parse(errorText);
-    } catch (parseError) {
-      throw new Error(`Gemini API test failed with status ${response.status}: ${errorText}`);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        console.log('Gemini response status:', response.status);
+        console.log('Gemini response headers:', Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Gemini API error response for ${model} (${version}):`, errorText);
+          lastErrorText = errorText;
+
+          // Try next candidate on 404s (model not found/unsupported on this API version)
+          if (response.status === 404) continue;
+
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch (_) {
+            throw new Error(`Gemini API test failed with status ${response.status}: ${errorText}`);
+          }
+
+          const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${errorText}`;
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        console.log('Gemini successful response:', JSON.stringify(data, null, 2));
+
+        return {
+          success: true,
+          response: data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response text found',
+          model: `${model} (${version})`,
+        };
+      } catch (err) {
+        // If the error wasn't due to a 404 handled above, and includes 401/403 quota/auth, throw it
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!/404/.test(msg)) {
+          throw err;
+        }
+        // otherwise continue to next model/version
+        continue;
+      }
     }
-
-    const errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}: ${errorText}`;
-    throw new Error(errorMessage);
   }
 
-  const data = await response.json();
-  console.log('Gemini successful response:', JSON.stringify(data, null, 2));
-
-  return {
-    success: true,
-    response: data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response text found',
-    model: 'gemini-1.5-flash-latest'
-  };
+  throw new Error(lastErrorText || 'No compatible Gemini models found for the available API versions.');
 }
 
 // Helper function to test Groq API
@@ -225,7 +258,7 @@ Deno.serve(async (req) => {
     console.log('Provider key lowercase:', provider.provider_key.toLowerCase());
 
     let testResult;
-switch (provider.provider_key.toLowerCase()) {
+    switch (provider.provider_key.toLowerCase()) {
       case 'gemini':
         console.log('Calling testGemini function...');
         testResult = await testGemini(apiKey);

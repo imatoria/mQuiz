@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { ViolationReporting } from './ViolationReporting';
 import { 
   Trophy, 
   TrendingUp, 
@@ -19,7 +20,8 @@ import {
   BarChart3,
   Eye,
   EyeOff,
-  Award
+  Award,
+  ShieldAlert
 } from 'lucide-react';
 
 interface TestAttempt {
@@ -326,7 +328,10 @@ export const TestResults = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setShowBreakdown(false)}
+                onClick={() => {
+                  setShowBreakdown(false);
+                  setSelectedAttempt(null);
+                }}
               >
                 ← Back to Results
               </Button>
@@ -410,65 +415,77 @@ export const TestResults = () => {
               )}
             </div>
           ) : (
-            // Question Breakdown
+            // Breakdown with Tabs
             selectedAttempt && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">{selectedAttempt.question_papers.title}</h3>
-                  <p className="text-muted-foreground">
-                    Score: {selectedAttempt.score}% ({Math.round((selectedAttempt.score / 100) * selectedAttempt.total_questions)}/{selectedAttempt.total_questions} correct)
-                  </p>
-                </div>
+              <Tabs defaultValue="breakdown" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="breakdown">Test Breakdown</TabsTrigger>
+                  <TabsTrigger value="violations">
+                    <ShieldAlert className="h-4 w-4 mr-2" />
+                    Security Violations
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="breakdown" className="mt-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">{selectedAttempt.question_papers.title}</h3>
+                      <p className="text-muted-foreground">
+                        Score: {selectedAttempt.score}% ({Math.round((selectedAttempt.score / 100) * selectedAttempt.total_questions)}/{selectedAttempt.total_questions} correct)
+                      </p>
+                    </div>
 
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">#</TableHead>
-                        <TableHead>Question</TableHead>
-                        <TableHead className="whitespace-nowrap w-24">Your Answer</TableHead>
-                        {selectedAttempt?.show_results && (
-                          <>
-                            <TableHead className="whitespace-nowrap w-24">Correct Answer</TableHead>
-                          </>
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {questionResults.map((result, index) => (
-                        <TableRow key={result.question_id}>
-                          <TableCell className="font-medium">{index + 1}</TableCell>
-                          <TableCell className="max-w-md">
-                            <div className="space-y-2">
-                              <p className="text-sm">{result.question_text}</p>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div>A. {result.option_a}</div>
-                                <div>B. {result.option_b}</div>
-                                <div>C. {result.option_c}</div>
-                                <div>D. {result.option_d}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={(selectedAttempt?.show_results && result.user_answer) ? (result.is_correct ? "success" : "destructive") : "secondary"} className="whitespace-nowrap">
-                              {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
-                            </Badge>
-                          </TableCell>
-                          {selectedAttempt?.show_results && (
-                            <>
+                    <div className="border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">#</TableHead>
+                            <TableHead>Question</TableHead>
+                            <TableHead className="whitespace-nowrap w-24">Your Answer</TableHead>
+                            {selectedAttempt?.show_results && (
+                              <TableHead className="whitespace-nowrap w-24">Correct Answer</TableHead>
+                            )}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {questionResults.map((result, index) => (
+                            <TableRow key={result.question_id}>
+                              <TableCell className="font-medium">{index + 1}</TableCell>
+                              <TableCell className="max-w-md">
+                                <div className="space-y-2">
+                                  <p className="text-sm">{result.question_text}</p>
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div>A. {result.option_a}</div>
+                                    <div>B. {result.option_b}</div>
+                                    <div>C. {result.option_c}</div>
+                                    <div>D. {result.option_d}</div>
+                                  </div>
+                                </div>
+                              </TableCell>
                               <TableCell>
-                                <Badge variant="outline">
-                                  {result.correct_answer}
+                                <Badge variant={(selectedAttempt?.show_results && result.user_answer) ? (result.is_correct ? "success" : "destructive") : "secondary"} className="whitespace-nowrap">
+                                  {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
                                 </Badge>
                               </TableCell>
-                            </>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
+                              {selectedAttempt?.show_results && (
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {result.correct_answer}
+                                  </Badge>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="violations" className="mt-4">
+                  <ViolationReporting attemptId={selectedAttempt.id} />
+                </TabsContent>
+              </Tabs>
             )
           )}
         </CardContent>

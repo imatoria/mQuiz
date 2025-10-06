@@ -71,18 +71,43 @@ export const MessageCenter = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // First fetch messages
+      const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender:profiles!sender_id(full_name, email, avatar_url),
-          recipient:profiles!recipient_id(full_name, email, avatar_url)
-        `)
+        .select('*')
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setMessages((data as any) || []);
+      if (messagesError) throw messagesError;
+
+      // Get unique user IDs from messages
+      const userIds = new Set<string>();
+      messagesData?.forEach(msg => {
+        userIds.add(msg.sender_id);
+        userIds.add(msg.recipient_id);
+      });
+
+      // Fetch profiles for all users involved in messages
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email, avatar_url')
+        .in('user_id', Array.from(userIds));
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of profiles
+      const profilesMap = new Map(
+        profilesData?.map(p => [p.user_id, p]) || []
+      );
+
+      // Merge messages with profile data
+      const enrichedMessages = messagesData?.map(msg => ({
+        ...msg,
+        sender: profilesMap.get(msg.sender_id),
+        recipient: profilesMap.get(msg.recipient_id),
+      })) || [];
+
+      setMessages(enrichedMessages as any);
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast({

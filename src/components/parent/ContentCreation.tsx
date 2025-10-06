@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DocumentUpload } from './DocumentUpload';
 import { DocumentProcessingStatus } from './DocumentProcessingStatus';
 import { QuestionPaperGenerator } from './QuestionPaperGenerator';
@@ -12,17 +13,23 @@ import { AIQuestionGenerator } from './AIQuestionGenerator';
 import QuestionBank from './QuestionBank';
 import QuestionAnalytics from './QuestionAnalytics';
 import BulkQuestionOperations from './BulkQuestionOperations';
-import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Clock, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import MarkdownViewerModal from '@/components/ui/markdown-viewer-modal';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+interface DocumentPage {
+  page_number: number;
+  content: string;
+}
 
 export const ContentCreation = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [documents, setDocuments] = useState<any[]>([]);
   const [questionPapers, setQuestionPapers] = useState<any[]>([]);
   const [scheduledTests, setScheduledTests] = useState<any[]>([]);
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerDoc, setViewerDoc] = useState<{ file_path: string; title: string; content?: string } | null>(null);
+  const [viewingDocument, setViewingDocument] = useState<any | null>(null);
+  const [documentPages, setDocumentPages] = useState<DocumentPage[]>([]);
+  const [loadingPages, setLoadingPages] = useState(false);
 
   React.useEffect(() => {
     fetchData();
@@ -121,56 +128,106 @@ export const ContentCreation = () => {
             
             <Card>
               <CardHeader>
-                <CardTitle>Recent Pages</CardTitle>
-                <CardDescription>
-                  Your uploaded pages and their processing status
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {documents.slice(0, 5).map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted cursor-pointer"
-                      onClick={async () => {
-                        // Fetch all pages content for this document
-                        const { data: pages } = await supabase
-                          .from('document_pages')
-                          .select('page_number, content')
-                          .eq('document_id', doc.id)
-                          .order('page_number');
-                        
-                        const combinedContent = pages?.map(p => p.content).join('\n\n') || '';
-                        
-                        setViewerDoc({ 
-                          file_path: '', 
-                          title: doc.title, 
-                          content: combinedContent 
-                        });
-                        setViewerOpen(true);
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Recent Pages</CardTitle>
+                    {!viewingDocument && (
+                      <CardDescription>
+                        Your uploaded pages and their processing status
+                      </CardDescription>
+                    )}
+                    {viewingDocument && (
+                      <CardDescription>
+                        {viewingDocument.subjects?.name} - Class {viewingDocument.class_level}
+                      </CardDescription>
+                    )}
+                  </div>
+                  {viewingDocument && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setViewingDocument(null);
+                        setDocumentPages([]);
                       }}
                     >
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-sm">{doc.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {doc.subjects?.name} - Class {doc.class_level}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(doc.processing_status)}
-                        {getStatusBadge(doc.processing_status)}
-                      </div>
-                    </div>
-                  ))}
-                  {documents.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No pages uploaded yet
-                    </p>
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back
+                    </Button>
                   )}
                 </div>
+              </CardHeader>
+              <CardContent>
+                {!viewingDocument ? (
+                  <div className="space-y-3">
+                    {documents.slice(0, 5).map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted cursor-pointer"
+                        onClick={async () => {
+                          setLoadingPages(true);
+                          try {
+                            // Fetch all pages content for this document
+                            const { data: pages } = await supabase
+                              .from('document_pages')
+                              .select('page_number, content')
+                              .eq('document_id', doc.id)
+                              .order('page_number');
+                            
+                            setViewingDocument(doc);
+                            setDocumentPages(pages || []);
+                          } finally {
+                            setLoadingPages(false);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-sm">{doc.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {doc.subjects?.name} - Class {doc.class_level}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(doc.processing_status)}
+                          {getStatusBadge(doc.processing_status)}
+                        </div>
+                      </div>
+                    ))}
+                    {documents.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No pages uploaded yet
+                      </p>
+                    )}
+                  </div>
+                ) : loadingPages ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Clock className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-sm text-muted-foreground">Loading pages...</span>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[600px]">
+                    <ul className="space-y-0">
+                      {documentPages.map((page) => (
+                        <li key={page.page_number}>
+                          <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2 px-3 border-b">
+                            <h3 className="font-semibold text-sm">Page {page.page_number}</h3>
+                          </div>
+                          <div className="p-3 text-sm text-muted-foreground whitespace-pre-wrap">
+                            {page.content || 'No content available'}
+                          </div>
+                        </li>
+                      ))}
+                      {documentPages.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No pages found for this document
+                        </p>
+                      )}
+                    </ul>
+                  </ScrollArea>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -185,12 +242,6 @@ export const ContentCreation = () => {
           <BulkQuestionOperations />
         </TabsContent>
       </Tabs>
-      <MarkdownViewerModal
-        open={viewerOpen}
-        onOpenChange={setViewerOpen}
-        content={viewerDoc?.content}
-        title={viewerDoc?.title}
-      />
     </div>
   );
 };

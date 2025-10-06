@@ -6,7 +6,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, Target, BookOpen, Calendar } from 'lucide-react';
+import { TrendingUp, Target, BookOpen, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface PerformanceData {
   test_name: string;
@@ -37,6 +37,8 @@ export const PerformanceAnalytics = () => {
   const [timeData, setTimeData] = useState<TimeData[]>([]);
   const [timeRange, setTimeRange] = useState('3months');
   const [loading, setLoading] = useState(true);
+  const [totalTests, setTotalTests] = useState(0);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -69,24 +71,42 @@ export const PerformanceAnalytics = () => {
           break;
       }
 
-      // Load test performance data
+      // Load test performance data - ONLY approved results (show_results = true)
       const { data: attempts, error } = await supabase
         .from('paper_attempts')
         .select(`
           score,
           completed_at,
           attempt_number,
+          show_results,
           question_papers!inner (
             title,
             subjects (name)
           )
         `)
         .eq('user_id', user?.id)
+        .eq('show_results', true)
         .not('completed_at', 'is', null)
         .gte('completed_at', dateThreshold.toISOString())
         .order('completed_at', { ascending: true });
 
       if (error) throw error;
+
+      // Get total test count (including unapproved)
+      const { data: allAttempts, error: allError } = await supabase
+        .from('paper_attempts')
+        .select('id, show_results', { count: 'exact' })
+        .eq('user_id', user?.id)
+        .not('completed_at', 'is', null)
+        .gte('completed_at', dateThreshold.toISOString());
+
+      if (allError) throw allError;
+
+      const totalCount = allAttempts?.length || 0;
+      const pendingCount = allAttempts?.filter(a => !a.show_results).length || 0;
+      
+      setTotalTests(totalCount);
+      setPendingApprovalCount(pendingCount);
 
       // Format performance data
       const formatted: PerformanceData[] = attempts?.map(attempt => ({
@@ -187,9 +207,40 @@ export const PerformanceAnalytics = () => {
     );
   }
 
+  // Show message if student has tests but no approved results
+  const hasNoApprovedResults = totalTests > 0 && performanceData.length === 0;
+  
+  if (hasNoApprovedResults) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Results Pending Approval
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <div className="text-center space-y-4">
+              <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                <Calendar className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium text-lg">You've completed {totalTests} test{totalTests > 1 ? 's' : ''}!</p>
+                <p className="text-muted-foreground mt-2">
+                  Results will appear here once your parent reviews and approves them.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold">Performance Analytics</h2>
           <p className="text-muted-foreground">Track your progress over time</p>
@@ -207,6 +258,23 @@ export const PerformanceAnalytics = () => {
         </Select>
       </div>
 
+      {/* Pending Approval Alert */}
+      {pendingApprovalCount > 0 && (
+        <Card className="border-l-4 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+          <CardContent className="flex items-center gap-3 py-4">
+            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            <div>
+              <p className="font-medium text-yellow-900 dark:text-yellow-100">
+                {pendingApprovalCount} test result{pendingApprovalCount > 1 ? 's' : ''} pending parent approval
+              </p>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                These results will appear in your analytics once approved by your parent.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -216,7 +284,7 @@ export const PerformanceAnalytics = () => {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Average Score</CardTitle>
@@ -228,6 +296,7 @@ export const PerformanceAnalytics = () => {
                     ? Math.round(performanceData.reduce((sum, item) => sum + item.score, 0) / performanceData.length)
                     : 0}%
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">From approved results</p>
               </CardContent>
             </Card>
 
@@ -237,7 +306,21 @@ export const PerformanceAnalytics = () => {
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
+                <div className="text-2xl font-bold">{totalTests}</div>
+                <p className="text-xs text-muted-foreground mt-1">All completed tests</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Results Approved</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
                 <div className="text-2xl font-bold">{performanceData.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {totalTests > 0 ? `${Math.round((performanceData.length / totalTests) * 100)}% approved` : 'No tests yet'}
+                </p>
               </CardContent>
             </Card>
 
@@ -248,6 +331,7 @@ export const PerformanceAnalytics = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{subjectData.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">Different subjects</p>
               </CardContent>
             </Card>
 
@@ -262,6 +346,7 @@ export const PerformanceAnalytics = () => {
                     ? `+${Math.round(subjectData.reduce((sum, item) => sum + item.improvement, 0) / subjectData.length)}%`
                     : '0%'}
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">Average growth</p>
               </CardContent>
             </Card>
           </div>
@@ -293,8 +378,17 @@ export const PerformanceAnalytics = () => {
                 <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                   <div className="text-center">
                     <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No test data available for the selected time period.</p>
-                    <p className="text-sm mt-2">Complete some tests to see your progress trend.</p>
+                    {totalTests > 0 ? (
+                      <>
+                        <p>You've completed {totalTests} test{totalTests > 1 ? 's' : ''}!</p>
+                        <p className="text-sm mt-2">Results will appear here once approved by your parent.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>No test data available for the selected time period.</p>
+                        <p className="text-sm mt-2">Complete some tests to see your progress trend.</p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -325,8 +419,17 @@ export const PerformanceAnalytics = () => {
                   <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                     <div className="text-center">
                       <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No subject data available.</p>
-                      <p className="text-sm mt-2">Complete tests in different subjects to see performance breakdown.</p>
+                      {totalTests > 0 ? (
+                        <>
+                          <p>Subject performance will appear here</p>
+                          <p className="text-sm mt-2">once your test results are approved by your parent.</p>
+                        </>
+                      ) : (
+                        <>
+                          <p>No subject data available.</p>
+                          <p className="text-sm mt-2">Complete tests in different subjects to see performance breakdown.</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -364,8 +467,17 @@ export const PerformanceAnalytics = () => {
                   <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                     <div className="text-center">
                       <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No test distribution data available.</p>
-                      <p className="text-sm mt-2">Complete tests to see subject distribution.</p>
+                      {totalTests > 0 ? (
+                        <>
+                          <p>Test distribution will appear here</p>
+                          <p className="text-sm mt-2">once your results are approved.</p>
+                        </>
+                      ) : (
+                        <>
+                          <p>No test distribution data available.</p>
+                          <p className="text-sm mt-2">Complete tests to see subject distribution.</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -397,8 +509,17 @@ export const PerformanceAnalytics = () => {
                 <div className="flex items-center justify-center h-[400px] text-muted-foreground">
                   <div className="text-center">
                     <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No timeline data available.</p>
-                    <p className="text-sm mt-2">Complete tests over time to see performance trends.</p>
+                    {totalTests > 0 ? (
+                      <>
+                        <p>Timeline data will appear here</p>
+                        <p className="text-sm mt-2">once your test results are approved by your parent.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>No timeline data available.</p>
+                        <p className="text-sm mt-2">Complete tests over time to see performance trends.</p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

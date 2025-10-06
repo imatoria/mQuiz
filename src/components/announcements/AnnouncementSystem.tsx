@@ -76,19 +76,56 @@ export const AnnouncementSystem = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch announcements
+      const { data: announcementsData, error: announcementsError } = await supabase
         .from('announcements')
-        .select(`
-          *,
-          creator:profiles!creator_id(full_name, email),
-          read_status:announcement_recipients!announcement_id(is_read, read_at)
-        `)
+        .select('*')
         .eq('is_active', true)
         .or('expires_at.is.null,expires_at.gt.now()')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setAnnouncements((data as any) || []);
+      if (announcementsError) throw announcementsError;
+
+      // Get unique creator IDs
+      const creatorIds = new Set<string>();
+      announcementsData?.forEach(ann => {
+        creatorIds.add(ann.creator_id);
+      });
+
+      // Fetch profiles for all creators
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', Array.from(creatorIds));
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of profiles
+      const profilesMap = new Map(
+        profilesData?.map(p => [p.user_id, p]) || []
+      );
+
+      // Fetch read status for current user
+      const { data: readStatusData, error: readStatusError } = await supabase
+        .from('announcement_recipients')
+        .select('announcement_id, is_read, read_at')
+        .eq('user_id', user.id);
+
+      if (readStatusError) throw readStatusError;
+
+      // Create a map of read statuses
+      const readStatusMap = new Map(
+        readStatusData?.map(rs => [rs.announcement_id, { is_read: rs.is_read, read_at: rs.read_at }]) || []
+      );
+
+      // Merge announcements with profile data and read status
+      const enrichedAnnouncements = announcementsData?.map(ann => ({
+        ...ann,
+        creator: profilesMap.get(ann.creator_id),
+        read_status: readStatusMap.get(ann.id),
+      })) || [];
+
+      setAnnouncements(enrichedAnnouncements as any);
     } catch (error) {
       console.error('Error fetching announcements:', error);
       toast({

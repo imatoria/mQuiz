@@ -19,7 +19,6 @@ import {
   CheckCircle, 
   AlertCircle,
   Shield,
-  TestTube,
   Loader2,
   RefreshCw
 } from 'lucide-react';
@@ -226,61 +225,6 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     }
   };
 
-  const handleTestSimple = async () => {
-    console.log('Testing simple edge function...');
-    try {
-      const { data, error } = await supabase.functions.invoke('test-simple');
-      console.log('Simple test response:', { data, error });
-
-      if (error) {
-        toast({
-          title: "Simple Test Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Simple Test Success",
-          description: `Function working: ${data.message}`,
-        });
-      }
-    } catch (error: any) {
-      console.error('Simple test error:', error);
-      toast({
-        title: "Simple Test Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDebugTest = async () => {
-    console.log('Testing debug function...');
-    try {
-      const { data, error } = await supabase.functions.invoke('debug-test');
-      console.log('Debug test response:', { data, error });
-
-      if (error) {
-        toast({
-          title: "Debug Test Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Debug Test Success",
-          description: `Environment check completed`,
-        });
-      }
-    } catch (error: any) {
-      console.error('Debug test error:', error);
-      toast({
-        title: "Debug Test Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleTestKey = async (userKey: UserAIProviderKey) => {
     if (!userKey.ai_providers) return;
@@ -411,26 +355,6 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
           <CardDescription>
             Configure your API keys for the AI providers set up by your administrator.
           </CardDescription>
-          <div className="mt-4 flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleTestSimple}
-              className="text-blue-600 hover:text-blue-700"
-            >
-              <TestTube className="w-4 h-4 mr-1" />
-              Test Edge Functions
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDebugTest}
-              className="text-purple-600 hover:text-purple-700"
-            >
-              <TestTube className="w-4 h-4 mr-1" />
-              Debug Test
-            </Button>
-          </div>
         </CardHeader>
       
       <CardContent className="space-y-6">
@@ -498,7 +422,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
                             {isTestingKey ? (
                               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                             ) : (
-                              <TestTube className="w-4 h-4 mr-1" />
+                              <CheckCircle className="w-4 h-4 mr-1" />
                             )}
                             Test
                           </Button>
