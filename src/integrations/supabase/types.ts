@@ -158,7 +158,7 @@ export type Database = {
         Row: {
           academic_year: string
           child_id: string
-          class_level: Database["public"]["Enums"]["class_level_enum"]
+          class_parent_id: string | null
           created_at: string | null
           id: string
           is_current: boolean | null
@@ -168,7 +168,7 @@ export type Database = {
         Insert: {
           academic_year?: string
           child_id: string
-          class_level: Database["public"]["Enums"]["class_level_enum"]
+          class_parent_id?: string | null
           created_at?: string | null
           id?: string
           is_current?: boolean | null
@@ -178,14 +178,22 @@ export type Database = {
         Update: {
           academic_year?: string
           child_id?: string
-          class_level?: Database["public"]["Enums"]["class_level_enum"]
+          class_parent_id?: string | null
           created_at?: string | null
           id?: string
           is_current?: boolean | null
           parent_id?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "child_class_assignments_class_parent_id_fkey"
+            columns: ["class_parent_id"]
+            isOneToOne: false
+            referencedRelation: "classes_parent"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       child_subject_assignments: {
         Row: {
@@ -195,7 +203,7 @@ export type Database = {
           id: string
           is_current: boolean | null
           parent_id: string
-          subject_id: string
+          subject_parent_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -205,7 +213,7 @@ export type Database = {
           id?: string
           is_current?: boolean | null
           parent_id: string
-          subject_id: string
+          subject_parent_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -215,18 +223,51 @@ export type Database = {
           id?: string
           is_current?: boolean | null
           parent_id?: string
-          subject_id?: string
+          subject_parent_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "child_subject_assignments_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "child_subject_assignments_subject_parent_id_fkey"
+            columns: ["subject_parent_id"]
             isOneToOne: false
-            referencedRelation: "subjects"
+            referencedRelation: "subjects_parent"
             referencedColumns: ["id"]
           },
         ]
+      }
+      classes_parent: {
+        Row: {
+          class_key: string
+          class_name: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          parent_id: string
+          updated_at: string
+        }
+        Insert: {
+          class_key: string
+          class_name: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          parent_id: string
+          updated_at?: string
+        }
+        Update: {
+          class_key?: string
+          class_name?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          parent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       document_pages: {
         Row: {
@@ -262,41 +303,48 @@ export type Database = {
       }
       documents: {
         Row: {
-          class_level: Database["public"]["Enums"]["class_level"]
+          class_parent_id: string | null
           created_at: string
           id: string
           processing_status: string | null
-          subject_id: string
+          subject_parent_id: string | null
           title: string
           total_pages: number | null
           user_id: string
         }
         Insert: {
-          class_level: Database["public"]["Enums"]["class_level"]
+          class_parent_id?: string | null
           created_at?: string
           id?: string
           processing_status?: string | null
-          subject_id: string
+          subject_parent_id?: string | null
           title: string
           total_pages?: number | null
           user_id: string
         }
         Update: {
-          class_level?: Database["public"]["Enums"]["class_level"]
+          class_parent_id?: string | null
           created_at?: string
           id?: string
           processing_status?: string | null
-          subject_id?: string
+          subject_parent_id?: string | null
           title?: string
           total_pages?: number | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "documents_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "documents_class_parent_id_fkey"
+            columns: ["class_parent_id"]
             isOneToOne: false
-            referencedRelation: "subjects"
+            referencedRelation: "classes_parent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_subject_parent_id_fkey"
+            columns: ["subject_parent_id"]
+            isOneToOne: false
+            referencedRelation: "subjects_parent"
             referencedColumns: ["id"]
           },
         ]
@@ -349,33 +397,6 @@ export type Database = {
           template_data?: Json
           template_name?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      encryption_keys: {
-        Row: {
-          created_at: string
-          encrypted_key: string
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          key_name: string
-        }
-        Insert: {
-          created_at?: string
-          encrypted_key: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          key_name: string
-        }
-        Update: {
-          created_at?: string
-          encrypted_key?: string
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          key_name?: string
         }
         Relationships: []
       }
@@ -734,7 +755,7 @@ export type Database = {
       question_papers: {
         Row: {
           assign_to_all: boolean | null
-          class_level: Database["public"]["Enums"]["class_level"]
+          class_parent_id: string | null
           created_at: string
           deleted_at: string | null
           difficulty_filter:
@@ -746,7 +767,7 @@ export type Database = {
           max_attempts: number | null
           show_results: boolean | null
           start_time: string | null
-          subject_id: string
+          subject_parent_id: string | null
           time_limit_minutes: number
           title: string
           total_questions: number
@@ -755,7 +776,7 @@ export type Database = {
         }
         Insert: {
           assign_to_all?: boolean | null
-          class_level: Database["public"]["Enums"]["class_level"]
+          class_parent_id?: string | null
           created_at?: string
           deleted_at?: string | null
           difficulty_filter?:
@@ -767,7 +788,7 @@ export type Database = {
           max_attempts?: number | null
           show_results?: boolean | null
           start_time?: string | null
-          subject_id: string
+          subject_parent_id?: string | null
           time_limit_minutes: number
           title: string
           total_questions: number
@@ -776,7 +797,7 @@ export type Database = {
         }
         Update: {
           assign_to_all?: boolean | null
-          class_level?: Database["public"]["Enums"]["class_level"]
+          class_parent_id?: string | null
           created_at?: string
           deleted_at?: string | null
           difficulty_filter?:
@@ -788,7 +809,7 @@ export type Database = {
           max_attempts?: number | null
           show_results?: boolean | null
           start_time?: string | null
-          subject_id?: string
+          subject_parent_id?: string | null
           time_limit_minutes?: number
           title?: string
           total_questions?: number
@@ -797,17 +818,24 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "question_papers_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "question_papers_class_parent_id_fkey"
+            columns: ["class_parent_id"]
             isOneToOne: false
-            referencedRelation: "subjects"
+            referencedRelation: "classes_parent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_papers_subject_parent_id_fkey"
+            columns: ["subject_parent_id"]
+            isOneToOne: false
+            referencedRelation: "subjects_parent"
             referencedColumns: ["id"]
           },
         ]
       }
       questions: {
         Row: {
-          class_level: Database["public"]["Enums"]["class_level"] | null
+          class_parent_id: string | null
           correct_answer: string
           created_at: string
           deleted_at: string | null
@@ -820,12 +848,12 @@ export type Database = {
           option_d: string
           page_number: number | null
           question_text: string
-          subject_id: string | null
+          subject_parent_id: string | null
           topic: string | null
           user_id: string | null
         }
         Insert: {
-          class_level?: Database["public"]["Enums"]["class_level"] | null
+          class_parent_id?: string | null
           correct_answer: string
           created_at?: string
           deleted_at?: string | null
@@ -838,12 +866,12 @@ export type Database = {
           option_d: string
           page_number?: number | null
           question_text: string
-          subject_id?: string | null
+          subject_parent_id?: string | null
           topic?: string | null
           user_id?: string | null
         }
         Update: {
-          class_level?: Database["public"]["Enums"]["class_level"] | null
+          class_parent_id?: string | null
           correct_answer?: string
           created_at?: string
           deleted_at?: string | null
@@ -856,11 +884,26 @@ export type Database = {
           option_d?: string
           page_number?: number | null
           question_text?: string
-          subject_id?: string | null
+          subject_parent_id?: string | null
           topic?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "questions_class_parent_id_fkey"
+            columns: ["class_parent_id"]
+            isOneToOne: false
+            referencedRelation: "classes_parent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_subject_parent_id_fkey"
+            columns: ["subject_parent_id"]
+            isOneToOne: false
+            referencedRelation: "subjects_parent"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_events: {
         Row: {
@@ -892,21 +935,36 @@ export type Database = {
         }
         Relationships: []
       }
-      subjects: {
+      subjects_parent: {
         Row: {
           created_at: string
+          description: string | null
           id: string
-          name: string
+          is_active: boolean
+          parent_id: string
+          subject_key: string | null
+          subject_name: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
-          name: string
+          is_active?: boolean
+          parent_id: string
+          subject_key?: string | null
+          subject_name: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
-          name?: string
+          is_active?: boolean
+          parent_id?: string
+          subject_key?: string | null
+          subject_name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1040,6 +1098,14 @@ export type Database = {
         }
         Returns: string
       }
+      seed_default_classes_parent: {
+        Args: { p_parent_id: string }
+        Returns: undefined
+      }
+      seed_default_subjects_parent: {
+        Args: { p_parent_id: string }
+        Returns: undefined
+      }
       soft_delete_paper: {
         Args: { paper_id: string }
         Returns: undefined
@@ -1054,19 +1120,6 @@ export type Database = {
       }
     }
     Enums: {
-      class_level:
-        | "1"
-        | "2"
-        | "3"
-        | "4"
-        | "5"
-        | "6"
-        | "7"
-        | "8"
-        | "9"
-        | "10"
-        | "11"
-        | "12"
       class_level_enum:
         | "grade_1"
         | "grade_2"
@@ -1208,20 +1261,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      class_level: [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "11",
-        "12",
-      ],
       class_level_enum: [
         "grade_1",
         "grade_2",

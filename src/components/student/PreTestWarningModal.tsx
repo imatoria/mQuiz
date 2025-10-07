@@ -19,7 +19,7 @@ interface PreTestWarningModalProps {
     question_papers: {
       total_questions: number;
       time_limit_minutes: number;
-      subjects: { name: string };
+      subjects_parent: { subject_name: string };
     };
   };
 }
@@ -96,7 +96,7 @@ export const PreTestWarningModal = ({ open, onClose, onProceed, test }: PreTestW
                     </div>
                     <div className="text-center">
                       <Badge variant="outline" className="text-sm px-3 py-1">
-                        {test.question_papers.subjects.name}
+                        {test.question_papers.subjects_parent.subject_name}
                       </Badge>
                     </div>
                   </div>

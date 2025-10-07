@@ -13,8 +13,8 @@ import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, Pagi
 interface Document {
   id: string;
   title: string;
-  subject_id: string;
-  class_level: string;
+  subject_parent_id: string;
+  class_parent_id: string;
   processing_status: string;
   created_at: string;
   current_version?: number;
@@ -22,7 +22,7 @@ interface Document {
 
 interface Subject {
   id: string;
-  name: string;
+  subject_name: string;
 }
 
 export const DocumentLibrary = () => {
@@ -56,9 +56,11 @@ export const DocumentLibrary = () => {
 
       // Fetch subjects
       const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subjects')
+        .from('subjects_parent')
         .select('*')
-        .order('name');
+        .eq('parent_id', user.user.id)
+        .eq('is_active', true)
+        .order('subject_name');
 
       if (subjectsError) throw subjectsError;
 
@@ -81,7 +83,7 @@ export const DocumentLibrary = () => {
 
   const getSubjectName = (subjectId: string) => {
     const subject = subjects.find(s => s.id === subjectId);
-    return subject?.name || 'Unknown Subject';
+    return subject?.subject_name || 'Unknown Subject';
   };
 
   const getStatusVariant = (status: string) => {
@@ -151,8 +153,8 @@ export const DocumentLibrary = () => {
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = !selectedSubject || selectedSubject === 'all' || doc.subject_id === selectedSubject;
-    const matchesClass = !selectedClass || selectedClass === 'all' || doc.class_level === selectedClass;
+    const matchesSubject = !selectedSubject || selectedSubject === 'all' || doc.subject_parent_id === selectedSubject;
+    const matchesClass = !selectedClass || selectedClass === 'all' || doc.class_parent_id === selectedClass;
     const matchesStatus = !selectedStatus || selectedStatus === 'all' || doc.processing_status === selectedStatus;
 
     return matchesSearch && matchesSubject && matchesClass && matchesStatus;
@@ -177,8 +179,8 @@ export const DocumentLibrary = () => {
 
   // Group paginated documents by subject and class
   const groupedDocuments = paginatedDocuments.reduce((acc, doc) => {
-    const subjectName = getSubjectName(doc.subject_id);
-    const key = `${subjectName} - Class ${doc.class_level}`;
+    const subjectName = getSubjectName(doc.subject_parent_id);
+    const key = `${subjectName} - Class ${doc.class_parent_id}`;
     
     if (!acc[key]) {
       acc[key] = [];
@@ -225,7 +227,7 @@ export const DocumentLibrary = () => {
               <SelectItem value="all">All Subjects</SelectItem>
               {subjects.map(subject => (
                 <SelectItem key={subject.id} value={subject.id}>
-                  {subject.name}
+                  {subject.subject_name}
                 </SelectItem>
               ))}
             </SelectContent>

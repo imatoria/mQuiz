@@ -34,7 +34,7 @@ export const useChildAcademicProfile = (childId?: string) => {
       // Fetch class assignment
       const { data: classData, error: classError } = await supabase
         .from('child_class_assignments')
-        .select('class_level')
+        .select('class_parent_id, classes_parent(class_name)')
         .eq('child_id', childId)
         .eq('parent_id', user.user.id)
         .eq('is_current', true)
@@ -46,10 +46,10 @@ export const useChildAcademicProfile = (childId?: string) => {
       const { data: subjectsData, error: subjectsError } = await supabase
         .from('child_subject_assignments')
         .select(`
-          subject_id,
-          subjects (
+          subject_parent_id,
+          subjects_parent (
             id,
-            name
+            subject_name
           )
         `)
         .eq('child_id', childId)
@@ -58,12 +58,12 @@ export const useChildAcademicProfile = (childId?: string) => {
 
       if (subjectsError) throw subjectsError;
 
-      const subjectIds = subjectsData?.map(s => s.subject_id) || [];
-      const subjectNames = subjectsData?.map(s => s.subjects?.name).filter(Boolean) || [];
+      const subjectIds = subjectsData?.map(s => s.subject_parent_id) || [];
+      const subjectNames = subjectsData?.map(s => s.subjects_parent?.subject_name).filter(Boolean) || [];
 
       setAcademicData({
         child_id: childId,
-        class_level: classData?.class_level,
+        class_level: classData?.classes_parent?.class_name,
         subject_ids: subjectIds,
         subject_names: subjectNames as string[]
       });

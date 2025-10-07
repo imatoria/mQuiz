@@ -81,7 +81,7 @@ export const PerformanceAnalytics = () => {
           show_results,
           question_papers!inner (
             title,
-            subjects (name)
+            subjects_parent (subject_name)
           )
         `)
         .eq('user_id', user?.id)
@@ -113,7 +113,7 @@ export const PerformanceAnalytics = () => {
         test_name: attempt.question_papers.title,
         score: attempt.score,
         date: new Date(attempt.completed_at).toLocaleDateString(),
-        subject: attempt.question_papers.subjects.name,
+        subject: attempt.question_papers.subjects_parent.subject_name,
         attempt_number: attempt.attempt_number
       })) || [];
 

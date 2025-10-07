@@ -120,7 +120,7 @@ export const ResultApproval = () => {
           paper_id,
           question_papers!inner (
             title,
-            subjects (name)
+            subjects_parent (subject_name)
           )
         `)
         .in('user_id', childIds)
@@ -158,7 +158,7 @@ export const ResultApproval = () => {
         },
         test: {
           title: attempt.question_papers?.title || 'Unknown Test',
-          subject: attempt.question_papers?.subjects?.name || 'Unknown Subject',
+          subject: attempt.question_papers?.subjects_parent?.subject_name || 'Unknown Subject',
           question_paper_id: attempt.paper_id || ''
         }
       })) || [];

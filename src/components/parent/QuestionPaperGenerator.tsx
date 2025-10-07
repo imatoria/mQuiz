@@ -58,8 +58,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       .from('documents')
       .select('id, total_pages')
       .eq('user_id', user.user.id)
-      .eq('subject_id', subject)
-      .eq('class_level', classLevel as any);
+      .eq('subject_parent_id', subject)
+      .eq('class_parent_id', classLevel);
     
     // Get all page numbers from all documents
     const allPages: number[] = [];
@@ -254,7 +254,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
                 ) : (
                   uniqueSubjects.map((subj) => (
                     <SelectItem key={subj.id} value={subj.id}>
-                      {subj.name}
+                      {subj.subject_name}
                     </SelectItem>
                   ))
                 )}
@@ -275,8 +275,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
                   <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
                 ) : (
                   uniqueClasses.map((cls) => (
-                    <SelectItem key={cls} value={cls}>
-                      {cls.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    <SelectItem key={cls.id} value={cls.class_key}>
+                      {cls.class_name}
                     </SelectItem>
                   ))
                 )}

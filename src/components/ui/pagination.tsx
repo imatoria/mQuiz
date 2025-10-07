@@ -116,6 +116,36 @@ const PaginationInfo = ({ startItem, endItem, totalItems }: {
   </div>
 );
 
+const PaginationFirst = ({
+  className,
+  ...props
+}: React.ComponentProps<typeof PaginationLink>) => (
+  <PaginationLink
+    aria-label="Go to first page"
+    size="default"
+    className={cn("gap-1 pl-2.5", className)}
+    {...props}
+  >
+    <span>First</span>
+  </PaginationLink>
+);
+PaginationFirst.displayName = "PaginationFirst";
+
+const PaginationLast = ({
+  className,
+  ...props
+}: React.ComponentProps<typeof PaginationLink>) => (
+  <PaginationLink
+    aria-label="Go to last page"
+    size="default"
+    className={cn("gap-1 pr-2.5", className)}
+    {...props}
+  >
+    <span>Last</span>
+  </PaginationLink>
+);
+PaginationLast.displayName = "PaginationLast";
+
 export {
   Pagination,
   PaginationContent,
@@ -125,4 +155,6 @@ export {
   PaginationNext,
   PaginationPrevious,
   PaginationInfo,
+  PaginationFirst,
+  PaginationLast,
 }

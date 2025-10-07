@@ -13,13 +13,13 @@ import { Share2, Users, Eye, Edit, Trash2, Calendar, UserPlus, Link } from "luci
 interface Document {
   id: string;
   title: string;
-  subject_id: string;
-  class_level: string;
+  subject_parent_id: string;
+  class_parent_id: string;
 }
 
 interface Subject {
   id: string;
-  name: string;
+  subject_name: string;
 }
 
 interface ShareRecord {
@@ -76,9 +76,11 @@ export const ContentSharing = () => {
 
       // Fetch subjects
       const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subjects')
+        .from('subjects_parent')
         .select('*')
-        .order('name');
+        .eq('parent_id', user.user.id)
+        .eq('is_active', true)
+        .order('subject_name');
 
       if (subjectsError) throw subjectsError;
 
@@ -214,7 +216,7 @@ export const ContentSharing = () => {
   };
 
   const getSubjectName = (subjectId: string) => {
-    return subjects.find(s => s.id === subjectId)?.name || 'Unknown';
+    return subjects.find(s => s.id === subjectId)?.subject_name || 'Unknown';
   };
 
   if (loading) {

@@ -6,19 +6,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { BookOpen, Save, X } from 'lucide-react';
+import { useSubjectsParent } from '@/hooks/useSubjectsParent';
 
 interface ChildSubjectAssignmentProps {
   childId: string;
   childName: string;
 }
 
-interface Subject {
-  id: string;
-  name: string;
-}
 
 export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssignmentProps) => {
-  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
+  const { subjects: allSubjects, isLoading: subjectsLoading } = useSubjectsParent();
   const [currentSubjects, setCurrentSubjects] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,35 +23,26 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchData();
+    fetchCurrentSubjects();
   }, [childId]);
 
-  const fetchData = async () => {
+  const fetchCurrentSubjects = async () => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      // Fetch all available subjects
-      const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subjects')
-        .select('id, name')
-        .order('name');
-
-      if (subjectsError) throw subjectsError;
-
       // Fetch current subject assignments
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('child_subject_assignments')
-        .select('subject_id')
+        .select('subject_parent_id')
         .eq('child_id', childId)
         .eq('parent_id', user.user.id)
         .eq('is_current', true);
 
       if (assignmentsError) throw assignmentsError;
 
-      const subjectIds = assignmentsData?.map(a => a.subject_id) || [];
+      const subjectIds = assignmentsData?.map(a => a.subject_parent_id) || [];
       
-      setAllSubjects(subjectsData || []);
       setCurrentSubjects(subjectIds);
       setSelectedSubjects(subjectIds);
     } catch (error: any) {
@@ -93,10 +81,10 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
 
       // Then insert new current assignments
       if (selectedSubjects.length > 0) {
-        const assignments = selectedSubjects.map(subjectId => ({
+        const assignments = selectedSubjects.map(subjectParentId => ({
           child_id: childId,
           parent_id: user.user.id,
-          subject_id: subjectId,
+          subject_parent_id: subjectParentId,
           is_current: true,
         }));
 
@@ -127,7 +115,7 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
     setSelectedSubjects(currentSubjects);
   };
 
-  if (isLoading) {
+  if (isLoading || subjectsLoading) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -157,7 +145,7 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
                   const subject = allSubjects.find(s => s.id === subjectId);
                   return (
                     <Badge key={subjectId} variant="secondary">
-                      {subject?.name || 'Unknown Subject'}
+                      {subject?.subject_name || 'Unknown Subject'}
                     </Badge>
                   );
                 })}
@@ -181,7 +169,7 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
                     htmlFor={`subject-${subject.id}`} 
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    {subject.name}
+                    {subject.subject_name}
                   </label>
                 </div>
               ))}

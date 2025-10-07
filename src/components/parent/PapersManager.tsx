@@ -33,7 +33,8 @@ export const PapersManager: React.FC = () => {
       .from('question_papers')
       .select(`
         *,
-        subjects(name)
+        subjects_parent!subject_parent_id(subject_name),
+        classes_parent!class_parent_id(class_name)
       `)
       .eq('user_id', user.user.id)
       .eq('is_deleted', false)
@@ -50,7 +51,8 @@ export const PapersManager: React.FC = () => {
       .from('question_papers')
       .select(`
         *,
-        subjects(name)
+        subjects_parent!subject_parent_id(subject_name),
+        classes_parent!class_parent_id(class_name)
       `)
       .eq('user_id', user.user.id)
       .eq('is_deleted', true)
@@ -207,7 +209,7 @@ export const PapersManager: React.FC = () => {
                       <div>
                         <h4 className="font-medium text-sm text-amber-900">{paper.title}</h4>
                         <p className="text-xs text-amber-700">
-                          {paper.subjects?.name} - Class {paper.class_level} • Deleted {formatDateTime(paper.deleted_at)}
+                          {paper.subjects_parent?.subject_name || 'Unknown'} - {paper.classes_parent?.class_name || 'Unknown'} • Deleted {formatDateTime(paper.deleted_at)}
                         </p>
                       </div>
                       <Button
@@ -246,8 +248,8 @@ export const PapersManager: React.FC = () => {
                         <div>
                           <h4 className="font-semibold text-base mb-2 truncate">{paper.title}</h4>
                           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
-                            <span className="font-medium">{paper.subjects?.name}</span>
-                            <span>Class {paper.class_level}</span>
+                            <span className="font-medium">{paper.subjects_parent?.subject_name || 'Unknown'}</span>
+                            <span>{paper.classes_parent?.class_name || 'Unknown'}</span>
                             <span>{paper.total_questions} questions</span>
                             <span>{paper.time_limit_minutes || 60}m duration</span>
                             <span>Max {paper.max_attempts} attempts</span>

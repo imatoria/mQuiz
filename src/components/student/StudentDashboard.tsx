@@ -40,7 +40,7 @@ interface ScheduledPaper {
   max_attempts: number;
   time_limit_minutes: number;
   total_questions: number;
-  subjects: { name: string };
+  subjects_parent: { subject_name: string };
   paper_attempts: PaperAttempt[];
 }
 
@@ -159,9 +159,9 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
           .from('question_papers')
           .select(`
             *,
-            subjects!inner (
+            subjects_parent!inner (
               id,
-              name
+              subject_name
             )
           `)
           .eq('assign_to_all', true)
@@ -194,7 +194,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
           max_attempts: p.max_attempts || 1,
           time_limit_minutes: p.time_limit_minutes || 60,
           total_questions: p.total_questions || 0,
-          subjects: p.subjects || {name: 'Unknown'},
+          subjects_parent: p.subjects_parent || {subject_name: 'Unknown'},
           paper_attempts: (attemptsMap[p.id] || []).map(a => ({
             id: a.id,
             attempt_number: a.attempt_number,
@@ -332,7 +332,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
         title: currentTest.title,
         total_questions: currentTest.total_questions,
         time_limit_minutes: currentTest.time_limit_minutes,
-        subjects: currentTest.subjects
+        subjects_parent: currentTest.subjects_parent
       },
       test_attempts: currentTest.paper_attempts?.map(attempt => ({
         id: attempt.id,
@@ -496,7 +496,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
                                 <p className="text-sm text-muted-foreground mb-2">
-                                  {test.subjects?.name} • Question {currentQuestion} of {totalQuestions}
+                                  {test.subjects_parent?.subject_name} • Question {currentQuestion} of {totalQuestions}
                                 </p>
                               </div>
                               
@@ -571,9 +571,9 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
                          <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md transition-shadow space-y-3 sm:space-y-0">
                            <div className="flex-1 min-w-0">
                              <h4 className="font-medium truncate pr-2">{test.title}</h4>
-                               <p className="text-sm text-muted-foreground truncate">
-                                 {test.subjects?.name || 'No subject'} • {test.total_questions} questions • {test.time_limit_minutes}m
-                               </p>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {test.subjects_parent?.subject_name || 'No subject'} • {test.total_questions} questions • {test.time_limit_minutes}m
+                                </p>
                              <div className="flex flex-wrap items-center mt-2 gap-2">
                                <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
                                
@@ -657,8 +657,8 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
               question_papers: {
                 total_questions: selectedTest.total_questions,
                 time_limit_minutes: selectedTest.time_limit_minutes,
-                subjects: selectedTest.subjects
-              }
+                subjects_parent: selectedTest.subjects_parent
+              } as any
             }}
           />
         )}

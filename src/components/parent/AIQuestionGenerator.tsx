@@ -10,6 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { PaginatedPageMultiSelect } from '@/components/ui/paginated-page-multi-select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useSubjectsParent } from '@/hooks/useSubjectsParent';
+import { useClassesParent } from '@/hooks/useClassesParent';
 
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -26,22 +28,22 @@ import {
 
 interface Subject {
   id: string;
-  name: string;
+  subject_name: string;
 }
 
 interface Document {
   id: string;
   title: string;
   processing_status: string;
-  subjects?: {
-    name: string;
+  subjects_parent?: {
+    subject_name: string;
   };
 }
 
 interface GenerationConfig {
   topic: string;
-  subject_id: string;
-  class_level: string;
+  subject_parent_id: string;
+  class_parent_id: string;
   difficulty: string;
   question_count: number;
   question_type: string;
@@ -51,13 +53,14 @@ interface GenerationConfig {
 }
 
 export const AIQuestionGenerator = () => {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const { subjects } = useSubjectsParent();
+  const { classes } = useClassesParent();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [config, setConfig] = useState<GenerationConfig>({
     topic: '',
-    subject_id: '',
-    class_level: '',
+    subject_parent_id: '',
+    class_parent_id: '',
     difficulty: 'medium',
     question_count: 5,
     question_type: 'mixed',
@@ -71,7 +74,7 @@ export const AIQuestionGenerator = () => {
   const [minQuestionsPerPage, setMinQuestionsPerPage] = useState(1);
   const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState(10);
 
-  const classLevels = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
+  
 
   const difficulties = [
     { value: 'easy', label: 'Easy', description: 'Basic recall and understanding' },
@@ -88,19 +91,13 @@ export const AIQuestionGenerator = () => {
   ];
 
   useEffect(() => {
-    fetchData();
+    fetchDocuments();
   }, []);
 
-  const fetchData = async () => {
+  const fetchDocuments = async () => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
-
-      // Fetch subjects
-      const { data: subjectsData } = await supabase
-        .from('subjects')
-        .select('*')
-        .order('name');
 
       // Fetch completed documents
       const { data: documentsData } = await supabase
@@ -109,22 +106,21 @@ export const AIQuestionGenerator = () => {
           id,
           title,
           processing_status,
-          subjects(name)
+          subjects_parent(subject_name)
         `)
         .eq('user_id', user.user.id)
         .eq('processing_status', 'completed')
         .order('created_at', { ascending: false });
 
-      setSubjects(subjectsData || []);
       setDocuments(documentsData || []);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching documents:', error);
     }
   };
 
   const fetchAvailablePages = async () => {
     const { data: user } = await supabase.auth.getUser();
-    if (!user.user || !config.subject_id || !config.class_level || mode !== 'book') {
+    if (!user.user || !config.subject_parent_id || !config.class_parent_id || mode !== 'book') {
       setAvailablePages([]);
       setSelectedPages([]);
       return;
@@ -135,8 +131,8 @@ export const AIQuestionGenerator = () => {
       .from('documents')
       .select('id, total_pages')
       .eq('user_id', user.user.id)
-      .eq('subject_id', config.subject_id)
-      .eq('class_level', config.class_level as any)
+      .eq('subject_parent_id', config.subject_parent_id)
+      .eq('class_parent_id', config.class_parent_id)
       .eq('processing_status', 'completed')
       .order('created_at', { ascending: false })
       .limit(1)
@@ -174,11 +170,11 @@ export const AIQuestionGenerator = () => {
 
   useEffect(() => {
     fetchAvailablePages();
-  }, [config.subject_id, config.class_level, mode]);
+  }, [config.subject_parent_id, config.class_parent_id, mode]);
 
   const handleGenerateQuestions = async () => {
     if (mode === 'independent') {
-      if (!config.topic.trim() || !config.subject_id || !config.class_level) {
+      if (!config.topic.trim() || !config.subject_parent_id || !config.class_parent_id) {
         toast({
           title: 'Missing Information',
           description: 'Please fill in topic, subject, and class level.',
@@ -187,7 +183,7 @@ export const AIQuestionGenerator = () => {
         return;
       }
     } else {
-      if (!config.document_id || !config.subject_id || !config.class_level || selectedPages.length === 0) {
+      if (!config.document_id || !config.subject_parent_id || !config.class_parent_id || selectedPages.length === 0) {
         toast({
           title: 'Missing Information',
           description: 'Please select a book and page(s) along with subject and class.',
@@ -297,8 +293,8 @@ export const AIQuestionGenerator = () => {
           <div className="space-y-2">
             <Label>Subject</Label>
             <Select 
-              value={config.subject_id} 
-              onValueChange={(value) => setConfig({ ...config, subject_id: value })}
+              value={config.subject_parent_id} 
+              onValueChange={(value) => setConfig({ ...config, subject_parent_id: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select subject" />
@@ -306,7 +302,7 @@ export const AIQuestionGenerator = () => {
               <SelectContent>
                 {subjects.map((subject) => (
                   <SelectItem key={subject.id} value={subject.id}>
-                    {subject.name}
+                    {subject.subject_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -316,16 +312,16 @@ export const AIQuestionGenerator = () => {
           <div className="space-y-2">
             <Label>Class Level</Label>
             <Select 
-              value={config.class_level} 
-              onValueChange={(value) => setConfig({ ...config, class_level: value })}
+              value={config.class_parent_id} 
+              onValueChange={(value) => setConfig({ ...config, class_parent_id: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
               <SelectContent>
-                {classLevels.map((level) => (
-                  <SelectItem key={level} value={level}>
-                    Class {level}
+                {classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.class_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -423,7 +419,7 @@ export const AIQuestionGenerator = () => {
                   selectedPages={selectedPages}
                   onChange={setSelectedPages}
                   className="w-full"
-                  disabled={!config.subject_id || !config.class_level}
+                  disabled={!config.subject_parent_id || !config.class_parent_id}
                   disabledPages={[]}
                 />
               </div>
@@ -453,8 +449,8 @@ export const AIQuestionGenerator = () => {
             disabled={
               isGenerating ||
               (mode === 'independent'
-                ? (!config.topic.trim() || !config.subject_id || !config.class_level)
-                : (!config.document_id || !config.subject_id || !config.class_level || selectedPages.length === 0 || minQuestionsPerPage > maxQuestionsPerPage)
+                ? (!config.topic.trim() || !config.subject_parent_id || !config.class_parent_id)
+                : (!config.document_id || !config.subject_parent_id || !config.class_parent_id || selectedPages.length === 0 || minQuestionsPerPage > maxQuestionsPerPage)
               )
             }
             className="min-w-32"

@@ -42,7 +42,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
 
-      // Check user permissions (admin or parent only can create global subjects)
+      // Check user permissions (admin or parent only can create subjects)
       const { data: profile } = await supabase
         .from('profiles')
         .select('role, is_approved')
@@ -52,31 +52,33 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       if (!profile || !['admin', 'parent'].includes(profile.role) || !profile.is_approved) {
         toast({
           title: 'Permission denied',
-          description: 'Only approved parents and admins can create subjects.',
+          description: 'Only approved parents can create subjects.',
           variant: 'destructive',
         });
         return;
       }
 
-      // Check if subject already exists globally
+      // Check if subject already exists for this parent
       const { data: existingSubjects } = await supabase
-        .from('subjects')
+        .from('subjects_parent')
         .select('*')
-        .eq('name', newSubjectName.trim());
+        .eq('parent_id', user.user.id)
+        .eq('subject_name', newSubjectName.trim());
 
       if (existingSubjects && existingSubjects.length > 0) {
         toast({
           title: 'Subject exists',
-          description: 'A subject with this name already exists.',
+          description: 'You already have a subject with this name.',
           variant: 'destructive',
         });
         return;
       }
 
       const { data: newSubject, error } = await supabase
-        .from('subjects')
+        .from('subjects_parent')
         .insert({
-          name: newSubjectName.trim(),
+          parent_id: user.user.id,
+          subject_name: newSubjectName.trim(),
         })
         .select()
         .single();
@@ -85,7 +87,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
 
       toast({
         title: 'Subject created',
-        description: `${newSubjectName} has been added to the global subjects.`,
+        description: `${newSubjectName} has been added to your subjects.`,
       });
 
       setNewSubjectName('');
@@ -114,7 +116,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
           <SelectContent>
             {subjects.map((subj) => (
               <SelectItem key={subj.id} value={subj.id}>
-                {subj.name}
+                {subj.subject_name}
               </SelectItem>
             ))}
           </SelectContent>

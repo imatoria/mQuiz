@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationInfo } from "@/components/ui/pagination";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationInfo, PaginationFirst, PaginationLast } from "@/components/ui/pagination";
 import { useChildSubjects } from '@/hooks/useChildSubjects';
 import { useChildClasses } from '@/hooks/useChildClasses';
 
@@ -31,8 +31,8 @@ interface Question {
   correct_answer: string;
   difficulty: 'easy' | 'medium' | 'difficult';
   page_number?: number;
-  subject_id: string;
-  class_level: string;
+  subject_parent_id: string;
+  class_parent_id: string;
   created_at: string;
 }
 
@@ -47,14 +47,25 @@ interface QuestionBankProps {
 
 export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // Temporary filter states (not applied until Apply Filters is clicked)
+  const [tempSearchTerm, setTempSearchTerm] = useState('');
+  const [tempSelectedSubject, setTempSelectedSubject] = useState<string>('all');
+  const [tempSelectedDifficulty, setTempSelectedDifficulty] = useState<string>('all');
+  const [tempSelectedClass, setTempSelectedClass] = useState<string>('all');
+  const [tempDateRange, setTempDateRange] = useState<{ from?: Date; to?: Date }>({});
+  
+  // Applied filter states (used for actual filtering)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
 
   // Use child assignments hooks
@@ -94,9 +105,9 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
 
   const filteredQuestions = questions.filter(question => {
     const matchesSearch = question.question_text.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = selectedSubject === 'all' || question.subject_id === selectedSubject;
+    const matchesSubject = selectedSubject === 'all' || question.subject_parent_id === selectedSubject;
     const matchesDifficulty = selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
-    const matchesClass = selectedClass === 'all' || question.class_level === selectedClass;
+    const matchesClass = selectedClass === 'all' || question.class_parent_id === selectedClass;
     
     // Date range filtering
     const questionDate = new Date(question.created_at);
@@ -118,10 +129,34 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     startItem,
     endItem,
     totalItems,
+    itemsPerPage: currentItemsPerPage,
+    setItemsPerPage: updateItemsPerPage,
   } = usePagination({
     data: filteredQuestions,
-    itemsPerPage: 20,
+    itemsPerPage: itemsPerPage,
+    onItemsPerPageChange: setItemsPerPage,
   });
+  
+  const applyFilters = () => {
+    setSearchTerm(tempSearchTerm);
+    setSelectedSubject(tempSelectedSubject);
+    setSelectedDifficulty(tempSelectedDifficulty);
+    setSelectedClass(tempSelectedClass);
+    setDateRange(tempDateRange);
+  };
+  
+  const clearAllFilters = () => {
+    setTempSearchTerm('');
+    setTempSelectedSubject('all');
+    setTempSelectedDifficulty('all');
+    setTempSelectedClass('all');
+    setTempDateRange({});
+    setSearchTerm('');
+    setSelectedSubject('all');
+    setSelectedDifficulty('all');
+    setSelectedClass('all');
+    setDateRange({});
+  };
 
   const getDifficultyBadgeVariant = (difficulty: string) => {
     switch (difficulty) {
@@ -203,18 +238,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     }
   };
 
-  const getDifficultyStats = () => {
-    const stats = { easy: 0, medium: 0, difficult: 0 };
-    filteredQuestions.forEach(q => {
-      if (q.difficulty === 'easy' || q.difficulty === 'medium' || q.difficulty === 'difficult') {
-        stats[q.difficulty]++;
-      }
-    });
-    return stats;
-  };
-
-  const difficultyStats = getDifficultyStats();
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -229,32 +252,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
           </Badge>
         </div>
       </div>
-
-      {/* Difficulty Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Difficulty Distribution
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{difficultyStats.easy}</div>
-              <div className="text-sm text-muted-foreground">Easy</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{difficultyStats.medium}</div>
-              <div className="text-sm text-muted-foreground">Medium</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{difficultyStats.difficult}</div>
-              <div className="text-sm text-muted-foreground">Difficult</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Filters */}
       <Card>
@@ -273,8 +270,8 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                 <Input
                   id="search"
                   placeholder="Search questions or documents..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={tempSearchTerm}
+                  onChange={(e) => setTempSearchTerm(e.target.value)}
                   className="pl-8"
                 />
               </div>
@@ -282,7 +279,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
 
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+              <Select value={tempSelectedSubject} onValueChange={setTempSelectedSubject}>
                 <SelectTrigger>
                   <SelectValue placeholder="All subjects" />
                 </SelectTrigger>
@@ -293,7 +290,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                   ) : (
                     uniqueSubjects.map((subject) => (
                       <SelectItem key={subject.id} value={subject.id}>
-                        {subject.name}
+                        {subject.subject_name}
                       </SelectItem>
                     ))
                   )}
@@ -303,7 +300,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
 
             <div className="space-y-2">
               <Label>Difficulty</Label>
-              <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+              <Select value={tempSelectedDifficulty} onValueChange={setTempSelectedDifficulty}>
                 <SelectTrigger>
                   <SelectValue placeholder="All difficulties" />
                 </SelectTrigger>
@@ -320,7 +317,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
 
             <div className="space-y-2">
               <Label>Class Level</Label>
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
+              <Select value={tempSelectedClass} onValueChange={setTempSelectedClass}>
                 <SelectTrigger>
                   <SelectValue placeholder="All classes" />
                 </SelectTrigger>
@@ -329,9 +326,9 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                   {loadingClasses ? (
                     <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
                   ) : (
-                    uniqueClasses.map((level) => (
-                      <SelectItem key={level} value={level}>
-                        {level.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    uniqueClasses.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.class_key}>
+                        {cls.class_name}
                       </SelectItem>
                     ))
                   )}
@@ -348,18 +345,18 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !dateRange.from && "text-muted-foreground"
+                      !tempDateRange.from && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
+                    {tempDateRange?.from ? (
+                      tempDateRange.to ? (
                         <>
-                          {format(dateRange.from, "LLL dd, y")} -{" "}
-                          {format(dateRange.to, "LLL dd, y")}
+                          {format(tempDateRange.from, "LLL dd, y")} -{" "}
+                          {format(tempDateRange.to, "LLL dd, y")}
                         </>
                       ) : (
-                        format(dateRange.from, "LLL dd, y")
+                        format(tempDateRange.from, "LLL dd, y")
                       )
                     ) : (
                       <span>Pick a date range</span>
@@ -370,9 +367,9 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                   <Calendar
                     initialFocus
                     mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={{ from: dateRange.from, to: dateRange.to }}
-                    onSelect={(range) => setDateRange(range || {})}
+                    defaultMonth={tempDateRange?.from}
+                    selected={{ from: tempDateRange.from, to: tempDateRange.to }}
+                    onSelect={(range) => setTempDateRange(range || {})}
                     numberOfMonths={2}
                     className={cn("p-3 pointer-events-auto")}
                   />
@@ -383,15 +380,14 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
           
           <div className="flex gap-2">
             <Button
+              onClick={applyFilters}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Apply Filters
+            </Button>
+            <Button
               variant="outline"
-              size="sm"
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedSubject('all');
-                setSelectedDifficulty('all');
-                setSelectedClass('all');
-                setDateRange({});
-              }}
+              onClick={clearAllFilters}
             >
               Clear All Filters
             </Button>
@@ -408,11 +404,38 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <PaginationInfo startItem={startItem} endItem={endItem} totalItems={totalItems} />
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <PaginationInfo startItem={startItem} endItem={endItem} totalItems={totalItems} />
+              <div className="flex items-center gap-2">
+                <Label htmlFor="items-per-page" className="text-sm whitespace-nowrap">Rows per page:</Label>
+                <Select value={currentItemsPerPage.toString()} onValueChange={(value) => updateItemsPerPage(Number(value))}>
+                  <SelectTrigger id="items-per-page" className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             {totalPages > 1 && (
               <Pagination>
                 <PaginationContent>
+                  <PaginationItem>
+                    <PaginationFirst 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        goToPage(1);
+                      }}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
                   <PaginationItem>
                     <PaginationPrevious 
                       href="#" 
@@ -483,6 +506,17 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                       className={!canGoNext ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
+                  
+                  <PaginationItem>
+                    <PaginationLast 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        goToPage(totalPages);
+                      }}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
                 </PaginationContent>
               </Pagination>
             )}
@@ -515,7 +549,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {uniqueSubjects.find(s => s.id === question.subject_id)?.name || '-'}
+                        {uniqueSubjects.find(s => s.id === question.subject_parent_id)?.subject_name || '-'}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
@@ -523,7 +557,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {question.class_level ? `Class ${question.class_level}` : '-'}
+                        {uniqueClasses.find(c => c.id === question.class_parent_id)?.class_name || '-'}
                       </TableCell>
                       <TableCell>
                         {question.page_number || '-'}

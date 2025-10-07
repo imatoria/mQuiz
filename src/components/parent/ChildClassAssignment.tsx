@@ -6,30 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, Save, X } from 'lucide-react';
+import { useClassesParent } from '@/hooks/useClassesParent';
 
 interface ChildClassAssignmentProps {
   childId: string;
   childName: string;
 }
 
-const classLevels = [
-  { value: 'grade_1', label: 'Grade 1' },
-  { value: 'grade_2', label: 'Grade 2' },
-  { value: 'grade_3', label: 'Grade 3' },
-  { value: 'grade_4', label: 'Grade 4' },
-  { value: 'grade_5', label: 'Grade 5' },
-  { value: 'grade_6', label: 'Grade 6' },
-  { value: 'grade_7', label: 'Grade 7' },
-  { value: 'grade_8', label: 'Grade 8' },
-  { value: 'grade_9', label: 'Grade 9' },
-  { value: 'grade_10', label: 'Grade 10' },
-  { value: 'grade_11', label: 'Grade 11' },
-  { value: 'grade_12', label: 'Grade 12' },
-];
 
 export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmentProps) => {
-  const [currentClass, setCurrentClass] = useState<string>('');
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const { classes, isLoading: classesLoading } = useClassesParent();
+  const [currentClassId, setCurrentClassId] = useState<string>('');
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -45,7 +33,7 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
 
       const { data, error } = await supabase
         .from('child_class_assignments')
-        .select('class_level')
+        .select('class_parent_id')
         .eq('child_id', childId)
         .eq('parent_id', user.user.id)
         .eq('is_current', true)
@@ -53,9 +41,9 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
 
       if (error) throw error;
 
-      const classLevel = data?.class_level || '';
-      setCurrentClass(classLevel);
-      setSelectedClass(classLevel);
+      const classId = data?.class_parent_id || '';
+      setCurrentClassId(classId);
+      setSelectedClassId(classId);
     } catch (error: any) {
       console.error('Error fetching child class:', error);
     } finally {
@@ -64,7 +52,7 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
   };
 
   const handleSave = async () => {
-    if (!selectedClass) {
+    if (!selectedClassId) {
       toast({
         title: "Please select a class",
         variant: "destructive",
@@ -88,19 +76,20 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
       // Then insert new current assignment
       const { error } = await supabase
         .from('child_class_assignments')
-        .upsert({
+        .insert({
           child_id: childId,
           parent_id: user.user.id,
-          class_level: selectedClass as any,
+          class_parent_id: selectedClassId,
           is_current: true,
         });
 
       if (error) throw error;
 
-      setCurrentClass(selectedClass);
+      setCurrentClassId(selectedClassId);
+      const selectedClassName = classes.find(c => c.id === selectedClassId)?.class_name;
       toast({
         title: "Class assigned successfully",
-        description: `${childName} has been assigned to ${classLevels.find(c => c.value === selectedClass)?.label}`,
+        description: `${childName} has been assigned to ${selectedClassName}`,
       });
     } catch (error: any) {
       toast({
@@ -114,10 +103,10 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
   };
 
   const handleCancel = () => {
-    setSelectedClass(currentClass);
+    setSelectedClassId(currentClassId);
   };
 
-  if (isLoading) {
+  if (isLoading || classesLoading) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -127,7 +116,8 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
     );
   }
 
-  const hasChanges = selectedClass !== currentClass;
+  const hasChanges = selectedClassId !== currentClassId;
+  const currentClassName = classes.find(c => c.id === currentClassId)?.class_name;
 
   return (
     <Card>
@@ -139,23 +129,23 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          {currentClass && (
+          {currentClassId && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Current Class:</span>
               <Badge variant="secondary">
-                {classLevels.find(c => c.value === currentClass)?.label || currentClass}
+                {currentClassName || 'Unknown Class'}
               </Badge>
             </div>
           )}
           
-          <Select value={selectedClass} onValueChange={setSelectedClass}>
+          <Select value={selectedClassId} onValueChange={setSelectedClassId}>
             <SelectTrigger>
               <SelectValue placeholder="Select a class level" />
             </SelectTrigger>
             <SelectContent>
-              {classLevels.map((classLevel) => (
-                <SelectItem key={classLevel.value} value={classLevel.value}>
-                  {classLevel.label}
+              {classes.map((cls) => (
+                <SelectItem key={cls.id} value={cls.id}>
+                  {cls.class_name}
                 </SelectItem>
               ))}
             </SelectContent>

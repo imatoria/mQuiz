@@ -39,14 +39,15 @@ interface QuestionPaper {
   title: string;
   total_questions: number;
   time_limit_minutes: number;
-  class_level: string;
+  class_parent_id: string;
+  subject_parent_id: string;
   created_at: string;
   updated_at: string;
   start_time?: string;
   end_time?: string;
   max_attempts: number;
   assign_to_all: boolean;
-  subjects: { name: string };
+  subjects_parent: { subject_name: string };
   paper_attempts: Array<{
     id: string;
     user_id: string;
@@ -87,7 +88,7 @@ export const EnhancedPaperManager = () => {
         .from('question_papers')
         .select(`
           *,
-          subjects (name),
+          subjects_parent (subject_name),
           paper_attempts (
             id,
             user_id,
@@ -120,7 +121,7 @@ export const EnhancedPaperManager = () => {
     if (searchTerm) {
       filtered = filtered.filter(paper => 
         paper.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        paper.subjects.name.toLowerCase().includes(searchTerm.toLowerCase())
+        paper.subjects_parent.subject_name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
@@ -343,7 +344,7 @@ export const EnhancedPaperManager = () => {
                         <div className="space-y-1">
                           <div className="font-medium">{paper.title}</div>
                           <div className="text-sm text-muted-foreground">
-                            {paper.subjects.name} • Class {paper.class_level} • {paper.total_questions} questions
+                            {paper.subjects_parent.subject_name} • {paper.total_questions} questions
                           </div>
                           <div className="flex items-center text-xs text-muted-foreground">
                             <Clock className="w-3 h-3 mr-1" />

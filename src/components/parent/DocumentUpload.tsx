@@ -280,7 +280,7 @@ export const DocumentUpload = ({
               ) : (
                 uniqueSubjects.map((subj) => (
                   <SelectItem key={subj.id} value={subj.id}>
-                    {subj.name}
+                    {subj.subject_name}
                   </SelectItem>
                 ))
               )}
@@ -301,8 +301,8 @@ export const DocumentUpload = ({
                 <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
               ) : (
                 uniqueClasses.map((cls) => (
-                  <SelectItem key={cls} value={cls}>
-                    {cls.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  <SelectItem key={cls.id} value={cls.class_key}>
+                    {cls.class_name}
                   </SelectItem>
                 ))
               )}

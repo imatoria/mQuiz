@@ -206,15 +206,20 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     applyQuestionFilters();
   }, [questions, questionFilters]);
 
-  const loadSubjects = async () => {
+const loadSubjects = async () => {
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
       const { data, error } = await supabase
-        .from('subjects')
+        .from('subjects_parent')
         .select('*')
-        .order('name');
+        .eq('parent_id', user.user.id)
+        .eq('is_active', true)
+        .order('subject_name');
       
       if (error) throw error;
-      setSubjects(data || []);
+      setSubjects((data || []).map(s => ({ id: s.id, name: s.subject_name })));
     } catch (error) {
       console.error('Error loading subjects:', error);
     }
@@ -264,8 +269,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       let query = supabase
         .from('questions')
         .select('*')
-        .eq('subject_id', formData.subject_id)
-        .eq('class_level', formData.class_level)
+        .eq('subject_parent_id', formData.subject_id)
+        .eq('class_parent_id', formData.class_level)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false });
 
@@ -339,8 +344,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       const { data, error } = await supabase
         .from('questions')
         .select('page_number')
-        .eq('subject_id', formData.subject_id)
-        .eq('class_level', formData.class_level)
+        .eq('subject_parent_id', formData.subject_id)
+        .eq('class_parent_id', formData.class_level)
         .eq('is_deleted', false)
         .not('page_number', 'is', null)
         .order('page_number');

@@ -52,7 +52,7 @@ interface TestInterfaceProps {
       title: string;
       total_questions: number;
       time_limit_minutes: number;
-      subjects: { name: string };
+      subjects_parent: { subject_name: string };
     };
     test_attempts: Array<{ attempt_number: number; completed_at: string | null }>;
   };
@@ -779,7 +779,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
             <div className="flex justify-between items-start">
               <div>
                 <CardTitle className="text-xl">{test.title}</CardTitle>
-                <CardDescription>{test.question_papers.subjects.name}</CardDescription>
+                <CardDescription>{test.question_papers.subjects_parent.subject_name}</CardDescription>
               </div>
               <div className="flex items-center space-x-4">
                 {/* Save Status Indicator */}

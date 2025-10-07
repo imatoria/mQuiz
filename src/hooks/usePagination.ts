@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 interface UsePaginationProps<T> {
   data: T[];
   itemsPerPage?: number;
+  onItemsPerPageChange?: (value: number) => void;
 }
 
 interface UsePaginationReturn<T> {
@@ -17,21 +18,25 @@ interface UsePaginationReturn<T> {
   startItem: number;
   endItem: number;
   totalItems: number;
+  itemsPerPage: number;
+  setItemsPerPage: (value: number) => void;
 }
 
 export function usePagination<T>({ 
   data, 
-  itemsPerPage = 10 
+  itemsPerPage = 10,
+  onItemsPerPageChange 
 }: UsePaginationProps<T>): UsePaginationReturn<T> {
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentItemsPerPage, setCurrentItemsPerPage] = useState(itemsPerPage);
 
-  const totalPages = Math.ceil(data.length / itemsPerPage);
+  const totalPages = Math.ceil(data.length / currentItemsPerPage);
   
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+    const startIndex = (currentPage - 1) * currentItemsPerPage;
+    const endIndex = startIndex + currentItemsPerPage;
     return data.slice(startIndex, endIndex);
-  }, [data, currentPage, itemsPerPage]);
+  }, [data, currentPage, currentItemsPerPage]);
 
   const goToPage = (page: number) => {
     const pageNumber = Math.max(1, Math.min(page, totalPages));
@@ -49,8 +54,14 @@ export function usePagination<T>({
   const canGoNext = currentPage < totalPages;
   const canGoPrevious = currentPage > 1;
 
-  const startItem = data.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-  const endItem = Math.min(currentPage * itemsPerPage, data.length);
+  const startItem = data.length === 0 ? 0 : (currentPage - 1) * currentItemsPerPage + 1;
+  const endItem = Math.min(currentPage * currentItemsPerPage, data.length);
+
+  const setItemsPerPage = (value: number) => {
+    setCurrentItemsPerPage(value);
+    setCurrentPage(1); // Reset to first page when changing items per page
+    onItemsPerPageChange?.(value);
+  };
 
   return {
     currentPage,
@@ -64,5 +75,7 @@ export function usePagination<T>({
     startItem,
     endItem,
     totalItems: data.length,
+    itemsPerPage: currentItemsPerPage,
+    setItemsPerPage,
   };
 }

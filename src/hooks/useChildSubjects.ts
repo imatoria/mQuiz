@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SubjectAssignment {
-  subject_id: string;
+  subject_parent_id: string;
   child_id: string;
-  subjects?: {
+  subjects_parent?: {
     id: string;
-    name: string;
+    subject_name: string;
   };
 }
 
@@ -33,11 +33,11 @@ export const useChildSubjects = () => {
       const { data, error } = await supabase
         .from('child_subject_assignments')
         .select(`
-          subject_id,
+          subject_parent_id,
           child_id,
-          subjects (
+          subjects_parent (
             id,
-            name
+            subject_name
           )
         `)
         .eq('parent_id', user.user.id)
@@ -55,12 +55,12 @@ export const useChildSubjects = () => {
   };
 
   const getUniqueSubjects = () => {
-    const uniqueSubjectIds = [...new Set(childSubjects.map(cs => cs.subject_id))];
+    const uniqueSubjectIds = [...new Set(childSubjects.map(cs => cs.subject_parent_id))];
     return uniqueSubjectIds.map(subjectId => {
-      const assignment = childSubjects.find(cs => cs.subject_id === subjectId);
+      const assignment = childSubjects.find(cs => cs.subject_parent_id === subjectId);
       return {
         id: subjectId,
-        name: assignment?.subjects?.name || 'Unknown Subject'
+        subject_name: assignment?.subjects_parent?.subject_name || 'Unknown Subject'
       };
     });
   };
@@ -69,19 +69,19 @@ export const useChildSubjects = () => {
     return childSubjects
       .filter(cs => cs.child_id === childId)
       .map(cs => ({
-        id: cs.subject_id,
-        name: cs.subjects?.name || 'Unknown Subject'
+        id: cs.subject_parent_id,
+        name: cs.subjects_parent?.subject_name || 'Unknown Subject'
       }));
   };
 
   const getSubjectIds = () => {
-    return [...new Set(childSubjects.map(cs => cs.subject_id))];
+    return [...new Set(childSubjects.map(cs => cs.subject_parent_id))];
   };
 
   const getSubjectIdsForChild = (childId: string) => {
     return childSubjects
       .filter(cs => cs.child_id === childId)
-      .map(cs => cs.subject_id);
+      .map(cs => cs.subject_parent_id);
   };
 
   const refetch = () => {

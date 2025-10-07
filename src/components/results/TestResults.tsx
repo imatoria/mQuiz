@@ -34,7 +34,7 @@ interface TestAttempt {
   question_papers: {
     id: string;
     title: string;
-    subjects: { name: string };
+    subjects_parent: { subject_name: string };
   };
 }
 
@@ -85,7 +85,7 @@ export const TestResults = () => {
           question_papers!inner (
             id,
             title,
-            subjects (name)
+            subjects_parent (subject_name)
           )
         `)
         .eq('user_id', user.id)
@@ -360,7 +360,7 @@ export const TestResults = () => {
                       <div className="space-y-1">
                         <h4 className="font-semibold">{attempt.question_papers.title}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {attempt.question_papers.subjects.name}
+                          {attempt.question_papers.subjects_parent.subject_name}
                         </p>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Clock className="w-3 h-3 mr-1" />

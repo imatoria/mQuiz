@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +31,8 @@ interface Child {
   full_name: string | null;
   is_approved: boolean;
   created_at: string;
+  class_name?: string;
+  subject_names?: string[];
 }
 
 interface ChildrenManagementProps {
@@ -44,6 +47,8 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
   const [newChildName, setNewChildName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedChildForProfile, setSelectedChildForProfile] = useState<Child | null>(null);
+  const [togglingChildId, setTogglingChildId] = useState<string | null>(null);
+  const [fetchingAcademicInfo, setFetchingAcademicInfo] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -87,7 +92,42 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
         console.log('ChildrenManagement: Current user ID:', user.user.id);
 
         if (childrenError) throw childrenError;
-        setChildren(childrenData || []);
+        
+        // Fetch academic info for each child
+        setFetchingAcademicInfo(true);
+        const childrenWithAcademicInfo = await Promise.all(
+          (childrenData || []).map(async (child) => {
+            const currentYear = new Date().getFullYear().toString();
+            
+            // Fetch class assignment
+            const { data: classData } = await supabase
+              .from('child_class_assignments')
+              .select('class_parent_id, classes_parent(class_name)')
+              .eq('child_id', child.user_id)
+              .eq('parent_id', user.user.id)
+              .eq('is_current', true)
+              .eq('academic_year', currentYear)
+              .maybeSingle();
+
+            // Fetch subject assignments
+            const { data: subjectsData } = await supabase
+              .from('child_subject_assignments')
+              .select('subject_parent_id, subjects_parent(subject_name)')
+              .eq('child_id', child.user_id)
+              .eq('parent_id', user.user.id)
+              .eq('is_current', true)
+              .eq('academic_year', currentYear);
+
+            return {
+              ...child,
+              class_name: classData?.classes_parent?.class_name,
+              subject_names: subjectsData?.map(s => s.subjects_parent?.subject_name).filter(Boolean) as string[] || []
+            };
+          })
+        );
+        setFetchingAcademicInfo(false);
+        
+        setChildren(childrenWithAcademicInfo);
       } else {
         console.log('ChildrenManagement: No relationships found');
         setChildren([]);
@@ -187,11 +227,31 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
     }
   };
 
-  const getStatusBadge = (child: Child) => {
-    if (child.is_approved) {
-      return <Badge variant="default" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
-    } else {
-      return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+
+  const handleToggleActive = async (childId: string, currentStatus: boolean) => {
+    setTogglingChildId(childId);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_approved: !currentStatus })
+        .eq('user_id', childId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status updated",
+        description: `Child account is now ${!currentStatus ? 'active' : 'inactive'}`,
+      });
+
+      fetchChildren();
+    } catch (error: any) {
+      toast({
+        title: "Failed to update status",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingChildId(null);
     }
   };
 
@@ -206,22 +266,22 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col md:flex-row gap-2 justify-between">
-          <div>
-            <CardTitle className="flex">
-              <Users className="w-5 h-5 mr-2" />
+    <Card className="border-none shadow-lg bg-gradient-to-br from-background to-accent/5">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              <Users className="w-6 h-6 mr-3 text-primary" />
               Children Management
             </CardTitle>
-            <CardDescription>
-              Manage your children's accounts and access
+            <CardDescription className="text-base">
+              Manage and monitor your children's academic profiles
             </CardDescription>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Child
               </Button>
@@ -291,51 +351,118 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
         </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="pt-2">
         {children.length === 0 ? (
-          <div className="text-center py-8">
-            <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No children added yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Add your children to start creating and assigning tests.
+          <div className="text-center py-16 px-4">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+              <Users className="w-10 h-10 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">No children added yet</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto">
+              Start by adding your children to create and assign personalized tests.
             </p>
           </div>
         ) : (
-          <div className="break-all space-y-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {children.map((child) => (
-              <div key={child.id} className="flex flex-col md:flex-row gap-2 md:items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium">
-                    {child.full_name?.charAt(0) || child.email?.charAt(0) || '?'}
-                  </div>
-                  <div>
-                    <p className="font-medium">{child.full_name || 'Unnamed Child'}</p>
-                    <p className="text-sm text-muted-foreground flex items-center">
-                      <Mail className="w-3 h-3 mr-1" />
-                      {child.email}
-                    </p>
-                  </div>
-                </div>
+              <div 
+                key={child.id} 
+                className="group relative overflow-hidden rounded-xl border bg-card hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
-                <div className="flex place-content-end items-center gap-2">
-                  {getStatusBadge(child)}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedChildForProfile(child)}
-                    className="flex items-center gap-2"
-                  >
-                    <GraduationCap className="w-4 h-4" />
-                    Academic Profile
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRemoveChild(child.user_id, child.full_name || child.email || 'Child')}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                <div className="relative p-5 space-y-4">
+                  {/* Header Section */}
+                  <div className="flex items-start gap-4">
+                    <div className="relative">
+                      <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                        {child.full_name?.charAt(0) || child.email?.charAt(0) || '?'}
+                      </div>
+                      {child.is_approved && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-card flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-lg truncate">{child.full_name || 'Unnamed Child'}</h4>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                        <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                        {child.email}
+                      </p>
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        {togglingChildId === child.user_id ? (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock className="w-3.5 h-3.5 animate-spin" />
+                            <span>Updating...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {child.is_approved ? 'Active' : 'Inactive'}
+                            </span>
+                            <Switch
+                              checked={child.is_approved}
+                              onCheckedChange={() => handleToggleActive(child.user_id, child.is_approved)}
+                              className="scale-90"
+                              disabled={togglingChildId !== null}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Academic Info Section */}
+                  {fetchingAcademicInfo ? (
+                    <div className="flex items-center gap-2 pt-3 border-t text-xs text-muted-foreground">
+                      <Clock className="w-3.5 h-3.5 animate-spin" />
+                      <span>Loading academic info...</span>
+                    </div>
+                  ) : (child.class_name || (child.subject_names && child.subject_names.length > 0)) && (
+                    <div className="space-y-2 pt-3 border-t">
+                      {child.class_name && (
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4 text-primary flex-shrink-0" />
+                          <Badge variant="outline" className="text-xs font-medium">
+                            {child.class_name}
+                          </Badge>
+                        </div>
+                      )}
+                      {child.subject_names && child.subject_names.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {child.subject_names.map((subject, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {subject}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedChildForProfile(child)}
+                      className="flex-1 hover:bg-primary hover:text-primary-foreground transition-colors"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Manage Profile
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveChild(child.user_id, child.full_name || child.email || 'Child')}
+                      className="text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -349,6 +476,10 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
           onClose={() => setSelectedChildForProfile(null)}
           childId={selectedChildForProfile.user_id}
           childName={selectedChildForProfile.full_name || selectedChildForProfile.email || 'Child'}
+          onUpdate={() => {
+            setFetchingAcademicInfo(true);
+            fetchChildren();
+          }}
         />
       )}
     </Card>

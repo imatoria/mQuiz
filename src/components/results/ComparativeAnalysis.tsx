@@ -89,8 +89,9 @@ export const ComparativeAnalysis = () => {
           question_papers!inner(
             title,
             user_id,
-            class_level,
-            subjects(name)
+            class_parent_id,
+            subjects_parent!subject_parent_id(subject_name),
+            classes_parent!class_parent_id(class_name)
           )
         `)
         .gte('started_at', new Date(Date.now() - parseInt(timeframe) * 24 * 60 * 60 * 1000).toISOString())
@@ -140,7 +141,7 @@ export const ComparativeAnalysis = () => {
     attempts.forEach((attempt: any) => {
       const studentId = attempt.user_id;
       const studentName = profileMap[studentId]?.full_name || 'Unknown Student';
-      const subject = attempt.question_papers.subjects?.name || 'Unknown';
+      const subject = attempt.question_papers.subjects_parent?.subject_name || 'Unknown';
       
       if (!studentMap.has(studentId)) {
         studentMap.set(studentId, {
@@ -230,8 +231,8 @@ export const ComparativeAnalysis = () => {
     const classMap = new Map<string, ClassComparison>();
     
     attempts.forEach((attempt: any) => {
-      const classLevel = attempt.question_papers.class_level || 'Unknown';
-      const subject = attempt.question_papers.subjects?.name || 'Unknown';
+      const classLevel = attempt.question_papers.classes_parent?.class_name || 'Unknown';
+      const subject = attempt.question_papers.subjects_parent?.subject_name || 'Unknown';
       
       if (!classMap.has(classLevel)) {
         classMap.set(classLevel, {
