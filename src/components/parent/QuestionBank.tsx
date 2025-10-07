@@ -240,17 +240,9 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col justify-between">
           <h2 className="text-2xl font-bold tracking-tight">Question Bank</h2>
           <p className="text-muted-foreground">Manage your reusable question repository</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1">
-            <BookOpen className="w-3 h-3" />
-            {filteredQuestions.length} questions
-          </Badge>
-        </div>
       </div>
 
       {/* Filters */}
@@ -404,6 +396,71 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">Loading questions...</div>
+          ) : filteredQuestions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No questions found matching your criteria.
+            </div>
+          ) : (
+            <div className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Question</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Difficulty</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Page</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedQuestions.map((question) => (
+                    <TableRow key={question.id}>
+                      <TableCell className="max-w-md">
+                        <div className="truncate" title={question.question_text}>
+                          {question.question_text}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {uniqueSubjects.find(s => s.id === question.subject_parent_id)?.subject_name || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
+                          {question.difficulty}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {uniqueClasses.find(c => c.id === question.class_parent_id)?.class_name || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {question.page_number || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditQuestion(question)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteQuestion(question.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <PaginationInfo startItem={startItem} endItem={endItem} totalItems={totalItems} />
@@ -521,71 +578,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
               </Pagination>
             )}
           </div>
-          {isLoading ? (
-            <div className="text-center py-8">Loading questions...</div>
-          ) : filteredQuestions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No questions found matching your criteria.
-            </div>
-          ) : (
-            <div className="overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Question</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Difficulty</TableHead>
-                    <TableHead>Class</TableHead>
-                    <TableHead>Page</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedQuestions.map((question) => (
-                    <TableRow key={question.id}>
-                      <TableCell className="max-w-md">
-                        <div className="truncate" title={question.question_text}>
-                          {question.question_text}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {uniqueSubjects.find(s => s.id === question.subject_parent_id)?.subject_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
-                          {question.difficulty}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {uniqueClasses.find(c => c.id === question.class_parent_id)?.class_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {question.page_number || '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditQuestion(question)}
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteQuestion(question.id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
         </CardContent>
       </Card>
 

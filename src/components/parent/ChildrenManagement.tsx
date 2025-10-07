@@ -363,14 +363,12 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-2">
             {children.map((child) => (
               <div 
                 key={child.id} 
                 className="group relative overflow-hidden rounded-xl border bg-card hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
                 <div className="relative p-5 space-y-4">
                   {/* Header Section */}
                   <div className="flex items-start gap-4">
