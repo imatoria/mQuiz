@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MessageSquare, Bell, Megaphone, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,17 +8,27 @@ import { AnnouncementSystem } from '../announcements/AnnouncementSystem';
 import { EmailNotificationSettings } from './EmailNotificationSettings';
 
 export const CommunicationHub = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Read communication subtab from URL or default to 'messages'
+  const activeTab = searchParams.get('comm') || 'messages';
+
+  // Update URL when changing communication tabs
+  const handleCommTabChange = (value: string) => {
+    setSearchParams({ comm: value });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">Communication Center</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Communication Center</h1>
         </div>
         <NotificationCenter />
       </div>
 
-      <Tabs defaultValue="messages">
+      <Tabs value={activeTab} onValueChange={handleCommTabChange}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="messages" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />

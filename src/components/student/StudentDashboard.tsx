@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,7 @@ import {
   Timer,
   User
 } from 'lucide-react';
+import { ProfileManagement } from '@/components/profile/ProfileManagement';
 
 interface ScheduledPaper {
   id: string;
@@ -58,12 +59,9 @@ interface PaperAttempt {
   progress_percentage?: number;
 }
 
-interface StudentDashboardProps {
-  onActiveTabChange?: (tabName: string, tabIcon: any) => void;
-}
-
-export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) => {
-  const [searchParams, setSearchParams] = useSearchParams();
+export const StudentDashboard = () => {
+  const { tab } = useParams();
+  const navigate = useNavigate();
   const [availableTests, setAvailableTests] = useState<ScheduledPaper[]>([]);
   const [completedTests, setCompletedTests] = useState<ScheduledPaper[]>([]);
   const [activeTests, setActiveTests] = useState<ScheduledPaper[]>([]);
@@ -79,28 +77,22 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
     { value: 'tests', label: 'Tests', icon: PlayCircle },
     { value: 'results', label: 'Results', icon: Award },
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { value: 'profile', label: 'Profile', icon: User },
   ];
 
   // Read tab from URL or default to 'tests'
-  const activeTab = searchParams.get('tab') || 'tests';
+  const activeTab = tab || 'tests';
   const activeItem = menuItems.find((i) => i.value === activeTab);
 
-  // Update active tab in parent component
+  // Redirect to default tab if not set
   useEffect(() => {
-    if (activeItem) {
-      onActiveTabChange?.(activeItem.label, activeItem.icon);
+    if (!tab) {
+      navigate('/tests', { replace: true });
     }
-  }, [activeTab, onActiveTabChange]);
-
-  // Sync URL on mount if no tab is set
-  useEffect(() => {
-    if (!searchParams.get('tab')) {
-      setSearchParams({ tab: 'tests' }, { replace: true });
-    }
-  }, []);
+  }, [tab, navigate]);
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    navigate(`/${value}`);
   };
   
   const { loading, error, execute: executeAsync } = useAsyncOperation({
@@ -380,9 +372,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
     <SidebarProvider>
       <Navigation 
         currentRole={profile?.role || null} 
-        onRoleChange={() => signOut()} 
-        activeTabName={activeItem?.label}
-        activeTabIcon={activeItem?.icon}
+        onRoleChange={() => signOut()}
       />
       <div className="flex w-full pt-[57px] md:pt-[64px]">
         <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
@@ -644,6 +634,16 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
 
               <TabsContent value="analytics">
                 <PerformanceAnalytics />
+              </TabsContent>
+
+              <TabsContent value="profile">
+                <div className="mb-6">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground">Profile Management</h2>
+                  <p className="text-sm md:text-base text-muted-foreground mt-1">
+                    Manage your account settings and personal information
+                  </p>
+                </div>
+                <ProfileManagement />
               </TabsContent>
             </Tabs>
             </div>

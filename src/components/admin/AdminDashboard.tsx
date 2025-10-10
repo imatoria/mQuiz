@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,16 +24,13 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
+import { ProfileManagement } from '@/components/profile/ProfileManagement';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarHeader, SidebarSeparator, SidebarProvider } from '@/components/ui/sidebar';
 import { SiteLogo } from '@/components/ui/site-logo';
 import { useAuth } from '@/hooks/useAuth';
 
-interface AdminDashboardProps {
-  onActiveTabChange?: (tabName: string, tabIcon: any) => void;
-}
-
-export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
-  const [searchParams, setSearchParams] = useSearchParams();
+export const AdminDashboard = () => {
+  const { tab } = useParams();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   
@@ -45,28 +42,22 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
     { value: 'moderation', label: 'Moderation', icon: AlertTriangle },
     { value: 'ai-config', label: 'AI Config', icon: Zap },
     { value: 'settings', label: 'Settings', icon: Settings },
+    { value: 'profile', label: 'Profile', icon: Users },
   ];
 
   // Read tab from URL or default to 'approvals'
-  const activeTab = searchParams.get('tab') || 'approvals';
+  const activeTab = tab || 'approvals';
   const activeItem = menuItems.find((i) => i.value === activeTab);
 
-  // Update active tab in parent component
+  // Redirect to default tab if not set
   useEffect(() => {
-    if (activeItem) {
-      onActiveTabChange?.(activeItem.label, activeItem.icon);
+    if (!tab) {
+      navigate('/approvals', { replace: true });
     }
-  }, [activeTab, onActiveTabChange]);
-
-  // Sync URL on mount if no tab is set
-  useEffect(() => {
-    if (!searchParams.get('tab')) {
-      setSearchParams({ tab: 'approvals' }, { replace: true });
-    }
-  }, []);
+  }, [tab, navigate]);
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    navigate(`/${value}`);
   };
 
   return (
@@ -74,9 +65,7 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
       <ErrorBoundary>
         <Navigation 
           currentRole={profile?.role || null} 
-          onRoleChange={() => signOut()} 
-          activeTabName={activeItem?.label}
-          activeTabIcon={activeItem?.icon}
+          onRoleChange={() => signOut()}
         />
         <div className="flex w-full pt-[57px] md:pt-[64px]">
           <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
@@ -206,6 +195,18 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
                 <TabsContent value="settings">
                   <ErrorBoundary>
                     <SystemSettings />
+                  </ErrorBoundary>
+                </TabsContent>
+
+                <TabsContent value="profile">
+                  <ErrorBoundary>
+                    <div className="mb-6">
+                      <h2 className="text-2xl md:text-3xl font-bold text-foreground">Profile Management</h2>
+                      <p className="text-sm md:text-base text-muted-foreground mt-1">
+                        Manage your account settings and personal information
+                      </p>
+                    </div>
+                    <ProfileManagement />
                   </ErrorBoundary>
                 </TabsContent>
               </Tabs>

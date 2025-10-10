@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
@@ -24,17 +24,15 @@ import {
   MessageSquare,
   Zap
 } from 'lucide-react';
+import { ProfileManagement } from '@/components/profile/ProfileManagement';
 
 import { PapersManager } from './PapersManager';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 
-interface ParentDashboardProps {
-  onActiveTabChange?: (tabName: string, tabIcon: any) => void;
-}
-
-export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => {
-  const [searchParams, setSearchParams] = useSearchParams();
+export const ParentDashboard = () => {
+  const { tab } = useParams();
+  const navigate = useNavigate();
   const { profile, signOut } = useAuth();
 
   const menuItems = [
@@ -47,28 +45,22 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
     { value: 'reports', label: 'Reports', icon: FileText },
     { value: 'ai-settings', label: 'AI Settings', icon: Zap },
     { value: 'communications', label: 'Communications', icon: MessageSquare },
+    { value: 'profile', label: 'Profile', icon: Settings },
   ];
 
   // Read tab from URL or default to 'children'
-  const activeTab = searchParams.get('tab') || 'children';
+  const activeTab = tab || 'children';
   const activeItem = menuItems.find((i) => i.value === activeTab);
 
-  // Update active tab in parent component
+  // Redirect to default tab if not set
   useEffect(() => {
-    if (activeItem) {
-      onActiveTabChange?.(activeItem.label, activeItem.icon);
+    if (!tab) {
+      navigate('/children', { replace: true });
     }
-  }, [activeTab, onActiveTabChange]);
-
-  // Sync URL on mount if no tab is set
-  useEffect(() => {
-    if (!searchParams.get('tab')) {
-      setSearchParams({ tab: 'children' }, { replace: true });
-    }
-  }, []);
+  }, [tab, navigate]);
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    navigate(`/${value}`);
   };
 
   return (
@@ -76,9 +68,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
       <ErrorBoundary>
         <Navigation 
           currentRole={profile?.role || null} 
-          onRoleChange={() => signOut()} 
-          activeTabName={activeItem?.label}
-          activeTabIcon={activeItem?.icon}
+          onRoleChange={() => signOut()}
         />
         <div className="flex w-full pt-[57px] md:pt-[64px]">
           <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
@@ -173,6 +163,18 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
                 <TabsContent value="reports">
                   <ErrorBoundary>
                     <ReportingDashboard />
+                  </ErrorBoundary>
+                </TabsContent>
+
+                <TabsContent value="profile">
+                  <ErrorBoundary>
+                    <div className="mb-6">
+                      <h2 className="text-2xl md:text-3xl font-bold text-foreground">Profile Management</h2>
+                      <p className="text-sm md:text-base text-muted-foreground mt-1">
+                        Manage your account settings and personal information
+                      </p>
+                    </div>
+                    <ProfileManagement />
                   </ErrorBoundary>
                 </TabsContent>
               </Tabs>

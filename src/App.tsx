@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Communications from "./pages/Communications";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import { Dashboard } from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -20,9 +21,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/communications" element={<Communications />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/auth" element={<Index />} />
+            <Route path="/:tab?" element={<Dashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

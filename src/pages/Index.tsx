@@ -1,21 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AuthPage } from '@/components/auth/AuthPage';
-import { Dashboard } from '@/pages/Dashboard';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Clock, LucideIcon } from 'lucide-react';
+import { AlertCircle, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import heroBanner from '@/assets/hero-banner.jpg';
 
 const Index = () => {
   const { loading, isAuthenticated, profile, canAccess, signOut } = useAuth();
-  const [activeTabName, setActiveTabName] = useState<string>('');
-  const [activeTabIcon, setActiveTabIcon] = useState<LucideIcon | null>(null);
-
-  const handleActiveTabChange = React.useCallback((tabName: string, tabIcon: LucideIcon) => {
-    setActiveTabName(tabName);
-    setActiveTabIcon(tabIcon);
-  }, []);
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -89,9 +83,14 @@ const Index = () => {
     );
   }
 
-  // Don't render if profile isn't loaded yet
-  if (!profile?.role) {
-    return (
+  // Redirect authenticated users to dashboard
+  if (profile?.role) {
+    navigate('/');
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-background w-full">
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <Card className="w-96">
           <CardContent className="pt-6 text-center">
@@ -100,12 +99,6 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background w-full">
-      <Dashboard role={profile.role} onActiveTabChange={handleActiveTabChange} />
     </div>
   );
 };
