@@ -369,80 +369,82 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
                 key={child.id} 
                 className="group relative overflow-hidden rounded-xl border bg-card hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
               >
-                <div className="relative p-5 space-y-4">
-                  {/* Header Section */}
-                  <div className="flex items-start gap-4">
-                    <div className="relative">
-                      <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                        {child.full_name?.charAt(0) || child.email?.charAt(0) || '?'}
-                      </div>
-                      {child.is_approved && (
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-card flex items-center justify-center">
-                          <CheckCircle className="w-3 h-3 text-white" />
+                <div className="relative p-5 flex flex-col h-full">
+                  <div className="space-y-4 flex-1">
+                    {/* Header Section */}
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
+                        <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                          {child.full_name?.charAt(0) || child.email?.charAt(0) || '?'}
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-lg truncate">{child.full_name || 'Unnamed Child'}</h4>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
-                        <Mail className="w-3.5 h-3.5 flex-shrink-0" />
-                        {child.email}
-                      </p>
-                      
-                      <div className="flex items-center gap-2 mt-2">
-                        {togglingChildId === child.user_id ? (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Clock className="w-3.5 h-3.5 animate-spin" />
-                            <span>Updating...</span>
+                        {child.is_approved && (
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-card flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-white" />
                           </div>
-                        ) : (
-                          <>
-                            <span className="text-xs font-medium text-muted-foreground">
-                              {child.is_approved ? 'Active' : 'Inactive'}
-                            </span>
-                            <Switch
-                              checked={child.is_approved}
-                              onCheckedChange={() => handleToggleActive(child.user_id, child.is_approved)}
-                              className="scale-90"
-                              disabled={togglingChildId !== null}
-                            />
-                          </>
                         )}
                       </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-lg truncate">{child.full_name || 'Unnamed Child'}</h4>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                          <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                          {child.email}
+                        </p>
+                        
+                        <div className="flex items-center gap-2 mt-2">
+                          {togglingChildId === child.user_id ? (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Clock className="w-3.5 h-3.5 animate-spin" />
+                              <span>Updating...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-xs font-medium text-muted-foreground">
+                                {child.is_approved ? 'Active' : 'Inactive'}
+                              </span>
+                              <Switch
+                                checked={child.is_approved}
+                                onCheckedChange={() => handleToggleActive(child.user_id, child.is_approved)}
+                                className="scale-90"
+                                disabled={togglingChildId !== null}
+                              />
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Academic Info Section */}
+                    {fetchingAcademicInfo ? (
+                      <div className="flex items-center gap-2 pt-3 border-t text-xs text-muted-foreground">
+                        <Clock className="w-3.5 h-3.5 animate-spin" />
+                        <span>Loading academic info...</span>
+                      </div>
+                    ) : (child.class_name || (child.subject_names && child.subject_names.length > 0)) && (
+                      <div className="space-y-2 pt-3 border-t">
+                        {child.class_name && (
+                          <div className="flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4 text-primary flex-shrink-0" />
+                            <Badge variant="outline" className="text-xs font-medium">
+                              {child.class_name}
+                            </Badge>
+                          </div>
+                        )}
+                        {child.subject_names && child.subject_names.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {child.subject_names.map((subject, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {subject}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Academic Info Section */}
-                  {fetchingAcademicInfo ? (
-                    <div className="flex items-center gap-2 pt-3 border-t text-xs text-muted-foreground">
-                      <Clock className="w-3.5 h-3.5 animate-spin" />
-                      <span>Loading academic info...</span>
-                    </div>
-                  ) : (child.class_name || (child.subject_names && child.subject_names.length > 0)) && (
-                    <div className="space-y-2 pt-3 border-t">
-                      {child.class_name && (
-                        <div className="flex items-center gap-2">
-                          <GraduationCap className="w-4 h-4 text-primary flex-shrink-0" />
-                          <Badge variant="outline" className="text-xs font-medium">
-                            {child.class_name}
-                          </Badge>
-                        </div>
-                      )}
-                      {child.subject_names && child.subject_names.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {child.subject_names.map((subject, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {subject}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-2">
+                  {/* Action Buttons - Pinned to bottom */}
+                  <div className="flex gap-2 pt-4 mt-auto">
                     <Button
                       variant="outline"
                       size="sm"

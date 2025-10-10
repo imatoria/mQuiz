@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Save, X } from 'lucide-react';
@@ -218,105 +218,103 @@ export const ChildAcademicProfile = ({
           </DialogTitle>
         </DialogHeader>
 
-        <Card>
-          <CardContent className="pt-6 space-y-6">
-            {/* Class Level Section */}
-            <div className="space-y-3">
-              {currentClassId && (
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm text-muted-foreground">Current Class:</span>
-                  <Badge variant="secondary">
-                    {currentClassName || 'Unknown Class'}
-                  </Badge>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Select Class Level:</label>
-                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a class level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classes.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.id}>
-                        {cls.class_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+        <Separator className="my-4" />
 
-            {/* Subjects Section */}
-            <div className="space-y-3">
-              {currentSubjects.length > 0 && (
-                <div className="space-y-2">
-                  <span className="text-sm text-muted-foreground">Currently Assigned:</span>
-                  <div className="flex flex-wrap gap-2">
-                    {currentSubjects.map(subjectId => {
-                      const subject = allSubjects.find(s => s.id === subjectId);
-                      return (
-                        <Badge key={subjectId} variant="secondary">
-                          {subject?.subject_name || 'Unknown Subject'}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Select Subjects:</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {allSubjects.map((subject) => (
-                    <div key={subject.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`subject-${subject.id}`}
-                        checked={selectedSubjects.includes(subject.id)}
-                        onCheckedChange={(checked) => 
-                          handleSubjectToggle(subject.id, checked as boolean)
-                        }
-                      />
-                      <label 
-                        htmlFor={`subject-${subject.id}`} 
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {subject.subject_name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {selectedSubjects.length === 0 && (
-                <div className="text-sm text-muted-foreground">
-                  No subjects selected. The child will not have access to any subject-specific content.
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            {hasChanges && (
-              <div className="flex gap-2 pt-4">
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? (
-                    <>Saving...</>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-                <Button variant="outline" onClick={handleCancel}>
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
+        <div className="space-y-6">
+          {/* Class Level Section */}
+          <div className="space-y-3">
+            {currentClassId && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-muted-foreground">Current Class:</span>
+                <Badge variant="secondary">
+                  {currentClassName || 'Unknown Class'}
+                </Badge>
               </div>
             )}
-          </CardContent>
-        </Card>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Class Level:</label>
+              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a class level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.class_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Subjects Section */}
+          <div className="space-y-3">
+            {currentSubjects.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Currently Assigned:</span>
+                <div className="flex flex-wrap gap-2">
+                  {currentSubjects.map(subjectId => {
+                    const subject = allSubjects.find(s => s.id === subjectId);
+                    return (
+                      <Badge key={subjectId} variant="secondary">
+                        {subject?.subject_name || 'Unknown Subject'}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Select Subjects:</label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {allSubjects.map((subject) => (
+                  <div key={subject.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`subject-${subject.id}`}
+                      checked={selectedSubjects.includes(subject.id)}
+                      onCheckedChange={(checked) => 
+                        handleSubjectToggle(subject.id, checked as boolean)
+                      }
+                    />
+                    <label 
+                      htmlFor={`subject-${subject.id}`} 
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {subject.subject_name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {selectedSubjects.length === 0 && (
+              <div className="text-sm text-muted-foreground">
+                No subjects selected. The child will not have access to any subject-specific content.
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-4">
+            <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
+              {isSaving ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+            <Button variant="outline" onClick={onClose}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
