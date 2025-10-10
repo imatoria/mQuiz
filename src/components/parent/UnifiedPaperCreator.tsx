@@ -36,6 +36,12 @@ interface Subject {
   name: string;
 }
 
+interface ClassLevel {
+  id: string;
+  class_name: string;
+  parent_id: string;
+}
+
 interface Child {
   id: string;
   user_id: string;
@@ -90,13 +96,14 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     max_attempts: 1,
     assign_to_all: true,
     show_results: false,
-    difficulty_filter: ['easy', 'medium', 'difficult'], // Default to all difficulties selected
+    difficulty_filter: [], // Empty by default for single-select
     difficulty: '',
     selected_children: [],
     selected_questions: []
   });
   
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classes, setClasses] = useState<ClassLevel[]>([]);
   const [children, setChildren] = useState<Child[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
@@ -123,6 +130,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
   React.useEffect(() => {
     loadSubjects();
+    loadClasses();
     if (user?.id) {
       loadChildren();
     }
@@ -148,7 +156,9 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
         max_attempts: editingPaper.max_attempts || 1,
         assign_to_all: editingPaper.assign_to_all ?? true,
         show_results: editingPaper.show_results || false,
-        difficulty_filter: editingPaper.difficulty_filter || ['easy', 'medium', 'difficult'],
+        difficulty_filter: editingPaper.difficulty_filter && editingPaper.difficulty_filter.length > 0 
+          ? [editingPaper.difficulty_filter[0]] 
+          : [],
       }));
       
       // Set default tab based on editing vs creating
@@ -222,6 +232,25 @@ const loadSubjects = async () => {
       setSubjects((data || []).map(s => ({ id: s.id, name: s.subject_name })));
     } catch (error) {
       console.error('Error loading subjects:', error);
+    }
+  };
+
+  const loadClasses = async () => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data, error } = await supabase
+        .from('classes_parent')
+        .select('*')
+        .eq('parent_id', user.user.id)
+        .eq('is_active', true)
+        .order('display_order');
+      
+      if (error) throw error;
+      setClasses(data || []);
+    } catch (error) {
+      console.error('Error loading classes:', error);
     }
   };
 
@@ -515,7 +544,7 @@ const loadSubjects = async () => {
           max_attempts: 1,
           assign_to_all: true,
           show_results: false,
-          difficulty_filter: ['easy', 'medium', 'difficult'],
+          difficulty_filter: [], // Empty by default for single-select
           selected_children: [],
           selected_questions: []
         });
@@ -679,9 +708,9 @@ const loadSubjects = async () => {
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((classLevel) => (
-                    <SelectItem key={classLevel} value={classLevel.toString()}>
-                      Class {classLevel}
+                  {classes.map((classItem) => (
+                    <SelectItem key={classItem.id} value={classItem.id}>
+                      {classItem.class_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -721,186 +750,154 @@ const loadSubjects = async () => {
               />
             </div>
             
-              <div className="space-y-3">
+            <div className="space-y-2">
               <Label>Difficulty Level</Label>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="select-all-difficulty"
-                    checked={formData.difficulty_filter?.length === 3}
-                    disabled={!!editingPaper}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setFormData(prev => ({
-                          ...prev,
-                          difficulty_filter: ['easy', 'medium', 'difficult']
-                        }));
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          difficulty_filter: []
-                        }));
-                      }
-                    }}
-                  />
-                  <Label htmlFor="select-all-difficulty" className="text-sm font-medium">
-                    Select All
-                  </Label>
-                </div>
-                {['easy', 'medium', 'difficult'].map((level) => (
-                  <div key={level} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={level}
-                      checked={formData.difficulty_filter?.includes(level) || false}
-                      disabled={!!editingPaper}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setFormData(prev => ({
-                            ...prev,
-                            difficulty_filter: [...(prev.difficulty_filter || []), level]
-                          }));
-                        } else {
-                          setFormData(prev => ({
-                            ...prev,
-                            difficulty_filter: prev.difficulty_filter?.filter(d => d !== level) || []
-                          }));
-                        }
-                      }}
-                    />
-                    <Label htmlFor={level} className="text-sm capitalize">
-                      {level}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              <Select 
+                value={formData.difficulty_filter?.[0] || ''} 
+                onValueChange={(value) => setFormData(prev => ({ 
+                  ...prev, 
+                  difficulty_filter: value ? [value] : [] 
+                }))}
+                disabled={!!editingPaper}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select difficulty" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="difficult">Difficult</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
-          {/* Scheduling Section */}
-          <div className="space-y-4 p-4 border rounded-lg">
-            <h3 className="font-medium">Test Scheduling (Optional)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start Time</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.start_time ? format(formData.start_time, "PPP") : "Pick date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.start_time}
-                      onSelect={(date) => {
-                        setFormData(prev => ({ ...prev, start_time: date }));
-                        // Close popover immediately
-                        setTimeout(() => {
-                          const popoverTrigger = document.querySelector('[data-radix-popper-content-wrapper]');
-                          if (popoverTrigger) {
-                            const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
-                            document.dispatchEvent(escapeEvent);
-                          }
-                        }, 100);
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>End Time</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.end_time ? format(formData.end_time, "PPP") : "Pick date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.end_time}
-                      onSelect={(date) => {
-                        setFormData(prev => ({ ...prev, end_time: date }));
-                        // Close popover immediately
-                        setTimeout(() => {
-                          const popoverTrigger = document.querySelector('[data-radix-popper-content-wrapper]');
-                          if (popoverTrigger) {
-                            const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
-                            document.dispatchEvent(escapeEvent);
-                          }
-                        }, 100);
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-          </div>
-          
-          {/* Settings Section */}
-          <div className="space-y-4 p-4 border rounded-lg">
-            <h3 className="font-medium">Assignment & Results Settings</h3>
+          {/* Scheduling and Settings Section - Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Test Scheduling */}
             <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <Switch
-                  checked={formData.assign_to_all}
-                  onCheckedChange={(checked) => setFormData(prev => ({ 
-                    ...prev, 
-                    assign_to_all: checked,
-                    selected_children: checked ? [] : prev.selected_children
-                  }))}
-                />
-                <Label>Assign to All Children</Label>
-              </div>
-              
-              {!formData.assign_to_all && (
-                <div className="space-y-3">
-                  <Label className="flex items-center">
-                    <Users className="w-4 h-4 mr-2" />
-                    Select Children to Assign
-                  </Label>
-                  {children.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No children found. Add children to your account first.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                      {children.map((child) => (
-                        <div key={child.id} className="flex items-center space-x-2 p-2 border rounded">
-                          <Checkbox
-                            id={child.id}
-                            checked={formData.selected_children?.includes(child.user_id) || false}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  selected_children: [...(prev.selected_children || []), child.user_id]
-                                }));
-                              } else {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  selected_children: prev.selected_children?.filter(id => id !== child.user_id) || []
-                                }));
-                              }
-                            }}
-                          />
-                          <Label htmlFor={child.id} className="text-sm">
-                            {child.full_name || child.email}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              <h3 className="font-medium">Test Scheduling (Optional)</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Start Time</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.start_time ? format(formData.start_time, "PPP") : "Pick date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.start_time}
+                        onSelect={(date) => {
+                          setFormData(prev => ({ ...prev, start_time: date }));
+                          setTimeout(() => {
+                            const popoverTrigger = document.querySelector('[data-radix-popper-content-wrapper]');
+                            if (popoverTrigger) {
+                              const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+                              document.dispatchEvent(escapeEvent);
+                            }
+                          }, 100);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              )}
-              
-              <div className="flex items-center space-x-3">
-                <Switch
-                  checked={formData.show_results}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_results: checked }))}
-                />
-                <Label>Auto-approve Results</Label>
+                
+                <div className="space-y-2">
+                  <Label>End Time</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.end_time ? format(formData.end_time, "PPP") : "Pick date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.end_time}
+                        onSelect={(date) => {
+                          setFormData(prev => ({ ...prev, end_time: date }));
+                          setTimeout(() => {
+                            const popoverTrigger = document.querySelector('[data-radix-popper-content-wrapper]');
+                            if (popoverTrigger) {
+                              const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+                              document.dispatchEvent(escapeEvent);
+                            }
+                          }, 100);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
+            
+            {/* Assignment & Results Settings */}
+            <div className="space-y-4">
+              <h3 className="font-medium">Assignment & Results Settings</h3>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Switch
+                    checked={formData.assign_to_all}
+                    onCheckedChange={(checked) => setFormData(prev => ({ 
+                      ...prev, 
+                      assign_to_all: checked,
+                      selected_children: checked ? [] : prev.selected_children
+                    }))}
+                  />
+                  <Label>Assign to All Children</Label>
+                </div>
+                
+                {!formData.assign_to_all && (
+                  <div className="space-y-3">
+                    <Label className="flex items-center">
+                      <Users className="w-4 h-4 mr-2" />
+                      Select Children to Assign
+                    </Label>
+                    {children.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No children found. Add children to your account first.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                        {children.map((child) => (
+                          <div key={child.id} className="flex items-center space-x-2 p-2 border rounded">
+                            <Checkbox
+                              id={child.id}
+                              checked={formData.selected_children?.includes(child.user_id) || false}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    selected_children: [...(prev.selected_children || []), child.user_id]
+                                  }));
+                                } else {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    selected_children: prev.selected_children?.filter(id => id !== child.user_id) || []
+                                  }));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={child.id} className="text-sm">
+                              {child.full_name || child.email}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="flex items-center space-x-3">
+                  <Switch
+                    checked={formData.show_results}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_results: checked }))}
+                  />
+                  <Label>Auto-approve Results</Label>
+                </div>
               </div>
             </div>
           </div>

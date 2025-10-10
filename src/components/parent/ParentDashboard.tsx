@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
@@ -33,16 +34,8 @@ interface ParentDashboardProps {
 }
 
 export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => {
-  const [activeTab, setActiveTab] = useState('children');
+  const [searchParams, setSearchParams] = useSearchParams();
   const { profile, signOut } = useAuth();
-  
-  // Notify initial tab on mount
-  React.useEffect(() => {
-    const initialItem = menuItems.find(i => i.value === 'children');
-    if (initialItem) {
-      onActiveTabChange?.(initialItem.label, initialItem.icon);
-    }
-  }, []); // Empty dependency array to run only once on mount
 
   const menuItems = [
     { value: 'children', label: 'Children', icon: Users },
@@ -56,7 +49,27 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
     { value: 'communications', label: 'Communications', icon: MessageSquare },
   ];
 
+  // Read tab from URL or default to 'children'
+  const activeTab = searchParams.get('tab') || 'children';
   const activeItem = menuItems.find((i) => i.value === activeTab);
+
+  // Update active tab in parent component
+  useEffect(() => {
+    if (activeItem) {
+      onActiveTabChange?.(activeItem.label, activeItem.icon);
+    }
+  }, [activeTab, onActiveTabChange]);
+
+  // Sync URL on mount if no tab is set
+  useEffect(() => {
+    if (!searchParams.get('tab')) {
+      setSearchParams({ tab: 'children' }, { replace: true });
+    }
+  }, []);
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
 
   return (
     <SidebarProvider>
@@ -77,10 +90,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
                       <SidebarMenuItem key={item.value}>
                         <SidebarMenuButton
                           isActive={activeTab === item.value}
-                          onClick={() => {
-                            setActiveTab(item.value);
-                            onActiveTabChange?.(item.label, item.icon);
-                          }}
+                          onClick={() => handleTabChange(item.value)}
                           tooltip={item.label}
                         >
                           <item.icon className="w-4 h-4" />
@@ -110,13 +120,7 @@ export const ParentDashboard = ({ onActiveTabChange }: ParentDashboardProps) => 
             
             <div className="min-h-screen bg-gradient-subtle">
               <div className="p-3 sm:p-4 md:p-6">
-              <Tabs value={activeTab} onValueChange={(value) => {
-                setActiveTab(value);
-                const item = menuItems.find(i => i.value === value);
-                if (item) {
-                  onActiveTabChange?.(item.label, item.icon);
-                }
-              }} className="space-y-6">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
                 {/* Content sections */}
                 <TabsContent value="children">
                   <ErrorBoundary>

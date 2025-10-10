@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,14 +13,29 @@ import { supabase } from '@/integrations/supabase/client';
 type ViewState = 'prepare' | 'previous' | 'edit';
 
 export const PapersManager: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [refreshKey, setRefreshKey] = React.useState(0);
   const [questionPapers, setQuestionPapers] = React.useState<any[]>([]);
   const [scheduledPapers, setScheduledPapers] = React.useState<any[]>([]);
   const [editingPaper, setEditingPaper] = React.useState<any | null>(null);
-  const [currentView, setCurrentView] = React.useState<ViewState>('prepare');
-  const [activeTab, setActiveTab] = React.useState('prepare');
   const [deletedPapers, setDeletedPapers] = React.useState<any[]>([]);
   const { toast } = useToast();
+
+  // Read subtab from URL or default to 'prepare'
+  const activeTab = searchParams.get('subtab') || 'prepare';
+  const currentView: ViewState = searchParams.get('edit') === 'true' ? 'edit' : (activeTab as ViewState);
+
+  // Sync URL on mount if no subtab is set
+  useEffect(() => {
+    if (!searchParams.get('subtab')) {
+      setSearchParams({ tab: 'papers', subtab: 'prepare' }, { replace: true });
+    }
+  }, []);
+
+  const handleSubTabChange = (value: string) => {
+    const params: any = { tab: 'papers', subtab: value };
+    setSearchParams(params);
+  };
 
   React.useEffect(() => {
     fetchPapers();
@@ -66,26 +82,18 @@ export const PapersManager: React.FC = () => {
 
   const handleEdit = (paper: any) => {
     setEditingPaper(paper);
-    setCurrentView('edit');
+    setSearchParams({ tab: 'papers', subtab: 'previous', edit: 'true' });
   };
 
   const handleBackToPrevious = () => {
-    setCurrentView('previous');
     setEditingPaper(null);
+    setSearchParams({ tab: 'papers', subtab: 'previous' });
     handleRefresh();
   };
 
   const handlePaperCreated = () => {
-    if (currentView === 'edit') {
-      // After editing, go back to previous papers
-      setCurrentView('previous');
-      setActiveTab('previous');
-    } else {
-      // After creating new paper, go to previous papers
-      setActiveTab('previous');
-      setCurrentView('previous');
-    }
     setEditingPaper(null);
+    setSearchParams({ tab: 'papers', subtab: 'previous' });
     handleRefresh();
   };
 
@@ -338,10 +346,7 @@ export const PapersManager: React.FC = () => {
       {currentView === 'edit' ? (
         renderCurrentView()
       ) : (
-        <Tabs value={activeTab} onValueChange={(value) => {
-          setActiveTab(value);
-          setCurrentView(value as ViewState);
-        }} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleSubTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="prepare" className="flex items-center gap-2">
               <FilePlus className="h-4 w-4" />

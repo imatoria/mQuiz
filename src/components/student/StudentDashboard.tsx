@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,11 +63,11 @@ interface StudentDashboardProps {
 }
 
 export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [availableTests, setAvailableTests] = useState<ScheduledPaper[]>([]);
   const [completedTests, setCompletedTests] = useState<ScheduledPaper[]>([]);
   const [activeTests, setActiveTests] = useState<ScheduledPaper[]>([]);
   const [currentTest, setCurrentTest] = useState<ScheduledPaper | null>(null);
-  const [activeTab, setActiveTab] = useState('tests');
   const [showPreTestModal, setShowPreTestModal] = useState(false);
   const [selectedTest, setSelectedTest] = useState<ScheduledPaper | null>(null);
   const [testDisplayMode, setTestDisplayMode] = useState<'single' | 'all'>('single');
@@ -79,15 +80,28 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
     { value: 'results', label: 'Results', icon: Award },
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
+
+  // Read tab from URL or default to 'tests'
+  const activeTab = searchParams.get('tab') || 'tests';
   const activeItem = menuItems.find((i) => i.value === activeTab);
-  
-  // Notify initial tab on mount
-  React.useEffect(() => {
-    const initialItem = menuItems.find(i => i.value === 'tests');
-    if (initialItem) {
-      onActiveTabChange?.(initialItem.label, initialItem.icon);
+
+  // Update active tab in parent component
+  useEffect(() => {
+    if (activeItem) {
+      onActiveTabChange?.(activeItem.label, activeItem.icon);
     }
-  }, []); // Empty dependency array to run only once on mount
+  }, [activeTab, onActiveTabChange]);
+
+  // Sync URL on mount if no tab is set
+  useEffect(() => {
+    if (!searchParams.get('tab')) {
+      setSearchParams({ tab: 'tests' }, { replace: true });
+    }
+  }, []);
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
   
   const { loading, error, execute: executeAsync } = useAsyncOperation({
     onError: (error) => console.error('Student dashboard error:', error)
@@ -380,10 +394,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
                     <SidebarMenuItem key={item.value}>
                     <SidebarMenuButton
                       isActive={activeTab === item.value}
-                      onClick={() => {
-                        setActiveTab(item.value);
-                        onActiveTabChange?.(item.label, item.icon);
-                      }}
+                      onClick={() => handleTabChange(item.value)}
                       tooltip={item.label}
                     >
                         <item.icon className="w-4 h-4" />
@@ -413,13 +424,7 @@ export const StudentDashboard = ({ onActiveTabChange }: StudentDashboardProps) =
           
           <div className="min-h-screen bg-gradient-subtle">
             <div className="p-3 sm:p-4 md:p-6">
-            <Tabs value={activeTab} onValueChange={(value) => {
-              setActiveTab(value);
-              const item = menuItems.find(i => i.value === value);
-              if (item) {
-                onActiveTabChange?.(item.label, item.icon);
-              }
-            }} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
               <TabsContent value="tests" className="space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

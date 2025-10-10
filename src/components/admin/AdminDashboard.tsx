@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,16 +33,10 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
-  const [activeTab, setActiveTab] = useState('approvals');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   
-  // Notify initial tab on mount
-  React.useEffect(() => {
-    const initialItem = menuItems.find(i => i.value === 'approvals');
-    if (initialItem) {
-      onActiveTabChange?.(initialItem.label, initialItem.icon);
-    }
-  }, []); // Empty dependency array to run only once on mount
   const menuItems = [
     { value: 'approvals', label: 'Approvals', icon: Clock },
     { value: 'users', label: 'Users', icon: Users },
@@ -51,7 +46,29 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
     { value: 'ai-config', label: 'AI Config', icon: Zap },
     { value: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  // Read tab from URL or default to 'approvals'
+  const activeTab = searchParams.get('tab') || 'approvals';
   const activeItem = menuItems.find((i) => i.value === activeTab);
+
+  // Update active tab in parent component
+  useEffect(() => {
+    if (activeItem) {
+      onActiveTabChange?.(activeItem.label, activeItem.icon);
+    }
+  }, [activeTab, onActiveTabChange]);
+
+  // Sync URL on mount if no tab is set
+  useEffect(() => {
+    if (!searchParams.get('tab')) {
+      setSearchParams({ tab: 'approvals' }, { replace: true });
+    }
+  }, []);
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
+
   return (
     <SidebarProvider>
       <ErrorBoundary>
@@ -71,10 +88,7 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
                       <SidebarMenuItem key={item.value}>
                         <SidebarMenuButton
                           isActive={activeTab === item.value}
-                          onClick={() => {
-                            setActiveTab(item.value);
-                            onActiveTabChange?.(item.label, item.icon);
-                          }}
+                          onClick={() => handleTabChange(item.value)}
                           tooltip={item.label}
                         >
                           <item.icon className="w-4 h-4" />
@@ -152,13 +166,7 @@ export const AdminDashboard = ({ onActiveTabChange }: AdminDashboardProps) => {
               </div>
 
               {/* Content Sections */}
-              <Tabs value={activeTab} onValueChange={(value) => {
-                setActiveTab(value);
-                const item = menuItems.find(i => i.value === value);
-                if (item) {
-                  onActiveTabChange?.(item.label, item.icon);
-                }
-              }} className="space-y-6">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
                 <TabsContent value="approvals">
                   <ErrorBoundary>
                     <ApprovalWorkflow />

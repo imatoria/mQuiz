@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProgressReport } from './ProgressReport';
@@ -15,7 +16,16 @@ import {
 } from 'lucide-react';
 
 export const ReportingDashboard = () => {
-  const [activeTab, setActiveTab] = useState('progress');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Read report subtab from URL or default to 'progress'
+  const activeTab = searchParams.get('report') || 'progress';
+
+  // Update URL when changing report tabs
+  const handleReportTabChange = (value: string) => {
+    const currentTab = searchParams.get('tab');
+    setSearchParams({ tab: currentTab || 'reports', report: value });
+  };
 
   return (
     <div className="space-y-6">
@@ -30,7 +40,7 @@ export const ReportingDashboard = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleReportTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
           <TabsTrigger value="progress" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
             <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
