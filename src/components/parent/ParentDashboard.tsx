@@ -31,7 +31,7 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu
 import { useAuth } from '@/hooks/useAuth';
 
 export const ParentDashboard = () => {
-  const { tab } = useParams();
+  const { tab, subtab } = useParams();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
 
@@ -52,15 +52,18 @@ export const ParentDashboard = () => {
   const activeTab = tab || 'children';
   const activeItem = menuItems.find((i) => i.value === activeTab);
 
-  // Redirect to default tab if not set
+  // Redirect to default tab if not set, and clear subtab if navigating to non-subtab sections
   useEffect(() => {
     if (!tab) {
-      navigate('/children', { replace: true });
+      navigate('/parent/children', { replace: true });
+    } else if (subtab && !['content', 'papers', 'reports', 'communications'].includes(tab)) {
+      // If we have a subtab but the current tab doesn't support subtabs, navigate without it
+      navigate(`/parent/${tab}`, { replace: true });
     }
-  }, [tab, navigate]);
+  }, [tab, subtab, navigate]);
 
   const handleTabChange = (value: string) => {
-    navigate(`/${value}`);
+    navigate(`/parent/${value}`);
   };
 
   return (

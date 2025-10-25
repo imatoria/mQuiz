@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -58,6 +60,8 @@ interface QuestionPaper {
 }
 
 export const ContentModeration = () => {
+  const { subtab } = useParams();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [questionPapers, setQuestionPapers] = useState<QuestionPaper[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,8 +69,23 @@ export const ContentModeration = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedContent, setSelectedContent] = useState<Document | QuestionPaper | null>(null);
   const [moderationNotes, setModerationNotes] = useState('');
-  const [activeTab, setActiveTab] = useState<'documents' | 'questions'>('documents');
   const { toast } = useToast();
+
+  // Read moderation subtab from URL or default to 'documents'
+  const activeTab = (subtab as 'documents' | 'questions') || 'documents';
+
+  // Redirect to default subtab if not set and we're on the moderation tab
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (!subtab && currentPath.startsWith('/admin/moderation')) {
+      navigate('/admin/moderation/documents', { replace: true });
+    }
+  }, [subtab, navigate]);
+
+  // Update URL when changing moderation tabs
+  const handleModerationTabChange = (value: string) => {
+    navigate(`/admin/moderation/${value}`);
+  };
 
   useEffect(() => {
     fetchContent();
@@ -187,74 +206,64 @@ export const ContentModeration = () => {
         </CardHeader>
       </Card>
 
-      {/* Filters and Tabs */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex gap-2">
-              <Button
-                variant={activeTab === 'documents' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('documents')}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Pages ({documents.length})
-              </Button>
-              <Button
-                variant={activeTab === 'questions' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('questions')}
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Question Papers ({questionPapers.length})
-              </Button>
-            </div>
-          </div>
+      {/* Tabs with Filters */}
+      <Tabs value={activeTab} onValueChange={handleModerationTabChange}>
+        <TabsList>
+          <TabsTrigger value="documents" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Pages ({documents.length})
+          </TabsTrigger>
+          <TabsTrigger value="questions" className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Question Papers ({questionPapers.length})
+          </TabsTrigger>
+        </TabsList>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search content..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            {activeTab === 'documents' && (
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="completed">Approved</SelectItem>
-                  <SelectItem value="failed">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="documents" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search pages..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <Filter className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="completed">Approved</SelectItem>
+                    <SelectItem value="failed">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Content Table */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Content</TableHead>
-                  <TableHead>Creator</TableHead>
-                  {activeTab === 'documents' && <TableHead>Status</TableHead>}
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activeTab === 'documents' 
-                  ? filteredDocuments.map((document) => (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Content</TableHead>
+                      <TableHead>Creator</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDocuments.map((document) => (
                       <TableRow key={document.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
@@ -341,8 +350,53 @@ export const ContentModeration = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  : filteredQuestionPapers.map((questionPaper) => (
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {filteredDocuments.length === 0 && (
+                <div className="text-center py-8">
+                  <Shield className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No pages found</h3>
+                  <p className="text-muted-foreground">
+                    No pages match your current filters.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="questions" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search question papers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Content</TableHead>
+                      <TableHead>Creator</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredQuestionPapers.map((questionPaper) => (
                       <TableRow key={questionPaper.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
@@ -376,24 +430,24 @@ export const ContentModeration = () => {
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))
-                }
-              </TableBody>
-            </Table>
-          </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-          {((activeTab === 'documents' && filteredDocuments.length === 0) || 
-            (activeTab === 'questions' && filteredQuestionPapers.length === 0)) && (
-            <div className="text-center py-8">
-              <Shield className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No content found</h3>
-              <p className="text-muted-foreground">
-                No content matches your current filters.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              {filteredQuestionPapers.length === 0 && (
+                <div className="text-center py-8">
+                  <Shield className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No question papers found</h3>
+                  <p className="text-muted-foreground">
+                    No question papers match your current filters.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

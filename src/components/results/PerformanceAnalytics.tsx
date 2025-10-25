@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,6 +33,8 @@ interface TimeData {
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1'];
 
 export const PerformanceAnalytics = () => {
+  const { subtab } = useParams();
+  const navigate = useNavigate();
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
   const [subjectData, setSubjectData] = useState<SubjectPerformance[]>([]);
   const [timeData, setTimeData] = useState<TimeData[]>([]);
@@ -41,6 +44,22 @@ export const PerformanceAnalytics = () => {
   const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Read analytics subtab from URL or default to 'overview'
+  const activeTab = subtab || 'overview';
+
+  // Redirect to default subtab if not set and we're on the analytics tab
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (!subtab && currentPath.startsWith('/student/analytics')) {
+      navigate('/student/analytics/overview', { replace: true });
+    }
+  }, [subtab, navigate]);
+
+  // Update URL when changing analytics tabs
+  const handleAnalyticsTabChange = (value: string) => {
+    navigate(`/student/analytics/${value}`);
+  };
 
   useEffect(() => {
     loadAnalyticsData();
@@ -275,7 +294,7 @@ export const PerformanceAnalytics = () => {
         </Card>
       )}
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={handleAnalyticsTabChange}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="subjects">By Subject</TabsTrigger>

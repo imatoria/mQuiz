@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,8 @@ interface SystemConfig {
 }
 
 export const SystemSettings = () => {
+  const { subtab } = useParams();
+  const navigate = useNavigate();
   const [config, setConfig] = useState<SystemConfig>({
     appName: 'EduTest Platform',
     appDescription: 'AI-powered educational testing platform',
@@ -63,6 +66,22 @@ export const SystemSettings = () => {
   
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  // Read settings subtab from URL or default to 'general'
+  const activeTab = subtab || 'general';
+
+  // Redirect to default subtab if not set and we're on the settings tab
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (!subtab && currentPath.startsWith('/admin/settings')) {
+      navigate('/admin/settings/general', { replace: true });
+    }
+  }, [subtab, navigate]);
+
+  // Update URL when changing settings tabs
+  const handleSettingsTabChange = (value: string) => {
+    navigate(`/admin/settings/${value}`);
+  };
 
   const handleConfigChange = (key: keyof SystemConfig, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
@@ -104,7 +123,7 @@ export const SystemSettings = () => {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleSettingsTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>

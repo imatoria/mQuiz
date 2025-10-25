@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 type ViewState = 'prepare' | 'previous' | 'edit';
 
 export const PapersManager: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { tab, subtab } = useParams();
+  const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = React.useState(0);
   const [questionPapers, setQuestionPapers] = React.useState<any[]>([]);
   const [scheduledPapers, setScheduledPapers] = React.useState<any[]>([]);
@@ -22,19 +23,18 @@ export const PapersManager: React.FC = () => {
   const { toast } = useToast();
 
   // Read subtab from URL or default to 'prepare'
-  const activeTab = searchParams.get('subtab') || 'prepare';
-  const currentView: ViewState = searchParams.get('edit') === 'true' ? 'edit' : (activeTab as ViewState);
+  const activeTab = subtab || 'prepare';
+  const currentView: ViewState = subtab === 'edit' ? 'edit' : (activeTab as ViewState);
 
-  // Sync URL on mount if no subtab is set
+  // Redirect to default subtab if not set
   useEffect(() => {
-    if (!searchParams.get('subtab')) {
-      setSearchParams({ tab: 'papers', subtab: 'prepare' }, { replace: true });
+    if (tab === 'papers' && !subtab) {
+      navigate('/parent/papers/prepare', { replace: true });
     }
-  }, []);
+  }, [tab, subtab, navigate]);
 
   const handleSubTabChange = (value: string) => {
-    const params: any = { tab: 'papers', subtab: value };
-    setSearchParams(params);
+    navigate(`/parent/papers/${value}`);
   };
 
   React.useEffect(() => {
@@ -82,18 +82,18 @@ export const PapersManager: React.FC = () => {
 
   const handleEdit = (paper: any) => {
     setEditingPaper(paper);
-    setSearchParams({ tab: 'papers', subtab: 'previous', edit: 'true' });
+    navigate('/parent/papers/edit');
   };
 
   const handleBackToPrevious = () => {
     setEditingPaper(null);
-    setSearchParams({ tab: 'papers', subtab: 'previous' });
+    navigate('/parent/papers/previous');
     handleRefresh();
   };
 
   const handlePaperCreated = () => {
     setEditingPaper(null);
-    setSearchParams({ tab: 'papers', subtab: 'previous' });
+    navigate('/parent/papers/previous');
     handleRefresh();
   };
 

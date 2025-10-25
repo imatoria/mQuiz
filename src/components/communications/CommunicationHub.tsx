@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { MessageSquare, Bell, Megaphone, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,16 +6,29 @@ import { NotificationCenter } from '../notifications/NotificationCenter';
 import { MessageCenter } from '../messaging/MessageCenter';
 import { AnnouncementSystem } from '../announcements/AnnouncementSystem';
 import { EmailNotificationSettings } from './EmailNotificationSettings';
+import { useEffect } from 'react';
 
 export const CommunicationHub = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { subtab } = useParams();
+  const navigate = useNavigate();
   
   // Read communication subtab from URL or default to 'messages'
-  const activeTab = searchParams.get('comm') || 'messages';
+  const activeTab = subtab || 'messages';
+
+  // Redirect to default subtab if not set and we're on the communications tab
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (!subtab && (currentPath.startsWith('/parent/communications') || currentPath.startsWith('/admin/communications'))) {
+      const prefix = currentPath.startsWith('/parent') ? '/parent' : '/admin';
+      navigate(`${prefix}/communications/messages`, { replace: true });
+    }
+  }, [subtab, navigate]);
 
   // Update URL when changing communication tabs
   const handleCommTabChange = (value: string) => {
-    setSearchParams({ comm: value });
+    const currentPath = window.location.pathname;
+    const prefix = currentPath.startsWith('/parent') ? '/parent' : '/admin';
+    navigate(`${prefix}/communications/${value}`);
   };
 
   return (

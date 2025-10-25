@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,8 @@ interface DocumentPage {
 }
 
 export const ContentCreation = () => {
+  const { tab, subtab } = useParams();
+  const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
   const [documents, setDocuments] = useState<any[]>([]);
   const [questionPapers, setQuestionPapers] = useState<any[]>([]);
@@ -30,6 +33,20 @@ export const ContentCreation = () => {
   const [viewingDocument, setViewingDocument] = useState<any | null>(null);
   const [documentPages, setDocumentPages] = useState<DocumentPage[]>([]);
   const [loadingPages, setLoadingPages] = useState(false);
+
+  // Read subtab from URL or default to 'upload'
+  const activeTab = subtab || 'upload';
+
+  // Redirect to default subtab if not set
+  useEffect(() => {
+    if (tab === 'content' && !subtab) {
+      navigate('/parent/content/upload', { replace: true });
+    }
+  }, [tab, subtab, navigate]);
+
+  const handleSubTabChange = (value: string) => {
+    navigate(`/parent/content/${value}`);
+  };
 
   React.useEffect(() => {
     fetchData();
@@ -115,7 +132,7 @@ export const ContentCreation = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="upload" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleSubTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="upload">Upload</TabsTrigger>
           <TabsTrigger value="ai-generator">AI Generator</TabsTrigger>

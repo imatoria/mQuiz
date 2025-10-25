@@ -60,7 +60,7 @@ interface PaperAttempt {
 }
 
 export const StudentDashboard = () => {
-  const { tab } = useParams();
+  const { tab, subtab } = useParams();
   const navigate = useNavigate();
   const [availableTests, setAvailableTests] = useState<ScheduledPaper[]>([]);
   const [completedTests, setCompletedTests] = useState<ScheduledPaper[]>([]);
@@ -87,12 +87,15 @@ export const StudentDashboard = () => {
   // Redirect to default tab if not set
   useEffect(() => {
     if (!tab) {
-      navigate('/tests', { replace: true });
+      navigate('/student/tests', { replace: true });
+    } else if (subtab && !['analytics'].includes(tab)) {
+      // If we have a subtab but the current tab doesn't support subtabs, navigate without it
+      navigate(`/student/${tab}`, { replace: true });
     }
-  }, [tab, navigate]);
+  }, [tab, subtab, navigate]);
 
   const handleTabChange = (value: string) => {
-    navigate(`/${value}`);
+    navigate(`/student/${value}`);
   };
   
   const { loading, error, execute: executeAsync } = useAsyncOperation({

@@ -83,9 +83,10 @@ const Index = () => {
     );
   }
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to role-specific dashboard
   if (profile?.role) {
-    navigate('/');
+    const roleRoute = profile.role === 'admin' ? '/admin' : profile.role === 'parent' ? '/parent' : '/student';
+    navigate(roleRoute);
     return null;
   }
 

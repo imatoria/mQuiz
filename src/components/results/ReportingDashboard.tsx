@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProgressReport } from './ProgressReport';
@@ -16,15 +16,22 @@ import {
 } from 'lucide-react';
 
 export const ReportingDashboard = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { tab, subtab } = useParams();
+  const navigate = useNavigate();
   
   // Read report subtab from URL or default to 'progress'
-  const activeTab = searchParams.get('report') || 'progress';
+  const activeTab = subtab || 'progress';
+
+  // Redirect to default subtab if not set
+  useEffect(() => {
+    if (tab === 'reports' && !subtab) {
+      navigate('/parent/reports/progress', { replace: true });
+    }
+  }, [tab, subtab, navigate]);
 
   // Update URL when changing report tabs
   const handleReportTabChange = (value: string) => {
-    const currentTab = searchParams.get('tab');
-    setSearchParams({ tab: currentTab || 'reports', report: value });
+    navigate(`/parent/reports/${value}`);
   };
 
   return (

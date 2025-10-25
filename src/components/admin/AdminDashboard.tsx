@@ -30,7 +30,7 @@ import { SiteLogo } from '@/components/ui/site-logo';
 import { useAuth } from '@/hooks/useAuth';
 
 export const AdminDashboard = () => {
-  const { tab } = useParams();
+  const { tab, subtab } = useParams();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   
@@ -52,12 +52,15 @@ export const AdminDashboard = () => {
   // Redirect to default tab if not set
   useEffect(() => {
     if (!tab) {
-      navigate('/approvals', { replace: true });
+      navigate('/admin/approvals', { replace: true });
+    } else if (subtab && !['moderation', 'settings'].includes(tab)) {
+      // If we have a subtab but the current tab doesn't support subtabs, navigate without it
+      navigate(`/admin/${tab}`, { replace: true });
     }
-  }, [tab, navigate]);
+  }, [tab, subtab, navigate]);
 
   const handleTabChange = (value: string) => {
-    navigate(`/${value}`);
+    navigate(`/admin/${value}`);
   };
 
   return (
