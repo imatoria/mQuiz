@@ -450,7 +450,7 @@ export const AIQuestionGenerator = () => {
               isGenerating ||
               (mode === 'independent'
                 ? (!config.topic.trim() || !config.subject_parent_id || !config.class_parent_id)
-                : (!config.document_id || !config.subject_parent_id || !config.class_parent_id || selectedPages.length === 0 || minQuestionsPerPage > maxQuestionsPerPage)
+                : (!config.subject_parent_id || !config.class_parent_id || selectedPages.length === 0 || minQuestionsPerPage > maxQuestionsPerPage || availablePages.length === 0)
               )
             }
             className="min-w-32"
