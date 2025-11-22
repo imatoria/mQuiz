@@ -195,19 +195,31 @@ export const DocumentUpload = ({
       for (let i = 1; i <= doc.numPages; i++) {
         const page = await doc.getPage(i);
         const textContent = await page.getTextContent();
+        
+        // Extract and clean text from page
         const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
+          .map((item: any) => {
+            if (!item || typeof item.str !== 'string') return '';
+            return item.str.trim();
+          })
+          .filter((str: string) => str.length > 0)
+          .join(' ')
+          .trim();
+        
+        console.log(`Page ${i}: Extracted ${pageText.length} characters`);
         
         const { error: pageError } = await supabase
           .from('document_pages')
           .insert({
             document_id: documentData.id,
             page_number: i,
-            content: pageText
+            content: pageText || '' // Ensure we always insert something, even if empty
           });
         
-        if (pageError) throw pageError;
+        if (pageError) {
+          console.error(`Error inserting page ${i}:`, pageError);
+          throw pageError;
+        }
       }
 
       // Removed page selection and book creation logic
