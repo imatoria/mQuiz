@@ -115,12 +115,17 @@ serve(async (req) => {
       });
     }
 
-    const { config } = await req.json();
+    const { config, mode } = await req.json();
     console.log('AI Question Generation request:', config);
 
-    // Validate required fields
-    if (!config.topic || !config.subject_parent_id || !config.class_parent_id) {
-      throw new Error('Missing required fields: topic, subject_parent_id, or class_parent_id');
+    // Validate required fields based on mode
+    if (!config.subject_parent_id || !config.class_parent_id) {
+      throw new Error('Missing required fields: subject_parent_id or class_parent_id');
+    }
+    
+    // In independent mode, topic is required
+    if (mode === 'independent' && !config.topic) {
+      throw new Error('Topic is required for independent mode');
     }
 
     // Get subject information
@@ -220,9 +225,10 @@ serve(async (req) => {
     }
 
     // Create the prompt
+    const topicText = config.topic ? config.topic : 'General questions from the document';
     const prompt = `Generate ${config.question_count} educational questions for ${className} level students.
 
-Topic: ${config.topic}
+Topic: ${topicText}
 Subject: ${subjectName}
 ${documentContext}
 
