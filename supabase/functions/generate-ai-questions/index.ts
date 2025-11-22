@@ -4,15 +4,51 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-// Fallback API keys (admin-configured)
-const fallbackGeminiKey = Deno.env.get('GEMINI_API_KEY');
-const fallbackGroqKey = Deno.env.get('GROQ_API_KEY');
+const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Helper function to call Lovable AI Gateway
+async function callLovableAI(prompt: string) {
+  if (!lovableApiKey) {
+    throw new Error('LOVABLE_API_KEY not configured');
+  }
+
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${lovableApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant that generates educational questions. Return ONLY valid JSON arrays without any markdown formatting or additional text.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error('Rate limit exceeded. Please try again in a moment.');
+    }
+    if (response.status === 402) {
+      throw new Error('Lovable AI credits depleted. Please add credits in your workspace settings.');
+    }
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error?.message || 'Lovable AI error');
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Lovable AI returned empty response');
+  return text;
+}
 
 // Helper function to get user's API key for a provider
 async function getUserApiKey(supabase: any, userId: string, providerKey: string) {
@@ -34,9 +70,7 @@ async function getUserApiKey(supabase: any, userId: string, providerKey: string)
   return null;
 }
 
-//
-
-// Helper function to call Google Gemini API
+// Helper function to call Google Gemini API (fallback)
 async function callGemini(apiKey: string, prompt: string) {
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
     method: 'POST',
@@ -179,20 +213,53 @@ serve(async (req) => {
       }
     }
 
-    // Build list of provider candidates in order of preference (Gemini, then Groq)
-    const candidates: Array<{ type: 'gemini' | 'groq'; key: string }> = [];
+    // Try Lovable AI first (most reliable), then fallback to user-configured providers
+    let generatedText: string | undefined;
+    let providerTypeUsed: 'lovable' | 'gemini' | 'groq' | undefined;
+    let lastError: any;
 
-    const userGeminiKey = await getUserApiKey(supabase, user.id, 'gemini');
-    if (userGeminiKey) candidates.push({ type: 'gemini', key: userGeminiKey });
+    // Try Lovable AI first
+    if (lovableApiKey) {
+      try {
+        console.log('Trying Lovable AI Gateway');
+        generatedText = await callLovableAI(prompt);
+        providerTypeUsed = 'lovable';
+        console.log('Lovable AI succeeded');
+      } catch (aiError: any) {
+        console.error('Lovable AI error:', aiError);
+        lastError = aiError;
+      }
+    }
 
-    const userGroqKey = await getUserApiKey(supabase, user.id, 'groq');
-    if (userGroqKey) candidates.push({ type: 'groq', key: userGroqKey });
+    // If Lovable AI failed, try user-configured providers
+    if (!generatedText) {
+      const candidates: Array<{ type: 'gemini' | 'groq'; key: string }> = [];
+      
+      const userGeminiKey = await getUserApiKey(supabase, user.id, 'gemini');
+      if (userGeminiKey) candidates.push({ type: 'gemini', key: userGeminiKey });
 
-    if (fallbackGeminiKey) candidates.push({ type: 'gemini', key: fallbackGeminiKey });
-    if (fallbackGroqKey) candidates.push({ type: 'groq', key: fallbackGroqKey });
+      const userGroqKey = await getUserApiKey(supabase, user.id, 'groq');
+      if (userGroqKey) candidates.push({ type: 'groq', key: userGroqKey });
 
-    if (candidates.length === 0) {
-      throw new Error('No AI provider API key available. Please configure your Gemini or Groq API key in settings.');
+      console.log(`Trying fallback providers: ${candidates.map(c => c.type).join(', ')}`);
+
+      for (const candidate of candidates) {
+        try {
+          console.log(`Trying provider: ${candidate.type}`);
+          if (candidate.type === 'gemini') {
+            generatedText = await callGemini(candidate.key, prompt);
+          } else if (candidate.type === 'groq') {
+            generatedText = await callGroq(candidate.key, prompt);
+          }
+          providerTypeUsed = candidate.type;
+          console.log(`Provider ${candidate.type} succeeded`);
+          break;
+        } catch (aiError: any) {
+          console.error(`${candidate.type} API error:`, aiError);
+          lastError = aiError;
+          continue;
+        }
+      }
     }
 
     // Build the difficulty instruction
@@ -255,31 +322,6 @@ Return ONLY valid JSON in this exact format:
 
 Note: For true/false questions, use only option_a and option_b. For fill-in-the-blank, put the answer in option_a and leave other options empty.`;
 
-    console.log(`Attempting providers in order: ${candidates.map(c => c.type).join(', ')}`);
-
-    // Try providers in order until one succeeds
-    let generatedText: string | undefined;
-    let providerTypeUsed: 'gemini' | 'groq' | undefined;
-    let lastError: any;
-
-    // Try providers in order until one succeeds
-    for (const candidate of candidates) {
-      try {
-        console.log(`Trying provider: ${candidate.type}`);
-        if (candidate.type === 'gemini') {
-          generatedText = await callGemini(candidate.key, prompt);
-        } else if (candidate.type === 'groq') {
-          generatedText = await callGroq(candidate.key, prompt);
-        }
-        providerTypeUsed = candidate.type;
-        console.log(`Provider ${candidate.type} succeeded`);
-        break;
-      } catch (aiError: any) {
-        console.error(`${candidate.type} API error:`, aiError);
-        lastError = aiError;
-        continue;
-      }
-    }
 
     if (!generatedText || !providerTypeUsed) {
       throw new Error(`AI provider error: ${lastError?.message || 'All providers failed'}`);
