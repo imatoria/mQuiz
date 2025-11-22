@@ -119,18 +119,27 @@ serve(async (req) => {
     console.log('AI Question Generation request:', config);
 
     // Validate required fields
-    if (!config.topic || !config.subject_id || !config.class_level) {
-      throw new Error('Missing required fields: topic, subject_id, or class_level');
+    if (!config.topic || !config.subject_parent_id || !config.class_parent_id) {
+      throw new Error('Missing required fields: topic, subject_parent_id, or class_parent_id');
     }
 
     // Get subject information
     const { data: subjectData } = await supabase
-      .from('subjects')
-      .select('name')
-      .eq('id', config.subject_id)
+      .from('subjects_parent')
+      .select('subject_name')
+      .eq('id', config.subject_parent_id)
       .maybeSingle();
 
-    const subjectName = subjectData?.name || 'General';
+    const subjectName = subjectData?.subject_name || 'General';
+
+    // Get class information
+    const { data: classData } = await supabase
+      .from('classes_parent')
+      .select('class_name')
+      .eq('id', config.class_parent_id)
+      .maybeSingle();
+
+    const className = classData?.class_name || 'General';
 
     // Get document information if provided
     let documentContext = '';
@@ -211,7 +220,7 @@ serve(async (req) => {
     }
 
     // Create the prompt
-    const prompt = `Generate ${config.question_count} educational questions for ${config.class_level.replace('grade_', 'Grade ')} level students.
+    const prompt = `Generate ${config.question_count} educational questions for ${className} level students.
 
 Topic: ${config.topic}
 Subject: ${subjectName}
@@ -220,7 +229,7 @@ ${documentContext}
 Requirements:
 - ${difficultyInstruction}
 - ${typeInstruction}
-- Questions should be appropriate for ${config.class_level.replace('grade_', 'Grade ')} students
+- Questions should be appropriate for ${className} students
 - Focus on understanding, application, and critical thinking
 - Make questions clear and unambiguous
 ${config.custom_instructions ? `- Additional instructions: ${config.custom_instructions}` : ''}
@@ -328,8 +337,8 @@ Note: For true/false questions, use only option_a and option_b. For fill-in-the-
       difficulty: q.difficulty,
       page_number: 1, // Default for generated questions
       user_id: user.id,
-      subject_id: config.subject_id,
-      class_level: config.class_level,
+      subject_parent_id: config.subject_parent_id,
+      class_parent_id: config.class_parent_id,
       topic: config.topic
     }));
 
