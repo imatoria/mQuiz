@@ -10,8 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { PaginatedPageMultiSelect } from '@/components/ui/paginated-page-multi-select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useSubjectsParent } from '@/hooks/useSubjectsParent';
-import { useClassesParent } from '@/hooks/useClassesParent';
+import { useChildSubjects } from '@/hooks/useChildSubjects';
+import { useChildClasses } from '@/hooks/useChildClasses';
 
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -53,8 +53,8 @@ interface GenerationConfig {
 }
 
 export const AIQuestionGenerator = () => {
-  const { subjects } = useSubjectsParent();
-  const { classes } = useClassesParent();
+  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [config, setConfig] = useState<GenerationConfig>({
@@ -300,17 +300,23 @@ export const AIQuestionGenerator = () => {
                 <SelectValue placeholder="Select subject" />
               </SelectTrigger>
               <SelectContent>
-                {subjects.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.id}>
-                    {subject.subject_name}
-                  </SelectItem>
-                ))}
+                {loadingSubjects ? (
+                  <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
+                ) : uniqueSubjects.length === 0 ? (
+                  <SelectItem value="_no_subjects" disabled>No subjects assigned to children</SelectItem>
+                ) : (
+                  uniqueSubjects.map((subj) => (
+                    <SelectItem key={subj.id} value={subj.id}>
+                      {subj.subject_name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>Class Level</Label>
+            <Label>Class</Label>
             <Select 
               value={config.class_parent_id} 
               onValueChange={(value) => setConfig({ ...config, class_parent_id: value })}
@@ -319,11 +325,17 @@ export const AIQuestionGenerator = () => {
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
               <SelectContent>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.class_name}
-                  </SelectItem>
-                ))}
+                {loadingClasses ? (
+                  <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
+                ) : uniqueClasses.length === 0 ? (
+                  <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
+                ) : (
+                  uniqueClasses.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.class_name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
