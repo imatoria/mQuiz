@@ -213,55 +213,6 @@ serve(async (req) => {
       }
     }
 
-    // Try Lovable AI first (most reliable), then fallback to user-configured providers
-    let generatedText: string | undefined;
-    let providerTypeUsed: 'lovable' | 'gemini' | 'groq' | undefined;
-    let lastError: any;
-
-    // Try Lovable AI first
-    if (lovableApiKey) {
-      try {
-        console.log('Trying Lovable AI Gateway');
-        generatedText = await callLovableAI(prompt);
-        providerTypeUsed = 'lovable';
-        console.log('Lovable AI succeeded');
-      } catch (aiError: any) {
-        console.error('Lovable AI error:', aiError);
-        lastError = aiError;
-      }
-    }
-
-    // If Lovable AI failed, try user-configured providers
-    if (!generatedText) {
-      const candidates: Array<{ type: 'gemini' | 'groq'; key: string }> = [];
-      
-      const userGeminiKey = await getUserApiKey(supabase, user.id, 'gemini');
-      if (userGeminiKey) candidates.push({ type: 'gemini', key: userGeminiKey });
-
-      const userGroqKey = await getUserApiKey(supabase, user.id, 'groq');
-      if (userGroqKey) candidates.push({ type: 'groq', key: userGroqKey });
-
-      console.log(`Trying fallback providers: ${candidates.map(c => c.type).join(', ')}`);
-
-      for (const candidate of candidates) {
-        try {
-          console.log(`Trying provider: ${candidate.type}`);
-          if (candidate.type === 'gemini') {
-            generatedText = await callGemini(candidate.key, prompt);
-          } else if (candidate.type === 'groq') {
-            generatedText = await callGroq(candidate.key, prompt);
-          }
-          providerTypeUsed = candidate.type;
-          console.log(`Provider ${candidate.type} succeeded`);
-          break;
-        } catch (aiError: any) {
-          console.error(`${candidate.type} API error:`, aiError);
-          lastError = aiError;
-          continue;
-        }
-      }
-    }
-
     // Build the difficulty instruction
     let difficultyInstruction = '';
     if (config.difficulty === 'mixed') {
@@ -322,6 +273,54 @@ Return ONLY valid JSON in this exact format:
 
 Note: For true/false questions, use only option_a and option_b. For fill-in-the-blank, put the answer in option_a and leave other options empty.`;
 
+    // Try Lovable AI first (most reliable), then fallback to user-configured providers
+    let generatedText: string | undefined;
+    let providerTypeUsed: 'lovable' | 'gemini' | 'groq' | undefined;
+    let lastError: any;
+
+    // Try Lovable AI first
+    if (lovableApiKey) {
+      try {
+        console.log('Trying Lovable AI Gateway');
+        generatedText = await callLovableAI(prompt);
+        providerTypeUsed = 'lovable';
+        console.log('Lovable AI succeeded');
+      } catch (aiError: any) {
+        console.error('Lovable AI error:', aiError);
+        lastError = aiError;
+      }
+    }
+
+    // If Lovable AI failed, try user-configured providers
+    if (!generatedText) {
+      const candidates: Array<{ type: 'gemini' | 'groq'; key: string }> = [];
+      
+      const userGeminiKey = await getUserApiKey(supabase, user.id, 'gemini');
+      if (userGeminiKey) candidates.push({ type: 'gemini', key: userGeminiKey });
+
+      const userGroqKey = await getUserApiKey(supabase, user.id, 'groq');
+      if (userGroqKey) candidates.push({ type: 'groq', key: userGroqKey });
+
+      console.log(`Trying fallback providers: ${candidates.map(c => c.type).join(', ')}`);
+
+      for (const candidate of candidates) {
+        try {
+          console.log(`Trying provider: ${candidate.type}`);
+          if (candidate.type === 'gemini') {
+            generatedText = await callGemini(candidate.key, prompt);
+          } else if (candidate.type === 'groq') {
+            generatedText = await callGroq(candidate.key, prompt);
+          }
+          providerTypeUsed = candidate.type;
+          console.log(`Provider ${candidate.type} succeeded`);
+          break;
+        } catch (aiError: any) {
+          console.error(`${candidate.type} API error:`, aiError);
+          lastError = aiError;
+          continue;
+        }
+      }
+    }
 
     if (!generatedText || !providerTypeUsed) {
       throw new Error(`AI provider error: ${lastError?.message || 'All providers failed'}`);
