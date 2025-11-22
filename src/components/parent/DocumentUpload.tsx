@@ -184,8 +184,8 @@ export const DocumentUpload = ({
       } = await supabase.from('documents').insert({
         user_id: user.user.id,
         title,
-        subject_id: subject,
-        class_level: classLevel as any,
+        subject_parent_id: subject,
+        class_parent_id: classLevel,
         processing_status: 'completed',
         total_pages: doc.numPages
       }).select().single();
@@ -301,7 +301,7 @@ export const DocumentUpload = ({
                 <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
               ) : (
                 uniqueClasses.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.class_key}>
+                  <SelectItem key={cls.id} value={cls.id}>
                     {cls.class_name}
                   </SelectItem>
                 ))

@@ -124,7 +124,7 @@ export type Database = {
           created_at: string
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource_id: string | null
           resource_type: string
           user_agent: string | null
@@ -135,7 +135,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type: string
           user_agent?: string | null
@@ -146,7 +146,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type?: string
           user_agent?: string | null
@@ -578,7 +578,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           is_active: boolean | null
           last_ping: string | null
           paper_attempt_id: string
@@ -589,7 +589,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean | null
           last_ping?: string | null
           paper_attempt_id: string
@@ -600,7 +600,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean | null
           last_ping?: string | null
           paper_attempt_id?: string
@@ -911,7 +911,7 @@ export type Database = {
           event_data: Json | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string | null
         }
@@ -920,7 +920,7 @@ export type Database = {
           event_data?: Json | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string | null
         }
@@ -929,7 +929,7 @@ export type Database = {
           event_data?: Json | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string | null
         }
@@ -1016,14 +1016,8 @@ export type Database = {
         Args: { paper_id: string; user_id: string }
         Returns: boolean
       }
-      cleanup_old_paper_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      debug_auth_context: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      cleanup_old_paper_sessions: { Args: never; Returns: number }
+      debug_auth_context: { Args: never; Returns: Json }
       debug_scheduled_test_insert: {
         Args: { creator_id_param: string }
         Returns: Json
@@ -1036,10 +1030,7 @@ export type Database = {
         Args: { paper_id_param: string; user_id_param: string }
         Returns: Json
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_user_role: { Args: never; Returns: string }
       get_overall_analytics: {
         Args: { parent_user_id: string; time_period_days?: number }
         Returns: {
@@ -1106,14 +1097,8 @@ export type Database = {
         Args: { p_parent_id: string }
         Returns: undefined
       }
-      soft_delete_paper: {
-        Args: { paper_id: string }
-        Returns: undefined
-      }
-      user_owns_paper: {
-        Args: { paper_id_param: string }
-        Returns: boolean
-      }
+      soft_delete_paper: { Args: { paper_id: string }; Returns: undefined }
+      user_owns_paper: { Args: { paper_id_param: string }; Returns: boolean }
       validate_role_change: {
         Args: { new_role: string; target_user_id: string }
         Returns: boolean
