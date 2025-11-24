@@ -1213,27 +1213,29 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                              Showing {pagination.startItem} to {pagination.endItem} of {pagination.totalItems} questions
                            </div>
                            <div className="flex items-center space-x-2">
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={pagination.previousPage}
-                               disabled={!pagination.canGoPrevious}
-                             >
-                               <ChevronLeft className="w-4 w-4" />
-                               Previous
-                             </Button>
-                             <span className="text-sm">
-                               Page {pagination.currentPage} of {pagination.totalPages}
-                             </span>
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={pagination.nextPage}
-                               disabled={!pagination.canGoNext}
-                             >
-                               Next
-                               <ChevronRight className="w-4 h-4" />
-                             </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={pagination.previousPage}
+                                disabled={!pagination.canGoPrevious}
+                              >
+                                <ChevronLeft className="w-4 w-4" />
+                                Previous
+                              </Button>
+                              <span className="text-sm">
+                                Page {pagination.currentPage} of {pagination.totalPages}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={pagination.nextPage}
+                                disabled={!pagination.canGoNext}
+                              >
+                                Next
+                                <ChevronRight className="w-4 h-4" />
+                              </Button>
                            </div>
                          </div>
                        )}
