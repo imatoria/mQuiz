@@ -157,7 +157,7 @@ const processEmailQueue = async () => {
           .update({
             status: 'failed',
             attempts: email.attempts + 1,
-            error_message: emailError.message,
+            error_message: emailError instanceof Error ? emailError.message : 'Unknown error',
           })
           .eq('id', email.id);
       }

@@ -180,9 +180,8 @@ serve(async (req) => {
 
     const className = classData?.class_name || 'General';
 
-    // Get document information if provided
-    let documentContext = '';
-    if (config.document_id) {
+    // For book mode with selected pages, process each page individually
+    if (mode === 'book' && config.selected_pages && config.selected_pages.length > 0) {
       // Fetch document title
       const { data: docMeta } = await supabase
         .from('documents')
@@ -191,7 +190,240 @@ serve(async (req) => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Fetch first pages' content to use as context
+      const documentTitle = docMeta?.title || 'Selected Document';
+      let totalQuestionsGenerated = 0;
+
+      // Process each page sequentially
+      for (const pageNumber of config.selected_pages) {
+        console.log(`Generating questions for page ${pageNumber}...`);
+
+        // Fetch the specific page content
+        const { data: pageData } = await supabase
+          .from('document_pages')
+          .select('content')
+          .eq('document_id', config.document_id)
+          .eq('page_number', pageNumber)
+          .maybeSingle();
+
+        if (!pageData || !pageData.content) {
+          console.warn(`No content found for page ${pageNumber}, skipping...`);
+          continue;
+        }
+
+        const pageContent = pageData.content;
+        const questionsForThisPage = Math.floor(config.question_count / config.selected_pages.length);
+
+        // Build the difficulty instruction
+        let difficultyInstruction = '';
+        if (config.difficulty === 'mixed') {
+          const easy = Math.ceil(questionsForThisPage * 0.4);
+          const medium = Math.ceil(questionsForThisPage * 0.4);
+          const difficult = questionsForThisPage - easy - medium;
+          difficultyInstruction = `Mix difficulty levels: ${easy} easy, ${medium} medium, ${difficult} difficult questions.`;
+        } else {
+          difficultyInstruction = `All questions should be ${config.difficulty} difficulty level.`;
+        }
+
+        // Build the question type instruction
+        let typeInstruction = '';
+        switch (config.question_type) {
+          case 'multiple_choice':
+            typeInstruction = 'Create multiple choice questions with 4 options (A, B, C, D) and one correct answer.';
+            break;
+          case 'true_false':
+            typeInstruction = 'Create true/false questions with 2 options and one correct answer.';
+            break;
+          case 'fill_blank':
+            typeInstruction = 'Create fill-in-the-blank questions with the answer provided.';
+            break;
+          case 'mixed':
+            typeInstruction = 'Create a mix of question types including multiple choice, true/false, and fill-in-the-blank.';
+            break;
+        }
+
+        // Create the prompt for this specific page
+        const prompt = `Generate ${questionsForThisPage} educational questions for ${className} level students.
+
+Document: "${documentTitle}"
+Page Number: ${pageNumber}
+Subject: ${subjectName}
+
+Page Content:
+${pageContent}
+
+Requirements:
+- ${difficultyInstruction}
+- ${typeInstruction}
+- Questions should be appropriate for ${className} students
+- Focus on understanding, application, and critical thinking
+- Make questions clear and unambiguous
+- Base questions ONLY on the content from this specific page
+${config.custom_instructions ? `- Additional instructions: ${config.custom_instructions}` : ''}
+
+Return ONLY valid JSON in this exact format:
+[
+  {
+    "question_text": "Your question?",
+    "option_a": "Option A",
+    "option_b": "Option B", 
+    "option_c": "Option C",
+    "option_d": "Option D",
+    "correct_answer": "A",
+    "difficulty": "easy",
+    "page_number": ${pageNumber}
+  }
+]
+
+Note: For true/false questions, use only option_a and option_b. For fill-in-the-blank, put the answer in option_a and leave other options empty.
+IMPORTANT: Set page_number to ${pageNumber} for all questions.`;
+
+        // Try Lovable AI first, then fallback to user-configured providers
+        let generatedText: string | undefined;
+        let providerTypeUsed: 'lovable' | 'gemini' | 'groq' | undefined;
+        let lastError: any;
+
+        // Try Lovable AI first
+        if (lovableApiKey) {
+          try {
+            console.log(`Trying Lovable AI Gateway for page ${pageNumber}`);
+            generatedText = await callLovableAI(prompt);
+            providerTypeUsed = 'lovable';
+            console.log(`Lovable AI succeeded for page ${pageNumber}`);
+          } catch (aiError: any) {
+            console.error(`Lovable AI error for page ${pageNumber}:`, aiError);
+            lastError = aiError;
+          }
+        }
+
+        // If Lovable AI failed, try user-configured providers
+        if (!generatedText) {
+          const candidates: Array<{ type: 'gemini' | 'groq'; key: string }> = [];
+          
+          const userGeminiKey = await getUserApiKey(supabase, user.id, 'gemini');
+          if (userGeminiKey) candidates.push({ type: 'gemini', key: userGeminiKey });
+
+          const userGroqKey = await getUserApiKey(supabase, user.id, 'groq');
+          if (userGroqKey) candidates.push({ type: 'groq', key: userGroqKey });
+
+          for (const candidate of candidates) {
+            try {
+              console.log(`Trying provider: ${candidate.type} for page ${pageNumber}`);
+              if (candidate.type === 'gemini') {
+                generatedText = await callGemini(candidate.key, prompt);
+              } else if (candidate.type === 'groq') {
+                generatedText = await callGroq(candidate.key, prompt);
+              }
+              providerTypeUsed = candidate.type;
+              console.log(`Provider ${candidate.type} succeeded for page ${pageNumber}`);
+              break;
+            } catch (aiError: any) {
+              console.error(`${candidate.type} API error for page ${pageNumber}:`, aiError);
+              lastError = aiError;
+              continue;
+            }
+          }
+        }
+
+        if (!generatedText || !providerTypeUsed) {
+          console.error(`All AI providers failed for page ${pageNumber}`);
+          continue; // Skip this page and move to next
+        }
+
+        // Parse the JSON response
+        let questions;
+        try {
+          let cleanText = generatedText.trim();
+          
+          const jsonMatch = cleanText.match(/```json\n([\s\S]*?)\n```/) || cleanText.match(/```\n([\s\S]*?)\n```/);
+          if (jsonMatch) {
+            cleanText = jsonMatch[1].trim();
+          }
+          
+          const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
+          if (arrayMatch) {
+            cleanText = arrayMatch[0];
+          }
+          
+          questions = JSON.parse(cleanText);
+          
+          if (!Array.isArray(questions) || questions.length === 0) {
+            throw new Error('Invalid questions format - not an array or empty');
+          }
+          
+          questions = questions.filter(q => 
+            q.question_text && q.correct_answer
+          ).map(q => ({
+            ...q,
+            option_a: q.option_a || '',
+            option_b: q.option_b || '',
+            option_c: q.option_c || '',
+            option_d: q.option_d || '',
+            difficulty: q.difficulty || 'medium',
+            page_number: pageNumber // Ensure correct page number
+          }));
+          
+          if (questions.length === 0) {
+            throw new Error('No valid questions found in response');
+          }
+          
+        } catch (e) {
+          console.error(`JSON parsing error for page ${pageNumber}:`, e);
+          console.error('Raw response:', generatedText);
+          continue; // Skip this page and move to next
+        }
+
+        // Insert questions into database
+        const questionsToInsert = questions.map((q: any) => ({
+          question_text: q.question_text,
+          option_a: q.option_a,
+          option_b: q.option_b,
+          option_c: q.option_c,
+          option_d: q.option_d,
+          correct_answer: q.correct_answer.toUpperCase(),
+          difficulty: q.difficulty,
+          page_number: pageNumber,
+          user_id: user.id,
+          subject_parent_id: config.subject_parent_id,
+          class_parent_id: config.class_parent_id,
+          topic: config.topic || `Page ${pageNumber}`
+        }));
+
+        const { error: insertError } = await supabase
+          .from('questions')
+          .insert(questionsToInsert);
+
+        if (insertError) {
+          console.error(`Database insert error for page ${pageNumber}:`, insertError);
+          continue; // Skip this page and move to next
+        }
+
+        totalQuestionsGenerated += questions.length;
+        console.log(`Successfully generated ${questions.length} questions for page ${pageNumber}`);
+      }
+
+      if (totalQuestionsGenerated === 0) {
+        throw new Error('Failed to generate questions for any pages');
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        questionsGenerated: totalQuestionsGenerated,
+        provider: 'multiple pages processed'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Independent mode or legacy handling
+    let documentContext = '';
+    if (config.document_id && mode === 'independent') {
+      const { data: docMeta } = await supabase
+        .from('documents')
+        .select('title')
+        .eq('id', config.document_id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       const { data: pages } = await supabase
         .from('document_pages')
         .select('content, page_number')
@@ -213,7 +445,7 @@ serve(async (req) => {
       }
     }
 
-    // Build the difficulty instruction
+    // Build the difficulty instruction for independent mode
     let difficultyInstruction = '';
     if (config.difficulty === 'mixed') {
       const totalQuestions = config.question_count;
@@ -225,7 +457,7 @@ serve(async (req) => {
       difficultyInstruction = `All questions should be ${config.difficulty} difficulty level.`;
     }
 
-    // Build the question type instruction
+    // Build the question type instruction for independent mode
     let typeInstruction = '';
     switch (config.question_type) {
       case 'multiple_choice':
@@ -242,7 +474,7 @@ serve(async (req) => {
         break;
     }
 
-    // Create the prompt
+    // Create the prompt for independent mode
     const topicText = config.topic ? config.topic : 'General questions from the document';
     const prompt = `Generate ${config.question_count} educational questions for ${className} level students.
 
@@ -267,13 +499,15 @@ Return ONLY valid JSON in this exact format:
     "option_c": "Option C",
     "option_d": "Option D",
     "correct_answer": "A",
-    "difficulty": "easy"
+    "difficulty": "easy",
+    "page_number": 1
   }
 ]
 
-Note: For true/false questions, use only option_a and option_b. For fill-in-the-blank, put the answer in option_a and leave other options empty.`;
+Note: For true/false questions, use only option_a and option_b. For fill-in-the-blank, put the answer in option_a and leave other options empty.
+${documentContext ? 'IMPORTANT: Include the page_number field indicating which page from the document the question relates to.' : ''}`;
 
-    // Try Lovable AI first (most reliable), then fallback to user-configured providers
+    // Try Lovable AI first (most reliable), then fallback to user-configured providers (for independent mode)
     let generatedText: string | undefined;
     let providerTypeUsed: 'lovable' | 'gemini' | 'groq' | undefined;
     let lastError: any;
@@ -360,7 +594,8 @@ Note: For true/false questions, use only option_a and option_b. For fill-in-the-
         option_b: q.option_b || '',
         option_c: q.option_c || '',
         option_d: q.option_d || '',
-        difficulty: q.difficulty || 'medium'
+        difficulty: q.difficulty || 'medium',
+        page_number: q.page_number || 1
       }));
       
       if (questions.length === 0) {
@@ -370,7 +605,8 @@ Note: For true/false questions, use only option_a and option_b. For fill-in-the-
     } catch (e) {
       console.error('JSON parsing error:', e);
       console.error('Raw response:', generatedText);
-      throw new Error(`Failed to parse AI response: ${e.message}`);
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      throw new Error(`Failed to parse AI response: ${errorMessage}`);
     }
 
     // Insert questions into database
@@ -380,9 +616,9 @@ Note: For true/false questions, use only option_a and option_b. For fill-in-the-
       option_b: q.option_b,
       option_c: q.option_c,
       option_d: q.option_d,
-      correct_answer: q.correct_answer.toLowerCase(),
+      correct_answer: q.correct_answer.toUpperCase(),
       difficulty: q.difficulty,
-      page_number: 1, // Default for generated questions
+      page_number: q.page_number,
       user_id: user.id,
       subject_parent_id: config.subject_parent_id,
       class_parent_id: config.class_parent_id,
@@ -410,9 +646,10 @@ Note: For true/false questions, use only option_a and option_b. For fill-in-the-
 
   } catch (error) {
     console.error('Error in generate-ai-questions function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate questions';
     
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to generate questions'
+      error: errorMessage
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

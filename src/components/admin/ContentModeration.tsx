@@ -33,12 +33,18 @@ interface Document {
   created_at: string;
   user_id: string;
   total_pages: number | null;
-  class_level: string;
-  subject_id: string;
+  class_parent_id: string | null;
+  subject_parent_id: string | null;
   updated_at: string;
   profiles?: {
     full_name: string | null;
     email: string;
+  } | null;
+  classes_parent?: {
+    class_name: string;
+  } | null;
+  subjects_parent?: {
+    subject_name: string;
   } | null;
 }
 
@@ -48,14 +54,20 @@ interface QuestionPaper {
   total_questions: number;
   created_at: string;
   user_id: string;
-  subject_id: string;
-  class_level: string;
+  subject_parent_id: string | null;
+  class_parent_id: string | null;
   time_limit_minutes: number;
   difficulty_filter: string[] | null;
   updated_at: string;
   profiles?: {
     full_name: string | null;
     email: string;
+  } | null;
+  classes_parent?: {
+    class_name: string;
+  } | null;
+  subjects_parent?: {
+    subject_name: string;
   } | null;
 }
 
@@ -93,23 +105,27 @@ export const ContentModeration = () => {
 
   const fetchContent = async () => {
     try {
-      // Fetch documents with user profiles
+      // Fetch documents with user profiles and class/subject info
       const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
         .select(`
           *,
-          profiles(full_name, email)
+          profiles(full_name, email),
+          classes_parent(class_name),
+          subjects_parent(subject_name)
         `)
         .order('created_at', { ascending: false });
 
       if (documentsError) throw documentsError;
 
-      // Fetch question papers with user profiles
+      // Fetch question papers with user profiles and class/subject info
       const { data: questionPapersData, error: questionPapersError } = await supabase
         .from('question_papers')
         .select(`
           *,
-          profiles(full_name, email)
+          profiles(full_name, email),
+          classes_parent(class_name),
+          subjects_parent(subject_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -273,7 +289,7 @@ export const ContentModeration = () => {
                             <div>
                               <div className="font-medium">{document.title}</div>
                               <div className="text-sm text-muted-foreground">
-                                {document.total_pages} pages • {document.class_level}
+                                {document.total_pages} pages • {document.classes_parent?.class_name || 'No class'}
                               </div>
                             </div>
                           </div>
@@ -315,7 +331,8 @@ export const ContentModeration = () => {
                                     <div className="text-sm space-y-1">
                                       <p><strong>Title:</strong> {document.title}</p>
                                       <p><strong>Pages:</strong> {document.total_pages}</p>
-                                      <p><strong>Class Level:</strong> {document.class_level}</p>
+                                      <p><strong>Class:</strong> {document.classes_parent?.class_name || 'No class'}</p>
+                                      <p><strong>Subject:</strong> {document.subjects_parent?.subject_name || 'No subject'}</p>
                                       <p><strong>Creator:</strong> {document.profiles?.full_name} ({document.profiles?.email})</p>
                                     </div>
                                   </div>

@@ -276,6 +276,7 @@ export type Database = {
           document_id: string
           id: string
           page_number: number
+          updated_at: string | null
         }
         Insert: {
           content?: string | null
@@ -283,6 +284,7 @@ export type Database = {
           document_id: string
           id?: string
           page_number: number
+          updated_at?: string | null
         }
         Update: {
           content?: string | null
@@ -290,6 +292,7 @@ export type Database = {
           document_id?: string
           id?: string
           page_number?: number
+          updated_at?: string | null
         }
         Relationships: [
           {

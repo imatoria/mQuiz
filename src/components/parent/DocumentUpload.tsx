@@ -15,6 +15,7 @@ import { useChildClasses } from '@/hooks/useChildClasses';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?worker';
 // pdf.js core
 import * as pdfjs from 'pdfjs-dist';
+import { createWorker } from 'tesseract.js';
 
 // Initialize pdf.js worker
 // @ts-ignore
@@ -187,46 +188,102 @@ export const DocumentUpload = ({
         subject_parent_id: subject,
         class_parent_id: classLevel,
         processing_status: 'completed',
-        total_pages: doc.numPages
+        total_pages: selectedPages.length // Store count of selected pages
       }).select().single();
       if (dbError) throw dbError;
 
-      // Store each page's content individually in document_pages
-      for (let i = 1; i <= doc.numPages; i++) {
-        const page = await doc.getPage(i);
+      // Store only selected pages with their actual page numbers
+      let ocrWorker: Tesseract.Worker | null = null;
+      
+      // Sort selected pages to process them in order
+      const sortedSelectedPages = [...selectedPages].sort((a, b) => a - b);
+      
+      for (let pdfPageIndex = 1; pdfPageIndex <= doc.numPages; pdfPageIndex++) {
+        // Map PDF page index to selected page number
+        const selectedPageNumber = sortedSelectedPages[pdfPageIndex - 1];
+        if (!selectedPageNumber) continue; // Skip if no mapping exists
+        
+        const page = await doc.getPage(pdfPageIndex);
         const textContent = await page.getTextContent();
         
         // Extract and clean text from page
-        const pageText = textContent.items
+        let pageText = textContent.items
           .map((item: any) => {
-            if (!item || typeof item.str !== 'string') return '';
-            return item.str.trim();
+            const text = item?.str || item?.text || '';
+            return typeof text === 'string' ? text.trim() : '';
           })
           .filter((str: string) => str.length > 0)
           .join(' ')
           .trim();
         
-        console.log(`Page ${i}: Extracted ${pageText.length} characters`);
+        console.log(`PDF Page ${pdfPageIndex} -> Selected Page ${selectedPageNumber}: Initial extraction: ${pageText.length} characters`);
+        
+        // If text extraction failed or returned minimal text, try OCR
+        if (pageText.length < 50) {
+          console.log(`PDF Page ${pdfPageIndex}: Text layer insufficient, attempting OCR...`);
+          
+          try {
+            // Render page to canvas for OCR
+            const viewport = page.getViewport({ scale: 2.0 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            if (context) {
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              
+              await page.render({
+                canvasContext: context,
+                viewport: viewport
+              }).promise;
+              
+              // Initialize OCR worker if not already done
+              if (!ocrWorker) {
+                ocrWorker = await createWorker('eng');
+              }
+              
+              // Perform OCR on canvas
+              const { data: { text: ocrText } } = await ocrWorker.recognize(canvas);
+              const cleanedOcrText = ocrText.trim();
+              
+              console.log(`PDF Page ${pdfPageIndex}: OCR extracted ${cleanedOcrText.length} characters`);
+              
+              // Use OCR text if it's better than what we had
+              if (cleanedOcrText.length > pageText.length) {
+                pageText = cleanedOcrText;
+                console.log(`PDF Page ${pdfPageIndex}: Using OCR text (preview: ${pageText.substring(0, 50)}...)`);
+              }
+            }
+          } catch (ocrError) {
+            console.error(`PDF Page ${pdfPageIndex}: OCR failed:`, ocrError);
+            // Continue with whatever text we have
+          }
+        }
         
         const { error: pageError } = await supabase
           .from('document_pages')
           .insert({
             document_id: documentData.id,
-            page_number: i,
-            content: pageText || '' // Ensure we always insert something, even if empty
+            page_number: selectedPageNumber, // Use the selected page number from user
+            content: pageText || ''
           });
         
         if (pageError) {
-          console.error(`Error inserting page ${i}:`, pageError);
+          console.error(`Error inserting page ${selectedPageNumber}:`, pageError);
           throw pageError;
         }
+      }
+      
+      // Cleanup OCR worker
+      if (ocrWorker) {
+        await ocrWorker.terminate();
       }
 
       // Removed page selection and book creation logic
 
       toast({
         title: "Document uploaded successfully",
-        description: "Your document has been processed and each page stored individually.",
+        description: `${selectedPages.length} ${selectedPages.length === 1 ? 'page' : 'pages'} stored with original page numbers.`,
       });
 
       // Reset form
@@ -335,11 +392,11 @@ export const DocumentUpload = ({
           </div>
         </div>
  
-        <Button onClick={handleUpload} disabled={!file || !title || !subject || !classLevel || isUploading || numPages === 0 || selectedPages.length !== numPages} className="w-full">
+        <Button onClick={handleUpload} disabled={!file || !title || !subject || !classLevel || isUploading || numPages === 0 || selectedPages.length === 0 || selectedPages.length > numPages} className="w-full">
           {isUploading ? <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Uploading...
-            </> : 'Upload Pages'}
+            </> : `Upload ${selectedPages.length} ${selectedPages.length === 1 ? 'Page' : 'Pages'}`}
         </Button>
       </CardContent>
     </Card>;

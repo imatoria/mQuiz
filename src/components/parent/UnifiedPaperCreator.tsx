@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePagination } from '@/hooks/usePagination';
+import { useChildSubjects } from '@/hooks/useChildSubjects';
+import { useChildClasses } from '@/hooks/useChildClasses';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { 
@@ -39,6 +41,7 @@ interface Subject {
 interface ClassLevel {
   id: string;
   class_name: string;
+  class_key: string;
   parent_id: string;
 }
 
@@ -65,8 +68,8 @@ interface Question {
 
 interface PaperFormData {
   title: string;
-  subject_id: string;
-  class_level: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '';
+  subject_parent_id: string;
+  class_parent_id: string;
   total_questions: number;
   time_limit_minutes: number;
   start_time?: Date;
@@ -89,8 +92,8 @@ interface UnifiedPaperCreatorProps {
 export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefresh, editingPaper, onPaperCreated }) => {
   const [formData, setFormData] = useState<PaperFormData>({
     title: '',
-    subject_id: '',
-    class_level: '',
+    subject_parent_id: '',
+    class_parent_id: '',
     total_questions: 10,
     time_limit_minutes: 60,
     max_attempts: 1,
@@ -102,8 +105,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     selected_questions: []
   });
   
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [classes, setClasses] = useState<ClassLevel[]>([]);
   const [children, setChildren] = useState<Child[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
@@ -112,7 +113,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [questionFilters, setQuestionFilters] = useState({
     search: '',
-    difficulty: '',
     topic: '',
     page_numbers: [] as number[],
     dateRange: { from: undefined as Date | undefined, to: undefined as Date | undefined }
@@ -127,10 +127,48 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Use child assignments hooks (same as Upload tab)
+  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
+  
+  // When editing, ensure the paper's subject/class are available even if not currently assigned to children
+  const subjects = React.useMemo(() => {
+    const subjectsList = uniqueSubjects.map(s => ({ id: s.id, name: s.subject_name }));
+    
+    // If editing and the paper's subject isn't in the list, add it
+    if (editingPaper?.subject_parent_id && editingPaper?.subjects_parent) {
+      const paperSubjectExists = subjectsList.some(s => s.id === editingPaper.subject_parent_id);
+      if (!paperSubjectExists) {
+        subjectsList.unshift({
+          id: editingPaper.subject_parent_id,
+          name: editingPaper.subjects_parent.subject_name
+        });
+      }
+    }
+    
+    return subjectsList;
+  }, [uniqueSubjects, editingPaper?.subject_parent_id, editingPaper?.subjects_parent]);
+  
+  const classes = React.useMemo(() => {
+    const classesList = [...uniqueClasses];
+    
+    // If editing and the paper's class isn't in the list, add it
+    if (editingPaper?.class_parent_id && editingPaper?.classes_parent) {
+      const paperClassExists = classesList.some(c => c.id === editingPaper.class_parent_id);
+      if (!paperClassExists) {
+        classesList.unshift({
+          id: editingPaper.class_parent_id,
+          class_name: editingPaper.classes_parent.class_name,
+          class_key: editingPaper.classes_parent.class_key || ''
+        });
+      }
+    }
+    
+    return classesList;
+  }, [uniqueClasses, editingPaper?.class_parent_id, editingPaper?.classes_parent]);
 
   React.useEffect(() => {
-    loadSubjects();
-    loadClasses();
     if (user?.id) {
       loadChildren();
     }
@@ -139,16 +177,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   // Effect to populate form when editing
   React.useEffect(() => {
     if (editingPaper) {
-      // First load subjects to ensure they're available when setting subject_id
-      if (subjects.length === 0) {
-        loadSubjects();
-      }
-      
       setFormData(prev => ({
         ...prev,
         title: editingPaper.title || '',
-        subject_id: editingPaper.subject_id || '',
-        class_level: editingPaper.class_level || '',
+        subject_parent_id: editingPaper.subject_parent_id || '',
+        class_parent_id: editingPaper.class_parent_id || '',
         total_questions: editingPaper.total_questions || 10,
         time_limit_minutes: editingPaper.time_limit_minutes || 60,
         start_time: editingPaper.start_time ? new Date(editingPaper.start_time) : undefined,
@@ -172,28 +205,30 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       // For new papers, default to unselected tab
       setQuestionTabValue('unselected');
     }
-  }, [editingPaper, subjects.length]);
+  }, [editingPaper]);
 
   React.useEffect(() => {
-    if (formData.subject_id && formData.class_level) {
+    if (formData.subject_parent_id && formData.class_parent_id) {
       loadAvailablePages();
     } else {
       setAvailablePages([]);
     }
-  }, [formData.subject_id, formData.class_level]);
+  }, [formData.subject_parent_id, formData.class_parent_id]);
+
+  // Auto-set difficulty filter when form difficulty is selected (removed as no longer needed)
 
   React.useEffect(() => {
-    if (formData.subject_id && formData.class_level && questionFilters.difficulty) {
+    if (formData.subject_parent_id && formData.class_parent_id && formData.difficulty_filter && formData.difficulty_filter.length > 0) {
       loadQuestions();
     } else {
       setQuestions([]);
       setFilteredQuestions([]);
     }
-  }, [formData.subject_id, formData.class_level, questionFilters.difficulty]);
+  }, [formData.subject_parent_id, formData.class_parent_id, formData.difficulty_filter]);
 
   // Effect to handle criteria changes and update selected questions visibility
   React.useEffect(() => {
-    if (selectedQuestions.length > 0 && formData.subject_id && formData.class_level) {
+    if (selectedQuestions.length > 0 && formData.subject_parent_id && formData.class_parent_id) {
       // Filter out questions that no longer meet the current criteria
       const validQuestions = selectedQuestions.filter(question => {
         const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(question.difficulty);
@@ -215,44 +250,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   React.useEffect(() => {
     applyQuestionFilters();
   }, [questions, questionFilters]);
-
-const loadSubjects = async () => {
-    try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
-
-      const { data, error } = await supabase
-        .from('subjects_parent')
-        .select('*')
-        .eq('parent_id', user.user.id)
-        .eq('is_active', true)
-        .order('subject_name');
-      
-      if (error) throw error;
-      setSubjects((data || []).map(s => ({ id: s.id, name: s.subject_name })));
-    } catch (error) {
-      console.error('Error loading subjects:', error);
-    }
-  };
-
-  const loadClasses = async () => {
-    try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
-
-      const { data, error } = await supabase
-        .from('classes_parent')
-        .select('*')
-        .eq('parent_id', user.user.id)
-        .eq('is_active', true)
-        .order('display_order');
-      
-      if (error) throw error;
-      setClasses(data || []);
-    } catch (error) {
-      console.error('Error loading classes:', error);
-    }
-  };
 
   const loadChildren = async () => {
     if (!user?.id) {
@@ -291,34 +288,28 @@ const loadSubjects = async () => {
   };
 
   const loadQuestions = async () => {
-    if (!formData.subject_id || !formData.class_level || !questionFilters.difficulty) return;
+    if (!formData.subject_parent_id || !formData.class_parent_id || !formData.difficulty_filter || formData.difficulty_filter.length === 0) return;
     
     setIsLoadingQuestions(true);
     try {
       let query = supabase
         .from('questions')
         .select('*')
-        .eq('subject_parent_id', formData.subject_id)
-        .eq('class_parent_id', formData.class_level)
+        .eq('subject_parent_id', formData.subject_parent_id)
+        .eq('class_parent_id', formData.class_parent_id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false });
 
-      // Handle difficulty filter - if "all" is selected, don't filter by difficulty
-      if (questionFilters.difficulty !== 'all') {
-        query = query.eq('difficulty', questionFilters.difficulty as 'easy' | 'medium' | 'difficult');
+      // Filter by difficulty from form
+      if (formData.difficulty_filter.length > 0) {
+        query = query.in('difficulty', formData.difficulty_filter as ('easy' | 'medium' | 'difficult')[]);
       }
       
       const { data, error } = await query;
       
       if (error) throw error;
       
-      // If "all" was selected, filter by the currently selected difficulties in the form
-      let questions = data || [];
-      if (questionFilters.difficulty === 'all' && formData.difficulty_filter?.length) {
-        questions = questions.filter(q => formData.difficulty_filter!.includes(q.difficulty));
-      }
-      
-      setQuestions(questions);
+      setQuestions(data || []);
     } catch (error) {
       console.error('Error loading questions:', error);
       toast({
@@ -366,15 +357,15 @@ const loadSubjects = async () => {
   };
 
   const loadAvailablePages = async () => {
-    if (!formData.subject_id || !formData.class_level) return;
+    if (!formData.subject_parent_id || !formData.class_parent_id) return;
     
     try {
       // Get unique page numbers for the selected subject and class level
       const { data, error } = await supabase
         .from('questions')
         .select('page_number')
-        .eq('subject_parent_id', formData.subject_id)
-        .eq('class_parent_id', formData.class_level)
+        .eq('subject_parent_id', formData.subject_parent_id)
+        .eq('class_parent_id', formData.class_parent_id)
         .eq('is_deleted', false)
         .not('page_number', 'is', null)
         .order('page_number');
@@ -424,8 +415,8 @@ const loadSubjects = async () => {
     const newErrors: Record<string, string> = {};
     
     if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.subject_id) newErrors.subject_id = 'Subject is required';
-    if (!formData.class_level) newErrors.class_level = 'Class level is required';
+    if (!formData.subject_parent_id) newErrors.subject_parent_id = 'Subject is required';
+    if (!formData.class_parent_id) newErrors.class_parent_id = 'Class level is required';
     
     if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
       newErrors.end_time = 'End time must be after start time';
@@ -445,8 +436,8 @@ const loadSubjects = async () => {
     try {
       const paperData = {
         title: formData.title,
-        subject_id: formData.subject_id,
-        class_level: formData.class_level as '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12',
+        subject_parent_id: formData.subject_parent_id,
+        class_parent_id: formData.class_parent_id,
         total_questions: formData.total_questions,
         time_limit_minutes: formData.time_limit_minutes,
         user_id: user?.id,
@@ -537,8 +528,8 @@ const loadSubjects = async () => {
       if (!editingPaper) {
         setFormData({
           title: '',
-          subject_id: '',
-          class_level: '',
+          subject_parent_id: '',
+          class_parent_id: '',
           total_questions: 10,
           time_limit_minutes: 60,
           max_attempts: 1,
@@ -679,42 +670,70 @@ const loadSubjects = async () => {
             
             <div className="space-y-2">
               <Label>Subject *</Label>
-              <Select 
-                value={formData.subject_id} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, subject_id: value }))}
-                disabled={!!editingPaper}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {editingPaper ? (
+                <Input
+                  value={editingPaper.subjects_parent?.subject_name || 'Unknown Subject'}
+                  disabled
+                  readOnly
+                />
+              ) : (
+                <Select 
+                  value={formData.subject_parent_id} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, subject_parent_id: value }))}
+                  disabled={loadingSubjects}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingSubjects ? (
+                      <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
+                    ) : subjects.length === 0 ? (
+                      <SelectItem value="_no_subjects" disabled>No subjects assigned to children</SelectItem>
+                    ) : (
+                      subjects.map((subject) => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             
             <div className="space-y-2">
               <Label>Class Level *</Label>
-              <Select 
-                value={formData.class_level} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, class_level: value as '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '' }))}
-                disabled={!!editingPaper}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map((classItem) => (
-                    <SelectItem key={classItem.id} value={classItem.id}>
-                      {classItem.class_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {editingPaper ? (
+                <Input
+                  value={editingPaper.classes_parent?.class_name || 'Unknown Class'}
+                  disabled
+                  readOnly
+                />
+              ) : (
+                <Select 
+                  value={formData.class_parent_id} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, class_parent_id: value }))}
+                  disabled={loadingClasses}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingClasses ? (
+                      <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
+                    ) : classes.length === 0 ? (
+                      <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
+                    ) : (
+                      classes.map((classItem) => (
+                        <SelectItem key={classItem.id} value={classItem.id}>
+                          {classItem.class_name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -1008,151 +1027,137 @@ const loadSubjects = async () => {
                 </TabsContent>
 
                 <TabsContent value="unselected" className="space-y-4">
-                  {/* Question Selection Filters */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <Label>Search Questions</Label>
-                      <Input
-                        placeholder="Search by question text, options, or topic..."
-                        value={questionFilters.search}
-                        onChange={(e) => setQuestionFilters(prev => ({ ...prev, search: e.target.value }))}
-                      />
+                  {/* Requirement Notice */}
+                  {(!formData.subject_parent_id || !formData.class_parent_id || !formData.difficulty_filter || formData.difficulty_filter.length === 0) && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-amber-900">Required Selections</h4>
+                          <p className="text-sm text-amber-700 mt-1">
+                            Please select <strong>Subject</strong>, <strong>Class Level</strong>, and <strong>Difficulty</strong> above to view and select questions.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Difficulty Filter</Label>
-                      <Select 
-                        value={questionFilters.difficulty} 
-                        onValueChange={(value) => setQuestionFilters(prev => ({ ...prev, difficulty: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select difficulty" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Select All</SelectItem>
-                          {formData.difficulty_filter?.map((difficulty) => (
-                            <SelectItem key={difficulty} value={difficulty}>
-                              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Filter by Pages</Label>
-                      <PageMultiSelect
-                        label="Select Pages"
-                        availablePages={availablePages}
-                        selectedPages={questionFilters.page_numbers}
-                        onChange={(pages) => setQuestionFilters(prev => ({ ...prev, page_numbers: pages }))}
-                        disabled={availablePages.length === 0}
-                        className="w-full"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Date Range</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !questionFilters.dateRange.from && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {questionFilters.dateRange?.from ? (
-                              questionFilters.dateRange.to ? (
-                                <>
-                                  {format(questionFilters.dateRange.from, "LLL dd, y")} -{" "}
-                                  {format(questionFilters.dateRange.to, "LLL dd, y")}
-                                </>
-                              ) : (
-                                format(questionFilters.dateRange.from, "LLL dd, y")
-                              )
-                            ) : (
-                              <span>Pick date range</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={questionFilters.dateRange?.from}
-                            selected={{ from: questionFilters.dateRange.from, to: questionFilters.dateRange.to }}
-                            onSelect={(range) => setQuestionFilters(prev => ({ 
-                              ...prev, 
-                              dateRange: { 
-                                from: range?.from, 
-                                to: range?.to 
-                              }
-                            }))}
-                            numberOfMonths={2}
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="flex items-center justify-between">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setQuestionFilters(prev => ({ 
-                        ...prev, 
-                        search: '', 
-                        page_numbers: [],
-                        difficulty: '',
-                        dateRange: { from: undefined, to: undefined }
-                      }))}
-                    >
-                      Clear Filters
-                    </Button>
-                    
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleSelectAllVisible}
-                      disabled={
-                        paginatedQuestions.length === 0 || 
-                        (formData.selected_questions?.length || 0) >= formData.total_questions
-                      }
-                    >
-                      Select All Visible
-                    </Button>
-                  </div>
+                  {/* Question Selection Filters */}
+                  {formData.subject_parent_id && formData.class_parent_id && formData.difficulty_filter && formData.difficulty_filter.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Search Questions</Label>
+                        <Input
+                          placeholder="Search by question text, options, or topic..."
+                          value={questionFilters.search}
+                          onChange={(e) => setQuestionFilters(prev => ({ ...prev, search: e.target.value }))}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Filter by Pages</Label>
+                        <PageMultiSelect
+                          label="Select Pages"
+                          availablePages={availablePages}
+                          selectedPages={questionFilters.page_numbers}
+                          onChange={(pages) => setQuestionFilters(prev => ({ ...prev, page_numbers: pages }))}
+                          disabled={availablePages.length === 0}
+                          className="w-full"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Date Range</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !questionFilters.dateRange.from && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {questionFilters.dateRange?.from ? (
+                                questionFilters.dateRange.to ? (
+                                  <>
+                                    {format(questionFilters.dateRange.from, "LLL dd, y")} -{" "}
+                                    {format(questionFilters.dateRange.to, "LLL dd, y")}
+                                  </>
+                                ) : (
+                                  format(questionFilters.dateRange.from, "LLL dd, y")
+                                )
+                              ) : (
+                                <span>Pick date range</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              initialFocus
+                              mode="range"
+                              defaultMonth={questionFilters.dateRange?.from}
+                              selected={{ from: questionFilters.dateRange.from, to: questionFilters.dateRange.to }}
+                              onSelect={(range) => setQuestionFilters(prev => ({ 
+                                ...prev, 
+                                dateRange: { 
+                                  from: range?.from, 
+                                  to: range?.to 
+                                }
+                              }))}
+                              numberOfMonths={2}
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  )}
                   
-                  {!formData.subject_id || !formData.class_level || !formData.difficulty_filter?.length ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">
-                        Please select Subject, Class Level, and at least one Difficulty level to view questions.
-                      </p>
-                    </div>
-                  ) : !questionFilters.difficulty ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">
-                        Please select a Difficulty filter to view questions.
-                      </p>
-                    </div>
-                  ) : isLoadingQuestions ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">Loading questions...</p>
-                    </div>
-                  ) : filteredQuestions.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">
-                        No questions found for the selected criteria.
-                      </p>
-                    </div>
-                  ) : (
+                  {formData.subject_parent_id && formData.class_parent_id && formData.difficulty_filter && formData.difficulty_filter.length > 0 && (
                     <>
-                      {/* Questions Table */}
-                      <div className="border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setQuestionFilters(prev => ({ 
+                            ...prev, 
+                            search: '', 
+                            page_numbers: [],
+                            dateRange: { from: undefined, to: undefined }
+                          }))}
+                        >
+                          Clear Filters
+                        </Button>
+                        
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleSelectAllVisible}
+                          disabled={
+                            paginatedQuestions.length === 0 || 
+                            (formData.selected_questions?.length || 0) >= formData.total_questions
+                          }
+                        >
+                          Select All Visible
+                        </Button>
+                      </div>
+                      
+                      {isLoadingQuestions ? (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">Loading questions...</p>
+                        </div>
+                      ) : filteredQuestions.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">
+                            No questions found for the selected criteria.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Questions Table */}
+                          <div className="border rounded-lg">
                         <Table>
                           <TableHeader>
                           <TableRow>
@@ -1199,44 +1204,46 @@ const loadSubjects = async () => {
                             ))}
                           </TableBody>
                         </Table>
-                      </div>
-                      
-                      {/* Pagination */}
-                      {pagination.totalPages > 1 && (
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-muted-foreground">
-                            Showing {pagination.startItem} to {pagination.endItem} of {pagination.totalItems} questions
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={pagination.previousPage}
-                          disabled={!pagination.canGoPrevious}
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                          Previous
-                        </Button>
-                        <span className="text-sm">
-                          Page {pagination.currentPage} of {pagination.totalPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={pagination.nextPage}
-                          disabled={!pagination.canGoNext}
-                        >
-                          Next
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
                        </div>
-                     </div>
+                       
+                       {/* Pagination */}
+                       {pagination.totalPages > 1 && (
+                         <div className="flex items-center justify-between">
+                           <div className="text-sm text-muted-foreground">
+                             Showing {pagination.startItem} to {pagination.endItem} of {pagination.totalItems} questions
+                           </div>
+                           <div className="flex items-center space-x-2">
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={pagination.previousPage}
+                               disabled={!pagination.canGoPrevious}
+                             >
+                               <ChevronLeft className="w-4 w-4" />
+                               Previous
+                             </Button>
+                             <span className="text-sm">
+                               Page {pagination.currentPage} of {pagination.totalPages}
+                             </span>
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={pagination.nextPage}
+                               disabled={!pagination.canGoNext}
+                             >
+                               Next
+                               <ChevronRight className="w-4 h-4" />
+                             </Button>
+                           </div>
+                         </div>
+                       )}
+                     </>
                    )}
                  </>
                )}
              </TabsContent>
            </Tabs>
-          </div>
+         </div>
         
           <div className="flex justify-end space-x-4">
             <Button type="button" variant="outline">Cancel</Button>

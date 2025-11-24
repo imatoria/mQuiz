@@ -102,8 +102,10 @@ export const ExportManager = () => {
           question_papers!inner(
             title,
             user_id,
-            class_level,
-            subjects(name)
+            class_parent_id,
+            subject_parent_id,
+            classes_parent(class_name),
+            subjects_parent(subject_name)
           ),
           profiles!paper_attempts_user_id_fkey(
             full_name,
@@ -152,8 +154,8 @@ export const ExportManager = () => {
         time_taken: attempt.completed_at && attempt.started_at 
           ? Math.round((new Date(attempt.completed_at).getTime() - new Date(attempt.started_at).getTime()) / 60000)
           : 0,
-        subject: attempt.question_papers.subjects?.name || 'Unknown',
-        class_level: attempt.question_papers.class_level || 'Unknown'
+        subject: attempt.question_papers.subjects_parent?.subject_name || 'Unknown',
+        class_level: attempt.question_papers.classes_parent?.class_name || 'Unknown'
       })) || [];
 
       setExportData(exportData);

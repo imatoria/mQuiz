@@ -155,7 +155,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  let documentId;
+  let documentId: string | undefined;
   let extractedTotalPages = 0;
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -323,7 +323,8 @@ Return ONLY valid JSON in this exact format:
       }
     } catch (aiError) {
       console.error(`${providerType} API error:`, aiError);
-      throw new Error(`AI provider error: ${aiError.message}`);
+      const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown error';
+      throw new Error(`AI provider error: ${errorMessage}`);
     }
 
     // Parse the JSON response with better error handling
@@ -363,7 +364,8 @@ Return ONLY valid JSON in this exact format:
     } catch (e) {
       console.error('JSON parsing error:', e);
       console.error('Raw response:', generatedText);
-      throw new Error(`Failed to parse AI response: ${e.message}`);
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      throw new Error(`Failed to parse AI response: ${errorMessage}`);
     }
 
     // Insert questions into database
@@ -427,7 +429,7 @@ Return ONLY valid JSON in this exact format:
     }
     
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       documentId: documentId
     }), {
       status: 500,

@@ -110,7 +110,7 @@ serve(async (req) => {
     const totalQuestions = questionsData?.length || 0;
     
     if (answers && Object.keys(answers).length > 0 && questionsData) {
-      const correctAnswers = questionsData.reduce((acc, item) => {
+      const correctAnswers = questionsData.reduce((acc: Record<string, string>, item: any) => {
         if (item.questions) {
           acc[item.questions.id] = item.questions.correct_answer;
         }
@@ -251,10 +251,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in complete-paper-attempt function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
-        details: error.message 
+        details: errorMessage
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

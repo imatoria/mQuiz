@@ -160,7 +160,7 @@ serve(async (req) => {
 
         if (questionsData && questionsData.length > 0) {
           totalQuestions = questionsData.length;
-          const correctAnswers = questionsData.reduce((acc, item) => {
+          const correctAnswers = questionsData.reduce((acc: Record<string, string>, item: any) => {
             if (item.questions) {
               acc[item.questions.id] = item.questions.correct_answer;
             }

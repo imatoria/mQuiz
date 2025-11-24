@@ -26,8 +26,8 @@ interface Question {
   correct_answer: string;
   difficulty: 'easy' | 'medium' | 'difficult';
   page_number?: number;
-  subject_id?: string;
-  class_level?: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12';
+  subject_parent_id?: string;
+  class_parent_id?: string;
 }
 
 export default function BulkQuestionOperations() {

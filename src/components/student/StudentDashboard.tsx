@@ -57,6 +57,7 @@ interface PaperAttempt {
   time_remaining?: number;
   answers?: any;
   progress_percentage?: number;
+  show_results?: boolean;
 }
 
 export const StudentDashboard = () => {
@@ -184,7 +185,7 @@ export const StudentDashboard = () => {
         // Get attempts for current user
         const { data: attemptsData, error: attemptsError } = await supabase
           .from('paper_attempts')
-          .select('*')
+          .select('id, paper_id, attempt_number, score, completed_at, started_at, current_question_index, total_questions, time_remaining, answers, progress_percentage, show_results')
           .eq('user_id', userId);
         
         if (attemptsError) throw attemptsError;
@@ -214,7 +215,8 @@ export const StudentDashboard = () => {
             total_questions: p.total_questions || 0,
             time_remaining: a.time_remaining || 0,
             answers: a.answers || {},
-            progress_percentage: a.progress_percentage || 0
+            progress_percentage: a.progress_percentage || 0,
+            show_results: a.show_results || false
           }))
         }));
         
@@ -450,15 +452,21 @@ export const StudentDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {completedTests.length > 0 
-                      ? Math.round(completedTests.reduce((sum, test) => {
-                          const lastAttempt = test.paper_attempts[test.paper_attempts.length - 1];
-                          return sum + (lastAttempt?.score || 0);
-                        }, 0) / completedTests.length) + '%'
-                      : 'N/A'
-                    }
+                    {(() => {
+                      const approvedAttempts = completedTests.flatMap(test => 
+                        test.paper_attempts.filter(attempt => attempt.show_results && attempt.score !== null)
+                      );
+                      return approvedAttempts.length > 0
+                        ? Math.round(approvedAttempts.reduce((sum, attempt) => sum + (attempt.score || 0), 0) / approvedAttempts.length) + '%'
+                        : 'N/A';
+                    })()}
                   </div>
-                  <p className="text-xs text-muted-foreground">Overall performance</p>
+                  <p className="text-xs text-muted-foreground">
+                    {completedTests.flatMap(test => test.paper_attempts.filter(attempt => attempt.show_results)).length > 0
+                      ? 'From approved results'
+                      : 'No approved results yet'
+                    }
+                  </p>
                 </CardContent>
               </Card>
             </div>

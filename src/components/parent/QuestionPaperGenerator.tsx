@@ -82,9 +82,9 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       .from('questions')
       .select('*', { count: 'exact', head: true })
       .in('difficulty', difficulties)
-      .eq('documents.subject_id', subject)
-      .eq('documents.class_level', classLevel as any)
-      .eq('documents.user_id', user.user.id);
+      .eq('subject_parent_id', subject)
+      .eq('class_parent_id', classLevel)
+      .eq('is_deleted', false);
 
     if (selectedPages.length > 0) {
       query = query.in('page_number', selectedPages);
@@ -148,8 +148,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
         .insert({
           user_id: user.user.id,
           title,
-          subject_id: subject,
-          class_level: classLevel as any,
+          subject_parent_id: subject,
+          class_parent_id: classLevel,
           total_questions: questionsNeeded,
           time_limit_minutes: 0,
           difficulty_filter: difficulties
@@ -159,16 +159,14 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
 
       if (paperError) throw paperError;
 
-      // Get questions from user's documents
+      // Get questions directly
       let query2: any = supabase
         .from('questions')
-        .select(`
-          *,
-          documents!inner(subject_id, class_level, user_id)
-        `)
-        .eq('documents.user_id', user.user.id)
-        .eq('documents.subject_id', subject)
-        .eq('documents.class_level', classLevel as any)
+        .select('*')
+        .eq('user_id', user.user.id)
+        .eq('subject_parent_id', subject)
+        .eq('class_parent_id', classLevel)
+        .eq('is_deleted', false)
         .in('difficulty', difficulties);
 
       if (selectedPages.length > 0) {

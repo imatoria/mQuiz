@@ -71,8 +71,7 @@ export const AIQuestionGenerator = () => {
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [mode, setMode] = useState<'book' | 'independent'>('book');
-  const [minQuestionsPerPage, setMinQuestionsPerPage] = useState(1);
-  const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState(10);
+  const [questionsPerPage, setQuestionsPerPage] = useState(5);
 
   
 
@@ -191,21 +190,13 @@ export const AIQuestionGenerator = () => {
         });
         return;
       }
-      if (minQuestionsPerPage > maxQuestionsPerPage) {
-        toast({
-          title: 'Invalid pagination settings',
-          description: 'Minimum questions per page cannot be greater than maximum.',
-          variant: 'destructive',
-        });
-        return;
-      }
     }
 
     setIsGenerating(true);
 
     try {
       const questionCount = mode === 'book'
-        ? Math.max(1, minQuestionsPerPage) * selectedPages.length
+        ? Math.max(1, questionsPerPage) * selectedPages.length
         : config.question_count;
 
       const payload = {
@@ -404,24 +395,22 @@ export const AIQuestionGenerator = () => {
           {mode === 'book' && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="minPerPage">Minimum Questions per Page</Label>
-                <Input
-                  id="minPerPage"
-                  type="number"
-                  min={1}
-                  value={minQuestionsPerPage}
-                  onChange={(e) => setMinQuestionsPerPage(Math.max(1, parseInt(e.target.value || '1')))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="maxPerPage">Maximum Questions per Page</Label>
-                <Input
-                  id="maxPerPage"
-                  type="number"
-                  min={1}
-                  value={maxQuestionsPerPage}
-                  onChange={(e) => setMaxQuestionsPerPage(Math.max(1, parseInt(e.target.value || '1')))}
-                />
+                <Label htmlFor="questionsPerPage">Number of Questions per Page</Label>
+                <Select 
+                  value={questionsPerPage.toString()} 
+                  onValueChange={(value) => setQuestionsPerPage(parseInt(value))}
+                >
+                  <SelectTrigger id="questionsPerPage">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 5, 10, 15, 20].map((count) => (
+                      <SelectItem key={count} value={count.toString()}>
+                        {count} {count === 1 ? 'question' : 'questions'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Select Pages</Label>
@@ -462,7 +451,7 @@ export const AIQuestionGenerator = () => {
               isGenerating ||
               (mode === 'independent'
                 ? (!config.topic.trim() || !config.subject_parent_id || !config.class_parent_id)
-                : (!config.subject_parent_id || !config.class_parent_id || selectedPages.length === 0 || minQuestionsPerPage > maxQuestionsPerPage || availablePages.length === 0)
+                : (!config.subject_parent_id || !config.class_parent_id || selectedPages.length === 0 || availablePages.length === 0)
               )
             }
             className="min-w-32"

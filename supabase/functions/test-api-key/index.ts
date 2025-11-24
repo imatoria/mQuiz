@@ -289,34 +289,31 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error in test-api-key function:', error);
-    console.error('Error stack:', error.stack);
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
 
     // Provide more specific error messages based on the error type
-    let errorMessage = error.message || 'Failed to test API key';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to test API key';
     let statusCode = 400;
 
     if (errorMessage.includes('quota') || errorMessage.includes('billing') || errorMessage.includes('insufficient_quota')) {
-      errorMessage = 'API quota exceeded. Please check your billing and usage limits.';
       statusCode = 402; // Payment Required
     } else if (errorMessage.includes('unauthorized') || errorMessage.includes('invalid') || errorMessage.includes('authentication') || errorMessage.includes('401')) {
-      errorMessage = 'Invalid API key. Please check your API key is correct and has the necessary permissions.';
       statusCode = 401; // Unauthorized
     } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
       statusCode = 429; // Too Many Requests
     } else if (errorMessage.includes('model') || errorMessage.includes('404')) {
-      errorMessage = 'Model not available or access denied. Please check your API key permissions.';
       statusCode = 403; // Forbidden
     } else if (errorMessage.includes('400')) {
-      errorMessage = 'Bad request. Please check your API key format and try again.';
       statusCode = 400;
     }
 
     return new Response(JSON.stringify({
       success: false,
       error: errorMessage,
-      originalError: error.message, // Keep original for debugging
-      stack: error.stack // Add stack trace for debugging
+      originalError: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
     }), {
       status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

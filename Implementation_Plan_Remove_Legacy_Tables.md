@@ -60,7 +60,21 @@ This plan outlines the steps to remove three legacy database elements that have 
 ### Step 2.2: Update React Components (29 files)
 **Status:** ✅ Complete
 
-**High Priority Components:**
+**Recently Updated (This Session):**
+- [x] `UnifiedPaperCreator.tsx` - All `subject_id` → `subject_parent_id`, `class_level` → `class_parent_id` ✅
+  - Fixed question loading logic to use `formData.difficulty_filter` instead of separate `questionFilters.difficulty`
+  - Auto-loads questions when Subject + Class + Difficulty are selected
+  - Simplified UI by removing redundant difficulty selector in Questions section
+- [x] `BulkQuestionOperations.tsx` - Interface definitions updated ✅
+- [x] `ContentCreation.tsx` - Queries use `subjects_parent` and `classes_parent` with joins ✅
+- [x] `QuestionPaperGenerator.tsx` - Database queries use new column names ✅
+- [x] `ContentModeration.tsx` - Interfaces and queries with proper joins ✅
+- [x] `ExportManager.tsx` - Query joins and data mapping updated ✅
+- [x] Confirmed `useChildSubjects.ts` - Already correct (no changes needed) ✅
+- [x] Confirmed `useChildClasses.ts` - Already correct (no changes needed) ✅
+- [x] Confirmed `useChildAcademicProfile.ts` - Already correct (no changes needed) ✅
+
+**Previously Updated (Earlier Sessions):**
 - [x] `ChildClassAssignment.tsx` - Use classes_parent ✅
 - [x] `AIQuestionGenerator.tsx` - Replace class_level selection ✅
 - [x] `DocumentUpload.tsx` - Updated class display ✅
@@ -69,26 +83,38 @@ This plan outlines the steps to remove three legacy database elements that have 
 - [x] `ChildSubjectAssignment.tsx` - Use subjects_parent ✅
 - [x] `UnifiedPaperCreator.tsx` - Use subjects_parent and classes_parent ✅
 - [x] `PapersManager.tsx` - Updated to use subjects_parent and classes_parent ✅
+- [x] `EnhancedPaperManager.tsx` - Already uses correct tables ✅
+- [x] `ScheduleManager.tsx` - Already uses subjects_parent ✅
 - [x] `QuestionAnalytics.tsx` - Already uses subjects_parent (no changes needed) ✅
 - [x] `ComparativeAnalysis.tsx` - Updated to use subjects_parent and classes_parent ✅
+- [x] `ResultApproval.tsx` - Already uses subjects_parent ✅
+- [x] `StudentDashboard.tsx` - Already uses subjects_parent ✅
+- [x] `SystemAnalytics.tsx` - No joins needed (count only) ✅
 
 ### Step 2.2 Progress Summary
-✅ **Completed (10/10 high-priority):**
+✅ **Completed (16/16 components):**
 - All class-level hooks and basic assignment components
 - AI Question Generator fully migrated
 - Question Bank, Document Upload, Paper Generator displays updated
-- Paper creation/editing workflows migrated
-- Analytics and reporting components migrated
+- Paper creation/editing workflows migrated (UnifiedPaperCreator, PapersManager, EnhancedPaperManager)
+- Scheduling components migrated (ScheduleManager)
+- Analytics and reporting components migrated (ComparativeAnalysis, ExportManager, QuestionAnalytics)
+- Result management components migrated (ResultApproval)
+- Student dashboard components migrated (StudentDashboard)
+- Admin analytics migrated (SystemAnalytics)
 
 **Pattern to Follow:**
 ```typescript
-// OLD: Direct enum usage
-class_level: '1' | '2' | ... | '12'
-subject_id: uuid (from subjects table)
-
-// NEW: Reference to parent tables
+// ✅ CORRECT: Reference to parent tables
 class_parent_id: uuid (from classes_parent)
 subject_parent_id: uuid (from subjects_parent)
+
+// Query Example:
+.select(`
+  *,
+  subjects_parent!subject_parent_id(subject_name),
+  classes_parent!class_parent_id(class_name)
+`)
 ```
 
 ### Step 2.3: Update Custom Hooks ✅
@@ -101,49 +127,68 @@ subject_parent_id: uuid (from subjects_parent)
 
 ---
 
-## ✅ PHASE 3: DATABASE SCHEMA CLEANUP - **IN PROGRESS**
+## ✅ PHASE 3: DATABASE SCHEMA CLEANUP - **COMPLETED**
 
-### Step 3.1: Drop Foreign Key Constraints  
-**Status:** ✅ Complete
-```sql
--- Drop subject_id foreign keys
-ALTER TABLE documents DROP CONSTRAINT IF EXISTS documents_subject_id_fkey;
-ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_subject_id_fkey;
-ALTER TABLE child_subject_assignments DROP CONSTRAINT IF EXISTS child_subject_assignments_subject_id_fkey;
-```
+## Phase 3: Database Schema Cleanup ✅
 
-### Step 3.2: Drop Old Columns
-**Status:** ✅ Complete
-```sql
--- Drop subject_id columns
-ALTER TABLE documents DROP COLUMN IF EXISTS subject_id;
-ALTER TABLE questions DROP COLUMN IF EXISTS subject_id;
-ALTER TABLE question_papers DROP COLUMN IF EXISTS subject_id;
-ALTER TABLE child_subject_assignments DROP COLUMN IF EXISTS subject_id;
+### 3.1 Drop Foreign Key Constraints ✅
+- Dropped foreign key constraints from:
+  - `documents.subject_id`
+  - `questions.subject_id`
+  - `question_papers.subject_id`
+  - `child_subject_assignments.subject_id`
 
--- Drop class_level columns
-ALTER TABLE documents DROP COLUMN IF EXISTS class_level;
-ALTER TABLE questions DROP COLUMN IF EXISTS class_level;
-ALTER TABLE question_papers DROP COLUMN IF EXISTS class_level;
-ALTER TABLE child_class_assignments DROP COLUMN IF EXISTS class_level;
-```
+### 3.2 Drop Legacy Columns ✅
+- ✅ Dropped `subject_id` from `documents`, `questions`, `question_papers`, `child_subject_assignments`
+- ✅ Dropped `class_level` from `documents`, `questions`, `question_papers`, `child_class_assignments`
+- ✅ Fixed all TypeScript errors in edge functions
+- ✅ Fixed all component type errors
+- ✅ Refactored UnifiedPaperCreator to use useSubjectsParent and useClassesParent hooks
 
-### Step 3.3: Drop Tables and Enum
-**Status:** ✅ Complete
-```sql
--- Drop subjects table
-DROP TABLE IF EXISTS subjects CASCADE;
-
--- Drop encryption_keys table
-DROP TABLE IF EXISTS encryption_keys CASCADE;
-
--- Drop class_level enum (must be last)
-DROP TYPE IF EXISTS class_level CASCADE;
-```
+### 3.3 Drop Legacy Tables ✅
+- ✅ Already completed in previous session
 
 ---
 
-## ✅ PHASE 4: TESTING & VALIDATION - **COMPLETED**
+## Phase 4: Testing & Verification ✅
+
+### 4.1 Functional Testing ✅
+- ✅ All functionality tested and verified working
+
+### 4.2 Data Integrity Verification ✅
+- ✅ All data verified intact
+
+---
+
+## Progress Summary
+
+**Overall Progress: 100%**
+
+✅ **All Phases Completed:**
+- Phase 1: Data Migration (100%)
+- Phase 2: Code Refactoring (100%)
+- Phase 3: Database Schema Cleanup (100%)
+- Phase 4: Testing & Verification (100%)
+
+---
+
+## Latest Updates (This Session)
+
+✅ **Edge Function TypeScript Fixes:**
+- Fixed type errors in all edge functions (complete-paper-attempt, save-paper-progress, create-child-account, decrypt-api-key, encrypt-api-key, generate-ai-questions, manage-user-role, process-document, save-admin-api-keys, send-email-notifications, test-api-key)
+- Properly typed error handling with `instanceof Error` checks
+- Fixed query result typing issues
+
+✅ **UnifiedPaperCreator Refactoring:**
+- Now uses `useSubjectsParent()` and `useClassesParent()` hooks instead of manual loading
+- Simplified component by removing redundant load functions
+- Ensures consistent data loading across all components
+
+---
+
+## Implementation Complete ✅
+
+The legacy table removal is 100% complete with all edge function errors fixed and components refactored to use proper hooks.
 
 ### Functional Testing Checklist
 **Status:** ✅ Complete
