@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { UnifiedPaperCreator } from './UnifiedPaperCreator';
 import { useToast } from '@/hooks/use-toast';
-import { Edit, Trash2, Users, Clock, Calendar, FileText, FilePlus, ArrowLeft, Undo2 } from 'lucide-react';
+import { Edit, Trash2, Users, Clock, Calendar, FileText, FilePlus, ArrowLeft, Undo2, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 type ViewState = 'prepare' | 'previous' | 'edit';
@@ -145,6 +145,147 @@ export const PapersManager: React.FC = () => {
     } catch (error: any) {
       toast({
         title: "Restore failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePrint = async (paper: any) => {
+    try {
+      // Fetch questions for this paper
+      const { data: paperQuestions, error } = await supabase
+        .from('question_paper_questions')
+        .select(`
+          question_order,
+          questions (
+            question_text,
+            option_a,
+            option_b,
+            option_c,
+            option_d,
+            correct_answer,
+            difficulty,
+            topic
+          )
+        `)
+        .eq('question_paper_id', paper.id)
+        .order('question_order');
+
+      if (error) throw error;
+
+      // Create print window content
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({
+          title: "Print blocked",
+          description: "Please allow pop-ups to print the paper.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${paper.title}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 40px;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 20px;
+            }
+            .title {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 10px;
+            }
+            .info {
+              font-size: 14px;
+              color: #666;
+              margin: 5px 0;
+            }
+            .question {
+              margin-bottom: 30px;
+              page-break-inside: avoid;
+            }
+            .question-number {
+              font-weight: bold;
+              font-size: 16px;
+              margin-bottom: 10px;
+            }
+            .question-text {
+              margin-bottom: 15px;
+              line-height: 1.6;
+            }
+            .options {
+              margin-left: 20px;
+            }
+            .option {
+              margin: 8px 0;
+              line-height: 1.5;
+            }
+            .metadata {
+              font-size: 12px;
+              color: #888;
+              margin-top: 10px;
+            }
+            @media print {
+              body {
+                padding: 20px;
+              }
+              .question {
+                page-break-inside: avoid;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">${paper.title}</div>
+            <div class="info">Subject: ${paper.subjects_parent?.subject_name || 'N/A'} | Class: ${paper.classes_parent?.class_name || 'N/A'}</div>
+            <div class="info">Total Questions: ${paper.total_questions} | Duration: ${paper.time_limit_minutes} minutes</div>
+            <div class="info">Max Attempts: ${paper.max_attempts || 1}</div>
+          </div>
+          
+          ${paperQuestions?.map((pq: any, index: number) => {
+            const q = pq.questions;
+            return `
+              <div class="question">
+                <div class="question-number">Question ${index + 1}</div>
+                <div class="question-text">${q.question_text}</div>
+                <div class="options">
+                  <div class="option">A) ${q.option_a}</div>
+                  <div class="option">B) ${q.option_b}</div>
+                  <div class="option">C) ${q.option_c}</div>
+                  <div class="option">D) ${q.option_d}</div>
+                </div>
+                ${q.topic ? `<div class="metadata">Topic: ${q.topic} | Difficulty: ${q.difficulty}</div>` : ''}
+              </div>
+            `;
+          }).join('') || '<p>No questions found</p>'}
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    } catch (error: any) {
+      toast({
+        title: "Print failed",
         description: error.message,
         variant: "destructive",
       });
@@ -292,6 +433,16 @@ export const PapersManager: React.FC = () => {
                       >
                         <Edit className="h-4 w-4" />
                         Edit
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePrint(paper)}
+                        className="flex items-center gap-2"
+                      >
+                        <Printer className="h-4 w-4" />
+                        Print
                       </Button>
                       
                       <AlertDialog>
