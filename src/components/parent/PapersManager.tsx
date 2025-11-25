@@ -214,29 +214,30 @@ export const PapersManager: React.FC = () => {
               margin: 5px 0;
             }
             .question {
-              margin-bottom: 30px;
+              margin-bottom: 25px;
               page-break-inside: avoid;
+            }
+            .question-text {
+              margin-bottom: 12px;
+              line-height: 1.6;
             }
             .question-number {
               font-weight: bold;
-              font-size: 16px;
-              margin-bottom: 10px;
-            }
-            .question-text {
-              margin-bottom: 15px;
-              line-height: 1.6;
+              margin-right: 8px;
+              display: inline;
             }
             .options {
-              margin-left: 20px;
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px 20px;
+              margin-top: 10px;
             }
             .option {
-              margin: 8px 0;
+              padding: 8px 12px;
+              border: 1px solid #ddd;
+              border-radius: 4px;
               line-height: 1.5;
-            }
-            .metadata {
-              font-size: 12px;
-              color: #888;
-              margin-top: 10px;
+              background: #fafafa;
             }
             @media print {
               body {
@@ -260,8 +261,10 @@ export const PapersManager: React.FC = () => {
             const q = pq.questions;
             return `
               <div class="question">
-                <div class="question-number">Question ${index + 1}</div>
-                <div class="question-text">${q.question_text}</div>
+                <div class="question-text">
+                  <span class="question-number">Q${index + 1}.</span>
+                  ${q.question_text}
+                </div>
                 <div class="options">
                   <div class="option">A) ${q.option_a}</div>
                   <div class="option">B) ${q.option_b}</div>
