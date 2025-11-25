@@ -268,7 +268,6 @@ export const PapersManager: React.FC = () => {
                   <div class="option">C) ${q.option_c}</div>
                   <div class="option">D) ${q.option_d}</div>
                 </div>
-                ${q.topic ? `<div class="metadata">Topic: ${q.topic} | Difficulty: ${q.difficulty}</div>` : ''}
               </div>
             `;
           }).join('') || '<p>No questions found</p>'}
