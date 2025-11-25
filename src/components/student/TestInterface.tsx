@@ -469,6 +469,17 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
           return;
         }
         
+        // Get the paper's show_results setting
+        const { data: paperData, error: paperError } = await supabase
+          .from('question_papers')
+          .select('show_results')
+          .eq('id', test.id)
+          .single();
+        
+        if (paperError) {
+          console.error('Error fetching paper settings:', paperError);
+        }
+        
         const { data: newAttempt, error: attemptError } = await supabase
           .from('paper_attempts')
           .insert({
@@ -478,7 +489,8 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
             started_at: startTime.toISOString(),
             current_question_index: 0,
             progress_percentage: 0,
-            time_remaining: (test.time_limit_minutes || 60) * 60
+            time_remaining: (test.time_limit_minutes || 60) * 60,
+            show_results: paperData?.show_results || false
           })
           .select()
           .single();
