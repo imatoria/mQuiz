@@ -237,7 +237,6 @@ export const PapersManager: React.FC = () => {
               border: 1px solid #ddd;
               border-radius: 4px;
               line-height: 1.5;
-              background: #fafafa;
             }
             @media print {
               body {
@@ -254,7 +253,6 @@ export const PapersManager: React.FC = () => {
             <div class="title">${paper.title}</div>
             <div class="info">Subject: ${paper.subjects_parent?.subject_name || 'N/A'} | Class: ${paper.classes_parent?.class_name || 'N/A'}</div>
             <div class="info">Total Questions: ${paper.total_questions} | Duration: ${paper.time_limit_minutes} minutes</div>
-            <div class="info">Max Attempts: ${paper.max_attempts || 1}</div>
           </div>
           
           ${paperQuestions?.map((pq: any, index: number) => {
