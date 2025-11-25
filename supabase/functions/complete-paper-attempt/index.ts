@@ -89,7 +89,17 @@ serve(async (req) => {
       );
     }
 
-    // Get questions to calculate score
+    // Get paper settings and questions to calculate score
+    const { data: paperData, error: paperError } = await supabase
+      .from('question_papers')
+      .select('show_results')
+      .eq('id', paperId)
+      .single();
+
+    if (paperError) {
+      console.error('Error fetching paper settings:', paperError);
+    }
+
     const { data: questionsData, error: questionsError } = await supabase
       .from('question_paper_questions')
       .select(`
@@ -150,7 +160,8 @@ serve(async (req) => {
       progress_percentage: progressPercentage || 0,
       time_remaining: Math.max(0, timeRemaining || 0),
       last_activity_at: currentTime.toISOString(),
-      is_paused: false
+      is_paused: false,
+      show_results: paperData?.show_results || false
     };
 
     // Update paper attempt
