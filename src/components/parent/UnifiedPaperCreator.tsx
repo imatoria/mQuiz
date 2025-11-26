@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -963,22 +964,41 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                         <p className="text-sm text-muted-foreground">
                           {selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''} selected
                         </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedQuestions([]);
-                            setFormData(prev => ({ ...prev, selected_questions: [] }));
-                            toast({
-                              title: "Questions Cleared",
-                              description: "All selected questions have been removed"
-                            });
-                          }}
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Clear All
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Clear All
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Clear All Selected Questions?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will remove all {selectedQuestions.length} selected question{selectedQuestions.length !== 1 ? 's' : ''} from the paper. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  setSelectedQuestions([]);
+                                  setFormData(prev => ({ ...prev, selected_questions: [] }));
+                                  toast({
+                                    title: "Questions Cleared",
+                                    description: "All selected questions have been removed"
+                                  });
+                                }}
+                              >
+                                Clear All
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                       <div className="border rounded-lg">
                         <Table>
