@@ -249,7 +249,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
   React.useEffect(() => {
     applyQuestionFilters();
-  }, [questions, questionFilters]);
+  }, [questions, questionFilters, formData.selected_questions]);
 
   const loadChildren = async () => {
     if (!user?.id) {
@@ -382,6 +382,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
   const applyQuestionFilters = () => {
     let filtered = [...questions];
+    
+    // Filter out already selected questions
+    if (formData.selected_questions && formData.selected_questions.length > 0) {
+      filtered = filtered.filter(q => !formData.selected_questions?.includes(q.id));
+    }
     
     if (questionFilters.search) {
       filtered = filtered.filter(q => 
