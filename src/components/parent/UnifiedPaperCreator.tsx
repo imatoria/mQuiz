@@ -958,7 +958,29 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                       </p>
                     </div>
                   ) : (
-                    <div className="border rounded-lg">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground">
+                          {selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''} selected
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedQuestions([]);
+                            setFormData(prev => ({ ...prev, selected_questions: [] }));
+                            toast({
+                              title: "Questions Cleared",
+                              description: "All selected questions have been removed"
+                            });
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Clear All
+                        </Button>
+                      </div>
+                      <div className="border rounded-lg">
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -1017,7 +1039,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                             );
                           })}
                         </TableBody>
-                      </Table>
+                       </Table>
+                      </div>
                       {selectedQuestions.some(q => {
                         const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(q.difficulty);
                         return !matchesDifficulty;
