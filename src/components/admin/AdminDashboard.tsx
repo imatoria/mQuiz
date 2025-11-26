@@ -108,7 +108,7 @@ export const AdminDashboard = () => {
               })()}
             </div>
             
-            <div className="min-h-screen bg-gradient-subtle">
+            <div className="min-h-screen bg-background">
               <div className="p-3 sm:p-4 md:p-6 space-y-6">
               {/* Quick Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

@@ -70,7 +70,7 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-black/70 backdrop-blur-lg border-b border-white/20 dark:border-white/10 shadow-sm transition-all duration-300">
       <div className="flex justify-between items-center h-14 md:h-16">
         {/* Logo and Sidebar Trigger Container */}
         <div className="flex items-center justify-between pl-2 sm:pl-4 md:w-64 md:pl-4">

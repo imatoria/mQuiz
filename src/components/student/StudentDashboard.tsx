@@ -417,7 +417,7 @@ export const StudentDashboard = () => {
             })()}
           </div>
           
-          <div className="min-h-screen bg-gradient-subtle">
+          <div className="min-h-screen bg-background">
             <div className="p-3 sm:p-4 md:p-6">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
               <TabsContent value="tests" className="space-y-6">
