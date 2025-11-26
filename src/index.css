@@ -118,3 +118,7 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600;
   }
 }
+
+#lovable-badge {
+  display: none;
+}
