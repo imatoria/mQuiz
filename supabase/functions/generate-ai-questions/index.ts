@@ -211,15 +211,13 @@ serve(async (req) => {
         }
 
         const pageContent = pageData.content;
-        const questionsForThisPage = Math.floor(config.question_count / config.selected_pages.length);
+        const minQuestions = config.min_questions_per_page || 3;
+        const maxQuestions = config.max_questions_per_page || 10;
 
         // Build the difficulty instruction
         let difficultyInstruction = '';
         if (config.difficulty === 'mixed') {
-          const easy = Math.ceil(questionsForThisPage * 0.4);
-          const medium = Math.ceil(questionsForThisPage * 0.4);
-          const difficult = questionsForThisPage - easy - medium;
-          difficultyInstruction = `Mix difficulty levels: ${easy} easy, ${medium} medium, ${difficult} difficult questions.`;
+          difficultyInstruction = `Mix difficulty levels appropriately based on the content complexity.`;
         } else {
           difficultyInstruction = `All questions should be ${config.difficulty} difficulty level.`;
         }
@@ -242,7 +240,7 @@ serve(async (req) => {
         }
 
         // Create the prompt for this specific page
-        const prompt = `Generate ${questionsForThisPage} educational questions for ${className} level students.
+        const prompt = `Generate educational questions for ${className} level students based on the page content below.
 
 Document: "${documentTitle}"
 Page Number: ${pageNumber}
@@ -252,6 +250,10 @@ Page Content:
 ${pageContent}
 
 Requirements:
+- Generate between ${minQuestions} and ${maxQuestions} questions for this page
+- Decide the number of questions based on the content richness and complexity of the page
+- If the page has limited content, generate fewer questions (closer to ${minQuestions})
+- If the page has rich, detailed content, generate more questions (closer to ${maxQuestions})
 - ${difficultyInstruction}
 - ${typeInstruction}
 - Questions should be appropriate for ${className} students

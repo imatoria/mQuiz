@@ -71,7 +71,8 @@ export const AIQuestionGenerator = () => {
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [mode, setMode] = useState<'book' | 'independent'>('book');
-  const [questionsPerPage, setQuestionsPerPage] = useState(5);
+  const [minQuestionsPerPage, setMinQuestionsPerPage] = useState(3);
+  const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState(10);
 
   
 
@@ -196,11 +197,20 @@ export const AIQuestionGenerator = () => {
 
     try {
       const questionCount = mode === 'book'
-        ? Math.max(1, questionsPerPage) * selectedPages.length
+        ? Math.max(1, maxQuestionsPerPage) * selectedPages.length
         : config.question_count;
 
       const payload = {
-        config: { ...config, selected_pages: selectedPages, question_count: questionCount, ...(mode === 'book' ? { topic: config.topic || '' } : {}) },
+        config: { 
+          ...config, 
+          selected_pages: selectedPages, 
+          question_count: questionCount, 
+          ...(mode === 'book' ? { 
+            topic: config.topic || '',
+            min_questions_per_page: minQuestionsPerPage,
+            max_questions_per_page: maxQuestionsPerPage
+          } : {}) 
+        },
         mode,
       };
 
@@ -395,16 +405,34 @@ export const AIQuestionGenerator = () => {
           {mode === 'book' && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="questionsPerPage">Number of Questions per Page</Label>
+                <Label htmlFor="minQuestionsPerPage">Minimum Questions per Page</Label>
                 <Select 
-                  value={questionsPerPage.toString()} 
-                  onValueChange={(value) => setQuestionsPerPage(parseInt(value))}
+                  value={minQuestionsPerPage.toString()} 
+                  onValueChange={(value) => setMinQuestionsPerPage(parseInt(value))}
                 >
-                  <SelectTrigger id="questionsPerPage">
+                  <SelectTrigger id="minQuestionsPerPage">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 5, 10, 15, 20].map((count) => (
+                    {[1, 2, 3, 5, 8, 10].map((count) => (
+                      <SelectItem key={count} value={count.toString()}>
+                        {count} {count === 1 ? 'question' : 'questions'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maxQuestionsPerPage">Maximum Questions per Page</Label>
+                <Select 
+                  value={maxQuestionsPerPage.toString()} 
+                  onValueChange={(value) => setMaxQuestionsPerPage(parseInt(value))}
+                >
+                  <SelectTrigger id="maxQuestionsPerPage">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 15, 20, 25, 30].map((count) => (
                       <SelectItem key={count} value={count.toString()}>
                         {count} {count === 1 ? 'question' : 'questions'}
                       </SelectItem>
