@@ -528,7 +528,7 @@ const StudentDashboardContent = () => {
                               <div className="flex-shrink-0 w-auto">
                                 <Button 
                                   onClick={() => resumeTest(test)}
-                                  className="w-full sm:w-auto bg-quiz hover:bg-quiz/90"
+                                  className="w-full sm:w-auto bg-quiz text-quiz-foreground hover:bg-quiz/90"
                                   size="sm"
                                 >
                                   Resume Test
@@ -644,7 +644,7 @@ const StudentDashboardContent = () => {
                               disabled={status !== 'active' || attemptsLeft === 0}
                               className={cn(
                                 'w-full sm:w-auto',
-                                status === 'active' ? 'bg-quiz hover:bg-quiz/90' : ''
+                                status === 'active' ? 'bg-quiz text-quiz-foreground hover:bg-quiz/90' : ''
                               )}
                               size="sm"
                             >

@@ -150,13 +150,6 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   const validateTestTimeLimit = useCallback(async (attemptData: any) => {
     const now = new Date();
     const testEndTime = new Date(test.end_time);
-    const attemptStartTime = new Date(attemptData.started_at);
-    
-    // Calculate individual attempt time limit
-    const totalMinutes = test.question_papers?.time_limit_minutes || 
-                        (test.time_limit_hours || 1) * 60 + (test.time_limit_minutes || 0);
-    const timeLimitMs = totalMinutes * 60000;
-    const attemptEndTime = new Date(attemptStartTime.getTime() + timeLimitMs);
     
     // Check if test window has expired
     if (now > testEndTime) {
@@ -169,22 +162,48 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       return false;
     }
     
-    // Check if individual attempt time has expired
-    if (now > attemptEndTime) {
-      toast({
-        title: "Attempt Time Expired",
-        description: "Your individual attempt time has expired. The test will be auto-submitted.",
-        variant: "destructive"
-      });
-      // Auto-submit the expired attempt
-      await handleSubmit('auto', 'Individual attempt time limit exceeded', true);
-      return false;
+    // For resumed attempts, use stored time_remaining if available
+    if (attemptData.time_remaining !== null && attemptData.time_remaining !== undefined) {
+      const remainingSeconds = Math.max(0, attemptData.time_remaining);
+      
+      // Check if stored time has expired
+      if (remainingSeconds <= 0) {
+        toast({
+          title: "Attempt Time Expired",
+          description: "Your individual attempt time has expired. The test will be auto-submitted.",
+          variant: "destructive"
+        });
+        // Auto-submit the expired attempt
+        await handleSubmit('auto', 'Individual attempt time limit exceeded', true);
+        return false;
+      }
+      
+      setTimeLeft(remainingSeconds);
+    } else {
+      // For new attempts, calculate from start time
+      const attemptStartTime = new Date(attemptData.started_at);
+      const totalMinutes = test.question_papers?.time_limit_minutes || 
+                          (test.time_limit_hours || 1) * 60 + (test.time_limit_minutes || 0);
+      const timeLimitMs = totalMinutes * 60000;
+      const attemptEndTime = new Date(attemptStartTime.getTime() + timeLimitMs);
+      
+      // Check if individual attempt time has expired
+      if (now > attemptEndTime) {
+        toast({
+          title: "Attempt Time Expired",
+          description: "Your individual attempt time has expired. The test will be auto-submitted.",
+          variant: "destructive"
+        });
+        // Auto-submit the expired attempt
+        await handleSubmit('auto', 'Individual attempt time limit exceeded', true);
+        return false;
+      }
+      
+      // Update time left based on remaining attempt time
+      const remainingMs = attemptEndTime.getTime() - now.getTime();
+      const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+      setTimeLeft(remainingSeconds);
     }
-    
-    // Update time left based on remaining attempt time
-    const remainingMs = attemptEndTime.getTime() - now.getTime();
-    const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
-    setTimeLeft(remainingSeconds);
     
     return true;
   }, [test, onComplete, toast]);
