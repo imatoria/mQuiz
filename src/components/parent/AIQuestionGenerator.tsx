@@ -406,39 +406,27 @@ export const AIQuestionGenerator = () => {
             <>
               <div className="space-y-2">
                 <Label htmlFor="minQuestionsPerPage">Minimum Questions per Page</Label>
-                <Select 
-                  value={minQuestionsPerPage.toString()} 
-                  onValueChange={(value) => setMinQuestionsPerPage(parseInt(value))}
-                >
-                  <SelectTrigger id="minQuestionsPerPage">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 5, 8, 10].map((count) => (
-                      <SelectItem key={count} value={count.toString()}>
-                        {count} {count === 1 ? 'question' : 'questions'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="minQuestionsPerPage"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={minQuestionsPerPage}
+                  onChange={(e) => setMinQuestionsPerPage(Math.max(1, parseInt(e.target.value) || 1))}
+                  placeholder="e.g., 3"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="maxQuestionsPerPage">Maximum Questions per Page</Label>
-                <Select 
-                  value={maxQuestionsPerPage.toString()} 
-                  onValueChange={(value) => setMaxQuestionsPerPage(parseInt(value))}
-                >
-                  <SelectTrigger id="maxQuestionsPerPage">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[5, 10, 15, 20, 25, 30].map((count) => (
-                      <SelectItem key={count} value={count.toString()}>
-                        {count} {count === 1 ? 'question' : 'questions'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="maxQuestionsPerPage"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={maxQuestionsPerPage}
+                  onChange={(e) => setMaxQuestionsPerPage(Math.max(1, parseInt(e.target.value) || 1))}
+                  placeholder="e.g., 10"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Select Pages</Label>

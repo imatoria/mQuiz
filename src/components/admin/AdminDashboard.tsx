@@ -25,14 +25,15 @@ import {
   Clock
 } from 'lucide-react';
 import { ProfileManagement } from '@/components/profile/ProfileManagement';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarHeader, SidebarSeparator, SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarHeader, SidebarSeparator, SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { SiteLogo } from '@/components/ui/site-logo';
 import { useAuth } from '@/hooks/useAuth';
 
-export const AdminDashboard = () => {
+const AdminDashboardContent = () => {
   const { tab, subtab } = useParams();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
   
   const menuItems = [
     { value: 'approvals', label: 'Approvals', icon: Clock },
@@ -61,163 +62,77 @@ export const AdminDashboard = () => {
 
   const handleTabChange = (value: string) => {
     navigate(`/admin/${value}`);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   return (
+    <ErrorBoundary>
+      <Navigation 
+        currentRole={profile?.role || null} 
+        onRoleChange={() => signOut()}
+      />
+      <div className="flex w-full pt-[57px] md:pt-[64px]">
+        <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
+          <SidebarContent className="h-full overflow-y-auto">
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.map((item) => (
+                    <SidebarMenuItem key={item.value}>
+                      <SidebarMenuButton
+                        isActive={activeTab === item.value}
+                        onClick={() => handleTabChange(item.value)}
+                        tooltip={item.label}
+                        className="text-base md:text-sm"
+                      >
+                        <item.icon className="w-5 h-5 md:w-4 md:h-4" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+
+        <SidebarInset>
+          {/* Mobile Tab Header */}
+          <div className="md:hidden bg-card border-b p-4 flex items-center space-x-3">
+            {activeTab && (() => {
+              const item = menuItems.find(m => m.value === activeTab);
+              if (!item) return null;
+              return (
+                <>
+                  <item.icon className="w-5 h-5 text-muted-foreground" />
+                  <h1 className="text-lg font-semibold">{item.label}</h1>
+                </>
+              );
+            })()}
+          </div>
+
+          <main className="flex-1 p-6 md:p-8 overflow-auto max-w-screen-2xl mx-auto">
+            {activeTab === 'approvals' && <ApprovalWorkflow />}
+            {activeTab === 'users' && <UserManagement />}
+            {activeTab === 'security' && <SecurityDashboard />}
+            {activeTab === 'analytics' && <SystemAnalytics />}
+            {activeTab === 'moderation' && <ContentModeration />}
+            {activeTab === 'ai-config' && <AdminAIProviderConfig />}
+            {activeTab === 'settings' && <SystemSettings />}
+            {activeTab === 'profile' && <ProfileManagement />}
+          </main>
+        </SidebarInset>
+      </div>
+    </ErrorBoundary>
+  );
+};
+
+export const AdminDashboard = () => {
+  return (
     <SidebarProvider>
-      <ErrorBoundary>
-        <Navigation 
-          currentRole={profile?.role || null} 
-          onRoleChange={() => signOut()}
-        />
-        <div className="flex w-full pt-[57px] md:pt-[64px]">
-          <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
-            <SidebarContent className="h-full overflow-y-auto">
-              <SidebarGroup>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {menuItems.map((item) => (
-                      <SidebarMenuItem key={item.value}>
-                        <SidebarMenuButton
-                          isActive={activeTab === item.value}
-                          onClick={() => handleTabChange(item.value)}
-                          tooltip={item.label}
-                        >
-                          <item.icon className="w-4 h-4" />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </SidebarContent>
-          </Sidebar>
-
-          <SidebarInset>
-            {/* Mobile Tab Header */}
-            <div className="md:hidden bg-card border-b p-4 flex items-center space-x-3">
-              {activeTab && (() => {
-                const item = menuItems.find(i => i.value === activeTab);
-                return item ? (
-                  <>
-                    <item.icon className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-lg font-medium text-foreground">{item.label}</span>
-                  </>
-                ) : null;
-              })()}
-            </div>
-            
-            <div className="min-h-screen bg-background">
-              <div className="p-3 sm:p-4 md:p-6 space-y-6">
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-                    <Clock className="h-4 w-4 text-amber-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-amber-600">8</div>
-                    <p className="text-xs text-muted-foreground">Users awaiting approval</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">System Health</CardTitle>
-                    <Activity className="h-4 w-4 text-green-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">98%</div>
-                    <p className="text-xs text-muted-foreground">All services operational</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Content Review</CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-orange-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-orange-600">3</div>
-                    <p className="text-xs text-muted-foreground">Items need moderation</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">AI Providers</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-blue-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">4</div>
-                    <p className="text-xs text-muted-foreground">Active AI services</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Content Sections */}
-              <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-                <TabsContent value="approvals">
-                  <ErrorBoundary>
-                    <ApprovalWorkflow />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="users">
-                  <ErrorBoundary>
-                    <UserManagement />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="security">
-                  <ErrorBoundary>
-                    <SecurityDashboard />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="analytics">
-                  <ErrorBoundary>
-                    <SystemAnalytics />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="moderation">
-                  <ErrorBoundary>
-                    <ContentModeration />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="ai-config">
-                  <ErrorBoundary>
-                    <AdminAIProviderConfig />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="settings">
-                  <ErrorBoundary>
-                    <SystemSettings />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="profile">
-                  <ErrorBoundary>
-                    <div className="mb-6">
-                      <h2 className="text-2xl md:text-3xl font-bold text-foreground">Profile Management</h2>
-                      <p className="text-sm md:text-base text-muted-foreground mt-1">
-                        Manage your account settings and personal information
-                      </p>
-                    </div>
-                    <ProfileManagement />
-                  </ErrorBoundary>
-                </TabsContent>
-              </Tabs>
-              </div>
-            </div>
-          </SidebarInset>
-        </div>
-      </ErrorBoundary>
+      <AdminDashboardContent />
     </SidebarProvider>
   );
 };

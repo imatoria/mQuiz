@@ -27,13 +27,14 @@ import {
 import { ProfileManagement } from '@/components/profile/ProfileManagement';
 
 import { PapersManager } from './PapersManager';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 
-export const ParentDashboard = () => {
+const ParentDashboardContent = () => {
   const { tab, subtab } = useParams();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const menuItems = [
     { value: 'children', label: 'Children', icon: Users },
@@ -64,128 +65,138 @@ export const ParentDashboard = () => {
 
   const handleTabChange = (value: string) => {
     navigate(`/parent/${value}`);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   return (
+    <ErrorBoundary>
+      <Navigation 
+        currentRole={profile?.role || null} 
+        onRoleChange={() => signOut()}
+      />
+      <div className="flex w-full pt-[57px] md:pt-[64px]">
+        <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
+          <SidebarContent className="h-full overflow-y-auto">
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.map((item) => (
+                    <SidebarMenuItem key={item.value}>
+                      <SidebarMenuButton
+                        isActive={activeTab === item.value}
+                        onClick={() => handleTabChange(item.value)}
+                        tooltip={item.label}
+                        className="text-base md:text-sm"
+                      >
+                        <item.icon className="w-5 h-5 md:w-4 md:h-4" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+
+        <SidebarInset>
+          {/* Mobile Tab Header */}
+          <div className="md:hidden bg-card border-b p-4 flex items-center space-x-3">
+            {activeTab && (() => {
+              const item = menuItems.find(i => i.value === activeTab);
+              return item ? (
+                <>
+                  <item.icon className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-lg font-medium text-foreground">{item.label}</span>
+                </>
+              ) : null;
+            })()}
+          </div>
+          
+          <div className="min-h-screen bg-background">
+            <div className="p-3 sm:p-4 md:p-6">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+              {/* Content sections */}
+              <TabsContent value="children">
+                <ErrorBoundary>
+                  <ChildrenManagement />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="content">
+                <ErrorBoundary>
+                  <ContentCreation />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="questions">
+                <ErrorBoundary>
+                  <QuestionBank />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="papers">
+                <ErrorBoundary>
+                  <PapersManager />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="ai-settings">
+                <ErrorBoundary>
+                  <AIProviderSettings />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="communications">
+                <ErrorBoundary>
+                  <CommunicationHub />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="approval">
+                <ErrorBoundary>
+                  <ResultApproval />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="analytics">
+                <ErrorBoundary>
+                  <QuestionAnalytics />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="reports">
+                <ErrorBoundary>
+                  <ReportingDashboard />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="profile">
+                <ErrorBoundary>
+                  <div className="mb-6">
+                    <h2 className="text-2xl md:text-3xl font-bold text-foreground">Profile Management</h2>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1">
+                      Manage your account settings and personal information
+                    </p>
+                  </div>
+                  <ProfileManagement />
+                </ErrorBoundary>
+              </TabsContent>
+            </Tabs>
+            </div>
+          </div>
+        </SidebarInset>
+      </div>
+    </ErrorBoundary>
+  );
+};
+
+export const ParentDashboard = () => {
+  return (
     <SidebarProvider>
-      <ErrorBoundary>
-        <Navigation 
-          currentRole={profile?.role || null} 
-          onRoleChange={() => signOut()}
-        />
-        <div className="flex w-full pt-[57px] md:pt-[64px]">
-          <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
-            <SidebarContent className="h-full overflow-y-auto">
-              <SidebarGroup>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {menuItems.map((item) => (
-                      <SidebarMenuItem key={item.value}>
-                        <SidebarMenuButton
-                          isActive={activeTab === item.value}
-                          onClick={() => handleTabChange(item.value)}
-                          tooltip={item.label}
-                        >
-                          <item.icon className="w-4 h-4" />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </SidebarContent>
-          </Sidebar>
-
-          <SidebarInset>
-            {/* Mobile Tab Header */}
-            <div className="md:hidden bg-card border-b p-4 flex items-center space-x-3">
-              {activeTab && (() => {
-                const item = menuItems.find(i => i.value === activeTab);
-                return item ? (
-                  <>
-                    <item.icon className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-lg font-medium text-foreground">{item.label}</span>
-                  </>
-                ) : null;
-              })()}
-            </div>
-            
-            <div className="min-h-screen bg-background">
-              <div className="p-3 sm:p-4 md:p-6">
-              <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-                {/* Content sections */}
-                <TabsContent value="children">
-                  <ErrorBoundary>
-                    <ChildrenManagement />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="content">
-                  <ErrorBoundary>
-                    <ContentCreation />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="questions">
-                  <ErrorBoundary>
-                    <QuestionBank />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="papers">
-                  <ErrorBoundary>
-                    <PapersManager />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="ai-settings">
-                  <ErrorBoundary>
-                    <AIProviderSettings />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="communications">
-                  <ErrorBoundary>
-                    <CommunicationHub />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="approval">
-                  <ErrorBoundary>
-                    <ResultApproval />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="analytics">
-                  <ErrorBoundary>
-                    <QuestionAnalytics />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="reports">
-                  <ErrorBoundary>
-                    <ReportingDashboard />
-                  </ErrorBoundary>
-                </TabsContent>
-
-                <TabsContent value="profile">
-                  <ErrorBoundary>
-                    <div className="mb-6">
-                      <h2 className="text-2xl md:text-3xl font-bold text-foreground">Profile Management</h2>
-                      <p className="text-sm md:text-base text-muted-foreground mt-1">
-                        Manage your account settings and personal information
-                      </p>
-                    </div>
-                    <ProfileManagement />
-                  </ErrorBoundary>
-                </TabsContent>
-              </Tabs>
-              </div>
-            </div>
-          </SidebarInset>
-        </div>
-      </ErrorBoundary>
+      <ParentDashboardContent />
     </SidebarProvider>
   );
 };

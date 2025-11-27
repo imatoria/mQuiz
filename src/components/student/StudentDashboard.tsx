@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { Navigation } from '@/components/ui/navigation';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
@@ -60,7 +60,7 @@ interface PaperAttempt {
   show_results?: boolean;
 }
 
-export const StudentDashboard = () => {
+const StudentDashboardContent = () => {
   const { tab, subtab } = useParams();
   const navigate = useNavigate();
   const [availableTests, setAvailableTests] = useState<ScheduledPaper[]>([]);
@@ -73,6 +73,7 @@ export const StudentDashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
+  const { isMobile, setOpenMobile } = useSidebar();
   
   const menuItems = [
     { value: 'tests', label: 'Tests', icon: PlayCircle },
@@ -97,6 +98,9 @@ export const StudentDashboard = () => {
 
   const handleTabChange = (value: string) => {
     navigate(`/student/${value}`);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
   
   const { loading, error, execute: executeAsync } = useAsyncOperation({
@@ -374,7 +378,7 @@ export const StudentDashboard = () => {
   }
 
   return (
-    <SidebarProvider>
+    <>
       <Navigation 
         currentRole={profile?.role || null} 
         onRoleChange={() => signOut()}
@@ -391,8 +395,9 @@ export const StudentDashboard = () => {
                       isActive={activeTab === item.value}
                       onClick={() => handleTabChange(item.value)}
                       tooltip={item.label}
+                      className="text-base md:text-sm"
                     >
-                        <item.icon className="w-4 h-4" />
+                        <item.icon className="w-5 h-5 md:w-4 md:h-4" />
                         <span>{item.label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -679,6 +684,14 @@ export const StudentDashboard = () => {
           />
         )}
       </div>
+    </>
+  );
+};
+
+export const StudentDashboard = () => {
+  return (
+    <SidebarProvider>
+      <StudentDashboardContent />
     </SidebarProvider>
   );
 };
