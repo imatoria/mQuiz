@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SecurityViolation {
   type: 'tab_switch' | 'fullscreen_exit' | 'copy_paste' | 'navigation' | 'multiple_sessions' | 'suspicious_activity';
@@ -28,10 +29,14 @@ export const useTestSecurity = ({
   const [isSecurityActive, setIsSecurityActive] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [navigationBlocked, setNavigationBlocked] = useState(false);
   
   const { toast } = useToast();
+  const location = useLocation();
   const violationCountRef = useRef(0);
   const lastViolationRef = useRef<Date | null>(null);
+  const historyPushedRef = useRef(false);
+  const touchStartXRef = useRef<number | null>(null);
 
   // Log violation to database
   const logViolation = useCallback(async (violation: SecurityViolation) => {
@@ -224,6 +229,81 @@ export const useTestSecurity = ({
     });
   }, [enabled, isSecurityActive, addViolation]);
 
+  // Browser back/forward button and swipe navigation prevention
+  const handlePopState = useCallback((e: PopStateEvent) => {
+    if (!enabled || !isSecurityActive) return;
+
+    // Push state back to prevent navigation
+    window.history.pushState(null, '', window.location.href);
+    
+    setNavigationBlocked(true);
+    
+    addViolation({
+      type: 'navigation',
+      severity: 'high',
+      details: {
+        action: 'browser_back_forward_attempt',
+        gesture: 'swipe_or_button',
+        timestamp: new Date().toISOString()
+      },
+      timestamp: new Date()
+    });
+
+    toast({
+      title: "Navigation Blocked",
+      description: "You cannot navigate away during the test. This has been recorded.",
+      variant: "destructive"
+    });
+  }, [enabled, isSecurityActive, addViolation, toast]);
+
+  // Touch gesture prevention for mobile edge swipes
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    if (!enabled || !isSecurityActive) return;
+    
+    const touch = e.touches[0];
+    touchStartXRef.current = touch.clientX;
+  }, [enabled, isSecurityActive]);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!enabled || !isSecurityActive || touchStartXRef.current === null) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartXRef.current;
+    const screenWidth = window.innerWidth;
+    
+    // Detect edge swipes (started near edge and moved significantly)
+    const startedNearLeftEdge = touchStartXRef.current < 30;
+    const startedNearRightEdge = touchStartXRef.current > screenWidth - 30;
+    const significantSwipe = Math.abs(deltaX) > 50;
+    
+    if ((startedNearLeftEdge || startedNearRightEdge) && significantSwipe) {
+      // Try to prevent the gesture
+      e.preventDefault();
+      
+      addViolation({
+        type: 'navigation',
+        severity: 'medium',
+        details: {
+          action: 'edge_swipe_attempt',
+          direction: deltaX > 0 ? 'right' : 'left',
+          startX: touchStartXRef.current,
+          timestamp: new Date().toISOString()
+        },
+        timestamp: new Date()
+      });
+
+      toast({
+        title: "Swipe Gesture Blocked",
+        description: "Edge swipes are not allowed during the test.",
+        variant: "destructive"
+      });
+    }
+  }, [enabled, isSecurityActive, addViolation, toast]);
+
+  const handleTouchEnd = useCallback(() => {
+    touchStartXRef.current = null;
+  }, []);
+
   // Session management with deduplication
   const createSession = useCallback(async () => {
     if (!testAttemptId || isCreatingSession || sessionId) return;
@@ -302,12 +382,24 @@ export const useTestSecurity = ({
       createSession();
     }
 
+    // Push history state to trap back navigation
+    if (!historyPushedRef.current) {
+      window.history.pushState(null, '', window.location.href);
+      historyPushedRef.current = true;
+    }
+
     // Add event listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    
+    // Touch gesture prevention for mobile
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     // Phase 3: Optimized session monitoring with reduced frequency
     const sessionInterval = setInterval(updateSession, 180000); // 3 minutes
@@ -328,7 +420,11 @@ export const useTestSecurity = ({
     handleFullscreenChange, 
     handleKeyDown, 
     handleContextMenu, 
-    handleBeforeUnload, 
+    handleBeforeUnload,
+    handlePopState,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
     updateSession, 
     checkMultipleSessions
   ]);
@@ -336,6 +432,8 @@ export const useTestSecurity = ({
   // Deactivate security measures  
   const deactivateSecurity = useCallback(() => {
     setIsSecurityActive(false);
+    setNavigationBlocked(false);
+    historyPushedRef.current = false;
     
     // Remove event listeners
     document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -343,6 +441,10 @@ export const useTestSecurity = ({
     document.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('contextmenu', handleContextMenu);
     window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.removeEventListener('popstate', handlePopState);
+    document.removeEventListener('touchstart', handleTouchStart);
+    document.removeEventListener('touchmove', handleTouchMove);
+    document.removeEventListener('touchend', handleTouchEnd);
 
     // Close session
     if (sessionId) {
@@ -356,12 +458,14 @@ export const useTestSecurity = ({
     if (document.exitFullscreen && document.fullscreenElement) {
       document.exitFullscreen();
     }
-  }, [sessionId]); // Remove unstable event handler dependencies
+  }, [sessionId, handlePopState, handleTouchStart, handleTouchMove, handleTouchEnd]); // Remove unstable event handler dependencies
 
   // Cleanup on unmount - use ref to avoid dependency issues
   useEffect(() => {
     const cleanup = () => {
       setIsSecurityActive(false);
+      setNavigationBlocked(false);
+      historyPushedRef.current = false;
       
       // Remove all possible event listeners
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -369,6 +473,10 @@ export const useTestSecurity = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
 
       if (sessionId) {
         supabase
@@ -381,12 +489,21 @@ export const useTestSecurity = ({
     return cleanup;
   }, []); // Empty dependency array to prevent infinite loops
 
+  // Dismiss navigation blocked state after a delay
+  useEffect(() => {
+    if (navigationBlocked) {
+      const timeout = setTimeout(() => setNavigationBlocked(false), 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [navigationBlocked]);
+
   return {
     violations,
     violationCount: violationCountRef.current,
     tabSwitchCount,
     isFullscreen,
     isSecurityActive,
+    navigationBlocked,
     activateSecurity,
     deactivateSecurity,
     enableFullscreen,

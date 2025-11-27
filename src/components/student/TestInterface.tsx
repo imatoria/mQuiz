@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useBlocker } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -100,6 +101,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     violationCount,
     isFullscreen,
     isSecurityActive,
+    navigationBlocked,
     activateSecurity,
     deactivateSecurity,
     enableFullscreen,
@@ -110,6 +112,38 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     onAutoSubmit: handleForceSubmit,
     maxViolations: 3
   });
+
+  // React Router navigation blocker - blocks all in-app navigation during test
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isSecurityActive && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // Handle React Router navigation blocking
+  useEffect(() => {
+    if (blocker.state === "blocked" && isSecurityActive) {
+      addViolation({
+        type: 'navigation',
+        severity: 'high',
+        details: {
+          action: 'router_navigation_attempt',
+          from: blocker.location?.pathname,
+          to: blocker.location?.pathname,
+          timestamp: new Date().toISOString()
+        },
+        timestamp: new Date()
+      });
+      
+      toast({
+        title: "Navigation Blocked",
+        description: "You cannot navigate away during the test. This has been recorded.",
+        variant: "destructive"
+      });
+      
+      // Reset blocker to stay on current page
+      blocker.reset?.();
+    }
+  }, [blocker.state, isSecurityActive, addViolation, toast]);
 
   // Check if test attempt is within time limits
   const validateTestTimeLimit = useCallback(async (attemptData: any) => {
