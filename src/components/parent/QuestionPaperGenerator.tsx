@@ -292,7 +292,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
               value={totalQuestions}
               onChange={(e) => setTotalQuestions(e.target.value)}
               placeholder="e.g., 20"
-              min="1"
+              min="0"
             />
           </div>
 
@@ -317,7 +317,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
               value={minQuestionsPerPage}
               onChange={(e) => setMinQuestionsPerPage(e.target.value)}
               placeholder="e.g., 1"
-              min="1"
+              min="0"
             />
           </div>
 
@@ -329,7 +329,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
               value={maxQuestionsPerPage}
               onChange={(e) => setMaxQuestionsPerPage(e.target.value)}
               placeholder="e.g., 10"
-              min="1"
+              min="0"
             />
           </div>
         </div>

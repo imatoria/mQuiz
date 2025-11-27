@@ -747,8 +747,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
               <Input
                 type="number"
                 value={formData.total_questions}
-                onChange={(e) => setFormData(prev => ({ ...prev, total_questions: parseInt(e.target.value) || 10 }))}
-                min="1"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, total_questions: val === '' ? 0 : (parseInt(val) || 0) }));
+                }}
+                min="0"
                 max="100"
               />
             </div>
@@ -758,8 +761,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
               <Input
                 type="number"
                 value={formData.time_limit_minutes}
-                onChange={(e) => setFormData(prev => ({ ...prev, time_limit_minutes: parseInt(e.target.value) || 60 }))}
-                min="5"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, time_limit_minutes: val === '' ? 0 : (parseInt(val) || 0) }));
+                }}
+                min="0"
                 max="600"
               />
             </div>
@@ -769,8 +775,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
               <Input
                 type="number"
                 value={formData.max_attempts}
-                onChange={(e) => setFormData(prev => ({ ...prev, max_attempts: parseInt(e.target.value) || 1 }))}
-                min="1"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, max_attempts: val === '' ? 0 : (parseInt(val) || 0) }));
+                }}
+                min="0"
                 max="10"
               />
             </div>

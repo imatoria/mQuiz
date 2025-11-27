@@ -409,10 +409,10 @@ export const AIQuestionGenerator = () => {
                 <Input
                   id="minQuestionsPerPage"
                   type="number"
-                  min="1"
+                  min="0"
                   max="50"
                   value={minQuestionsPerPage}
-                  onChange={(e) => setMinQuestionsPerPage(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => setMinQuestionsPerPage(e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))}
                   placeholder="e.g., 3"
                 />
               </div>
@@ -421,10 +421,10 @@ export const AIQuestionGenerator = () => {
                 <Input
                   id="maxQuestionsPerPage"
                   type="number"
-                  min="1"
+                  min="0"
                   max="50"
                   value={maxQuestionsPerPage}
-                  onChange={(e) => setMaxQuestionsPerPage(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => setMaxQuestionsPerPage(e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))}
                   placeholder="e.g., 10"
                 />
               </div>

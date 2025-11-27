@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TableSkeleton } from '@/components/ui/skeleton-loaders';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination } from '@/hooks/usePagination';
 import { supabase } from '@/integrations/supabase/client';
@@ -176,13 +178,7 @@ export const UserManagement = () => {
   });
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center">Loading users...</div>
-        </CardContent>
-      </Card>
-    );
+    return <TableSkeleton rows={10} columns={6} />;
   }
 
   return (

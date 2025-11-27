@@ -9,6 +9,7 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu
 import { Navigation } from '@/components/ui/navigation';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { StatsCardsSkeleton, TestCardSkeleton } from '@/components/ui/skeleton-loaders';
 import { useToast } from '@/hooks/use-toast';
 import { useAsyncOperation } from '@/hooks/useAsyncOperation';
 import { cn } from '@/lib/utils';
@@ -426,8 +427,22 @@ const StudentDashboardContent = () => {
             <div className="p-3 sm:p-4 md:p-6">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
               <TabsContent value="tests" className="space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {loading ? (
+                  <div className="space-y-6">
+                    <StatsCardsSkeleton count={3} />
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Available Tests</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <TestCardSkeleton />
+                        <TestCardSkeleton />
+                        <TestCardSkeleton />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Tests Available</CardTitle>
@@ -563,7 +578,11 @@ const StudentDashboardContent = () => {
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <LoadingState text="Loading tests..." />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TestCardSkeleton />
+                    <TestCardSkeleton />
+                    <TestCardSkeleton />
+                  </div>
                 ) : availableTests.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -642,6 +661,8 @@ const StudentDashboardContent = () => {
               </CardContent>
             </Card>
 
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="results">

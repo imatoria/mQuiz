@@ -229,7 +229,7 @@ export const SystemSettings = () => {
                     id="sessionTimeout"
                     type="number"
                     value={config.sessionTimeout}
-                    onChange={(e) => handleConfigChange('sessionTimeout', parseInt(e.target.value))}
+                    onChange={(e) => handleConfigChange('sessionTimeout', e.target.value === '' ? 0 : parseInt(e.target.value))}
                     className="w-32"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -270,7 +270,7 @@ export const SystemSettings = () => {
                     id="maxFileSize"
                     type="number"
                     value={config.maxFileSize}
-                    onChange={(e) => handleConfigChange('maxFileSize', parseInt(e.target.value))}
+                    onChange={(e) => handleConfigChange('maxFileSize', e.target.value === '' ? 0 : parseInt(e.target.value))}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Maximum file size for page uploads
@@ -283,7 +283,7 @@ export const SystemSettings = () => {
                     id="maxDocumentPages"
                     type="number"
                     value={config.maxDocumentPages}
-                    onChange={(e) => handleConfigChange('maxDocumentPages', parseInt(e.target.value))}
+                    onChange={(e) => handleConfigChange('maxDocumentPages', e.target.value === '' ? 0 : parseInt(e.target.value))}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Maximum pages per upload for processing
@@ -418,7 +418,7 @@ export const SystemSettings = () => {
                       id="rateLimitRequests"
                       type="number"
                       value={config.rateLimitRequests}
-                      onChange={(e) => handleConfigChange('rateLimitRequests', parseInt(e.target.value))}
+                      onChange={(e) => handleConfigChange('rateLimitRequests', e.target.value === '' ? 0 : parseInt(e.target.value))}
                     />
                   </div>
 
@@ -428,7 +428,7 @@ export const SystemSettings = () => {
                       id="rateLimitWindow"
                       type="number"
                       value={config.rateLimitWindow}
-                      onChange={(e) => handleConfigChange('rateLimitWindow', parseInt(e.target.value))}
+                      onChange={(e) => handleConfigChange('rateLimitWindow', e.target.value === '' ? 0 : parseInt(e.target.value))}
                     />
                   </div>
                 </div>

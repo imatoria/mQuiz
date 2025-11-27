@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "@/components/ui/skeleton-loaders";
 import { Search, Edit, Trash2, Plus, Filter, BookOpen, BarChart3, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
@@ -397,7 +399,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading questions...</div>
+            <TableSkeleton rows={10} columns={6} />
           ) : filteredQuestions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No questions found matching your criteria.
