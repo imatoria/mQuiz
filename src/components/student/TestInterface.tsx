@@ -85,6 +85,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { user } = useAuth();
@@ -341,6 +342,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       }
 
       setLastSaved(new Date());
+      setHasUnsavedChanges(false);
 
       // Monitor save performance for grace period warnings
       if (saveResponseTime > 10000 && timeLeft <= 60) {
@@ -835,6 +837,11 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                       <Save className="w-4 h-4 mr-1 animate-spin" />
                       <span className="text-sm">Saving...</span>
                     </div>
+                  ) : hasUnsavedChanges ? (
+                    <div className="flex items-center text-warning animate-pulse">
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      <span className="text-sm font-medium">Unsaved Changes</span>
+                    </div>
                   ) : lastSaved ? (
                     <div className="flex items-center text-success">
                       <Check className="w-4 h-4 mr-1" />
@@ -843,9 +850,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                   ) : null}
                   
                   {/* Network Status */}
-                  {isOnline ? (
-                    <Wifi className="w-4 h-4 text-success" />
-                  ) : (
+                  {!isOnline && (
                     <div className="flex items-center text-destructive">
                       <WifiOff className="w-4 h-4 mr-1" />
                       <span className="text-sm">Offline</span>

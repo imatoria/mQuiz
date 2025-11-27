@@ -174,7 +174,7 @@ const StudentDashboardContent = () => {
           .from('question_papers')
           .select(`
             *,
-            subjects_parent!inner (
+            subjects_parent (
               id,
               subject_name
             )
@@ -507,11 +507,10 @@ const StudentDashboardContent = () => {
                   <div className="space-y-4">
                      {activeTests.map((test) => {
                       const activeAttempt = test.paper_attempts.find(attempt => !attempt.completed_at);
-                      if (!activeAttempt) return null;
-
-                      // For now use placeholder values until database columns are added
-                      const progress = 0; // activeAttempt.progress_percentage || 0;
-                      const currentQuestion = 1; // (activeAttempt.current_question_index || 0) + 1;
+                      
+                      // Use actual values from the attempt
+                      const progress = activeAttempt?.progress_percentage || 0;
+                      const currentQuestion = (activeAttempt?.current_question_index || 0) + 1;
                       const totalQuestions = test.total_questions;
                       const timeRemaining = formatTimeRemaining(test.end_time);
                       
@@ -551,7 +550,7 @@ const StudentDashboardContent = () => {
                                 </span>
                                 <span className="flex items-center">
                                   <User className="w-3 h-3 mr-1" />
-                                  Attempt {activeAttempt.attempt_number}
+                                  Attempt {activeAttempt?.attempt_number || 1}
                                 </span>
                               </div>
                             </div>
