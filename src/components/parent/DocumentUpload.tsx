@@ -40,13 +40,69 @@ export const DocumentUpload = ({
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [loadingPages, setLoadingPages] = useState(false);
+  const [usedPages, setUsedPages] = useState<number[]>([]);
+  const [fetchingUsedPages, setFetchingUsedPages] = useState(false);
   
   // Use child assignments hooks
   const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
   const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
-  // Remove the fetch subjects effect since we're using hooks now
-  // Removed fetchUsedPages - no longer using document_page_selections
-  // Removed page selection logic
+
+  // Fetch already used pages for the selected subject and class
+  React.useEffect(() => {
+    const fetchUsedPages = async () => {
+      if (!subject || !classLevel) {
+        setUsedPages([]);
+        return;
+      }
+
+      try {
+        setFetchingUsedPages(true);
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) {
+          setFetchingUsedPages(false);
+          return;
+        }
+
+        // Get all documents for this user, subject, and class
+        const { data: documents, error: docsError } = await supabase
+          .from('documents')
+          .select('id')
+          .eq('user_id', user.user.id)
+          .eq('subject_parent_id', subject)
+          .eq('class_parent_id', classLevel);
+
+        if (docsError) throw docsError;
+        if (!documents || documents.length === 0) {
+          setUsedPages([]);
+          setFetchingUsedPages(false);
+          return;
+        }
+
+        const docIds = documents.map(d => d.id);
+
+        // Get all page numbers for these documents
+        const { data: pages, error: pagesError } = await supabase
+          .from('document_pages')
+          .select('page_number')
+          .in('document_id', docIds);
+
+        if (pagesError) throw pagesError;
+
+        const used = pages?.map(p => p.page_number) || [];
+        setUsedPages(used);
+
+        // If any currently selected pages are now "used", remove them
+        setSelectedPages(prev => prev.filter(p => !used.includes(p)));
+
+      } catch (err) {
+        console.error('Failed to fetch used pages', err);
+      } finally {
+        setFetchingUsedPages(false);
+      }
+    };
+
+    fetchUsedPages();
+  }, [subject, classLevel]);
   const generateTitleWithPages = () => {
     if (!originalFileName) return '';
     const baseName = originalFileName.replace(/\.pdf$/i, '');
@@ -382,7 +438,7 @@ export const DocumentUpload = ({
         <div>
           <Label>Pages</Label>
           <div className="mt-2">
-            <PaginatedPageMultiSelect label="Select Pages" availablePages={availablePages} selectedPages={selectedPages} onChange={setSelectedPages} disabled={!file || !subject || !classLevel || loadingPages || availablePages.length === 0} disabledPages={[]} maxSelectable={numPages} onLimitExceeded={() => toast({
+            <PaginatedPageMultiSelect label="Select Pages" availablePages={availablePages} selectedPages={selectedPages} onChange={setSelectedPages} disabled={!file || !subject || !classLevel || loadingPages || fetchingUsedPages || availablePages.length === 0} disabledPages={usedPages} maxSelectable={numPages} onLimitExceeded={() => toast({
             title: 'Selection limit reached',
             description: `You can select up to ${numPages} pages for this document.`,
             variant: 'destructive'

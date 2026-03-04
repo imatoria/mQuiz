@@ -404,52 +404,50 @@ export function BookManager() {
           </span>
         </div>
 
-        <ScrollArea className="h-[600px]">
-          <div className="space-y-3">
-            {selectedSubject.pages.map(page => (
-              <Card key={page.id} className="p-4">
-                <div className="flex items-start gap-4">
-                  <Checkbox
-                    checked={selectedPageIds.includes(page.id)}
-                    onCheckedChange={() => togglePageSelection(page.id)}
-                    className="mt-1"
-                  />
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <FileText className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium mb-2">Page {page.page_number}</div>
-                      <div className="p-3 bg-muted/50 rounded-md">
-                        <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-3">
-                          {page.content || 'No content'}
-                        </p>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-2">
-                        Last updated {formatDistanceToNow(new Date(page.updated_at), { addSuffix: true })}
-                      </div>
+        <div className="space-y-3">
+          {selectedSubject.pages.map(page => (
+            <Card key={page.id} className="p-4">
+              <div className="flex items-start gap-4">
+                <Checkbox
+                  checked={selectedPageIds.includes(page.id)}
+                  onCheckedChange={() => togglePageSelection(page.id)}
+                  className="mt-1"
+                />
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <FileText className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium mb-2">Page {page.page_number}</div>
+                    <div className="p-3 bg-muted/50 rounded-md">
+                      <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-3">
+                        {page.content || 'No content'}
+                      </p>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Last updated {formatDistanceToNow(new Date(page.updated_at), { addSuffix: true })}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditPage(page)}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setDeletingPageId(page.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-        </ScrollArea>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleEditPage(page)}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setDeletingPageId(page.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* Page Editor Dialog */}

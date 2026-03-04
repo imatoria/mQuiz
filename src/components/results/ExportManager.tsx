@@ -449,7 +449,7 @@ export const ExportManager = () => {
           {profile?.role === 'parent' && studentList.length > 0 && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Students</label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
+              <div className="space-y-2">
                 {studentList.map((student) => (
                   <div key={student.child_id} className="flex items-center space-x-2">
                     <Checkbox
@@ -476,7 +476,7 @@ export const ExportManager = () => {
           {testList.length > 0 && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Tests</label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
+              <div className="space-y-2">
                 {testList.map((test) => (
                   <div key={test.id} className="flex items-center space-x-2">
                     <Checkbox

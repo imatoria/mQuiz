@@ -11,6 +11,16 @@ const Index = () => {
   const { loading, isAuthenticated, profile, canAccess, signOut } = useAuth();
   const navigate = useNavigate();
 
+  // Redirect authenticated users to role-specific dashboard
+  React.useEffect(() => {
+    if (!loading && isAuthenticated && canAccess && profile?.role) {
+      if (profile.role === 'admin' && !profile.is_approved) return;
+      
+      const roleRoute = profile.role === 'admin' ? '/admin' : profile.role === 'parent' ? '/parent' : '/student';
+      navigate(roleRoute);
+    }
+  }, [loading, isAuthenticated, canAccess, profile, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
@@ -83,20 +93,13 @@ const Index = () => {
     );
   }
 
-  // Redirect authenticated users to role-specific dashboard
-  if (profile?.role) {
-    const roleRoute = profile.role === 'admin' ? '/admin' : profile.role === 'parent' ? '/parent' : '/student';
-    navigate(roleRoute);
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-background w-full">
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <Card className="w-96">
           <CardContent className="pt-6 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading profile...</p>
+            <p className="text-muted-foreground">Redirecting...</p>
           </CardContent>
         </Card>
       </div>
