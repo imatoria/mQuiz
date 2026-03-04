@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTestSecurity } from '@/hooks/useTestSecurity';
 import { SecurityWarningModal } from './SecurityWarningModal';
+import { cn } from '@/lib/utils';
 import { 
   Clock, 
   AlertTriangle, 
@@ -600,10 +601,19 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   // Auto-save is handled by 30-second debounce in debouncedSave function
 
   const handleAnswer = (questionId: string, answer: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: answer
-    }));
+    setAnswers(prev => {
+      // If clicking the already selected option, unselect it
+      if (prev[questionId] === answer) {
+        const newAnswers = { ...prev };
+        delete newAnswers[questionId];
+        return newAnswers;
+      }
+      // Otherwise, select the new option
+      return {
+        ...prev,
+        [questionId]: answer
+      };
+    });
   };
 
   const toggleFlag = (questionIndex: number) => {
@@ -803,10 +813,10 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
   if (!currentQuestion || isSubmitting) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen w-full flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>{isSubmitting ? "Submitting test..." : "Loading test..."}</p>
+          <p className="text-muted-foreground font-medium">{isSubmitting ? "Submitting test..." : "Loading test..."}</p>
         </div>
       </div>
     );
@@ -843,81 +853,83 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       <div className="max-w-6xl mx-auto mb-6">
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-xl">{test.title}</CardTitle>
-                <CardDescription>{test.question_papers.subjects_parent.subject_name}</CardDescription>
-              </div>
-              <div className="flex items-center space-x-4">
-                {/* Save Status Indicator */}
-                <div className="flex items-center space-x-2">
-                  {isSaving ? (
-                    <div className="flex items-center text-muted-foreground">
-                      <Save className="w-4 h-4 mr-1 animate-spin" />
-                      <span className="text-sm">Saving...</span>
-                    </div>
-                  ) : hasUnsavedChanges ? (
-                    <div className="flex items-center text-warning animate-pulse">
-                      <AlertTriangle className="w-4 h-4 mr-1" />
-                      <span className="text-sm font-medium">Unsaved Changes</span>
-                    </div>
-                  ) : lastSaved ? (
-                    <div className="flex items-center text-success">
-                      <Check className="w-4 h-4 mr-1" />
-                      <span className="text-sm">Saved {new Date(lastSaved).toLocaleTimeString()}</span>
-                    </div>
-                  ) : null}
-                  
-                  {/* Network Status */}
-                  {!isOnline && (
-                    <div className="flex items-center text-destructive">
-                      <WifiOff className="w-4 h-4 mr-1" />
-                      <span className="text-sm">Offline</span>
-                    </div>
-                  )}
-                </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+               <div>
+                  <div className="flex flex-wrap items-center gap-3 mb-1">
+                    <CardTitle className="text-xl">{test.title}</CardTitle>
+                    <Badge variant={isSecurityActive ? "secondary" : "destructive"} className="text-xs bg-muted">
+                      {isSecurityActive ? <Shield className="w-3 h-3 mr-1 text-success" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
+                      {isSecurityActive ? 'Secure' : 'Unsecured'}
+                    </Badge>
+                    {violationCount > 0 && (
+                      <Badge variant="destructive" className="flex items-center text-xs">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        Violations: {violationCount}/3
+                      </Badge>
+                    )}
+                  </div>
+                  <CardDescription>{test.question_papers.subjects_parent.subject_name}</CardDescription>
+               </div>
+               
+               <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center text-xs px-2.5 py-1.5 bg-muted/50 rounded-md border text-muted-foreground whitespace-nowrap">
+                    {isSaving ? (
+                      <div className="flex items-center">
+                        <Save className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        <span>Saving...</span>
+                      </div>
+                    ) : hasUnsavedChanges ? (
+                      <div className="flex items-center text-warning animate-pulse">
+                        <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+                        <span className="font-medium">Unsaved</span>
+                      </div>
+                    ) : lastSaved ? (
+                      <div className="flex items-center text-success">
+                        <Check className="w-3.5 h-3.5 mr-1.5" />
+                        <span>Saved {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    ) : (
+                       <div className="flex items-center">
+                         <span className="w-2 h-2 rounded-full bg-muted-foreground/30 mr-1.5"></span>
+                         <span>Not saved yet</span>
+                       </div>
+                    )}
+                    
+                    {!isOnline && (
+                      <>
+                        <span className="mx-2.5 border-l border-border h-3.5"></span>
+                        <div className="flex items-center text-destructive font-medium">
+                          <WifiOff className="w-3.5 h-3.5 mr-1.5" />
+                          <span>Offline</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-                {violationCount > 0 && (
-                  <Badge variant="destructive" className="flex items-center">
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    Violations: {violationCount}/3
+                  <Badge variant={timeLeft <= 300 ? "destructive" : "default"} className="flex flex-shrink-0 items-center text-lg px-3 py-1 bg-quiz shadow-sm font-mono tracking-wider">
+                    <Clock className="w-4 h-4 mr-2" />
+                    {formatTime(timeLeft)}
                   </Badge>
-                )}
-                <Badge variant={timeLeft <= 300 ? "destructive" : "default"} className="flex items-center text-lg px-3 py-1">
-                  <Clock className="w-4 h-4 mr-2" />
-                  {formatTime(timeLeft)}
-                </Badge>
-              </div>
+               </div>
             </div>
             
-            <div className="flex justify-between items-center mt-4">
-              <div className="text-sm text-muted-foreground">
-                Question {currentQuestionIndex + 1} of {questions.length} • 
-                Answered: {getAnsweredCount()}/{questions.length}
+            <div className="mt-4">
+              <div className="flex justify-between items-end mb-1.5">
+                <div className="text-sm text-muted-foreground font-medium">
+                  {displayMode === 'single' && (
+                    <span className="mr-3 hidden sm:inline-block">Question <span className="text-foreground">{currentQuestionIndex + 1}</span> of {questions.length}</span>
+                  )}
+                  <span>Answered: <span className="text-foreground">{getAnsweredCount()} / {questions.length}</span></span>
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {Math.round((getAnsweredCount() / questions.length) * 100)}%
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleFlag(currentQuestionIndex)}
-                  className={flaggedQuestions.has(currentQuestionIndex) ? 'bg-warning/20' : ''}
-                >
-                  <Flag className={`w-4 h-4 ${flaggedQuestions.has(currentQuestionIndex) ? 'fill-current' : ''}`} />
-                </Button>
-                <Badge 
-                  variant={isSecurityActive ? "default" : "destructive"}
-                  className="text-xs"
-                >
-                  {isSecurityActive ? <Shield className="w-3 h-3 mr-1" /> : <AlertTriangle className="w-3 h-3 mr-1" />}
-                  Security {isSecurityActive ? 'Active' : 'Inactive'}
-                </Badge>
-              </div>
+              <Progress 
+                value={(getAnsweredCount() / questions.length) * 100} 
+                className="h-2"
+              />
             </div>
-            
-            <Progress 
-              value={(getAnsweredCount() / questions.length) * 100} 
-              className="mt-2"
-            />
           </CardHeader>
         </Card>
       </div>
@@ -932,12 +944,23 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Question {currentQuestionIndex + 1}</span>
-                  {flaggedQuestions.has(currentQuestionIndex) && (
-                    <Badge variant="outline" className="bg-warning/20">
-                      <Flag className="w-3 h-3 mr-1 fill-current" />
-                      Flagged
-                    </Badge>
-                  )}
+                  <div className="flex items-center space-x-3">
+                    {flaggedQuestions.has(currentQuestionIndex) && (
+                      <Badge variant="outline" className="bg-warning/10 text-warning border-warning/50">
+                        <Flag className="w-3 h-3 mr-1 fill-current" />
+                        Flagged
+                      </Badge>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleFlag(currentQuestionIndex)}
+                      className={flaggedQuestions.has(currentQuestionIndex) ? 'bg-warning/20 hover:bg-warning/30 border-warning border-2' : ''}
+                    >
+                      <Flag className={`w-4 h-4 ${flaggedQuestions.has(currentQuestionIndex) ? 'fill-current text-warning' : 'text-muted-foreground'}`} />
+                      <span className="ml-2 hidden sm:inline">{flaggedQuestions.has(currentQuestionIndex) ? 'Unflag' : 'Flag Question'}</span>
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -955,19 +978,21 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                       <Button
                         key={option}
                         variant={isSelected ? "default" : "outline"}
-                        className={`w-full justify-start text-left p-4 h-auto ${
-                          isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                        className={`relative w-full justify-start text-left py-4 pr-4 pl-4 h-auto border-2 transition-all overflow-visible ${
+                          isSelected 
+                            ? 'border-primary bg-primary text-primary-foreground shadow-md' 
+                            : 'border-muted hover:border-primary/50 hover:bg-muted/50'
                         }`}
                         onClick={() => handleAnswer(currentQuestion.id, option)}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                            isSelected ? 'border-primary-foreground bg-primary-foreground text-primary' : 'border-muted-foreground'
-                          }`}>
-                            {option}
-                          </div>
-                          <div className="text-wrap">{optionText}</div>
+                        <div className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 font-bold bg-background ${
+                          isSelected 
+                            ? 'border-primary text-primary shadow-sm' 
+                            : 'border-muted-foreground text-muted-foreground'
+                        }`}>
+                          {option}
                         </div>
+                        <div className="text-wrap text-base ml-2">{optionText}</div>
                       </Button>
                     );
                   })}
@@ -1041,19 +1066,21 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                           <Button
                             key={option}
                             variant={isSelected ? "default" : "outline"}
-                            className={`w-full justify-start text-left p-4 h-auto ${
-                              isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                            className={`relative w-full justify-start text-left py-4 pr-4 pl-4 h-auto border-2 transition-all overflow-visible ${
+                              isSelected 
+                                ? 'border-primary bg-primary text-primary-foreground shadow-md' 
+                                : 'border-muted hover:border-primary/50 hover:bg-muted/50'
                             }`}
                             onClick={() => handleAnswer(question.id, option)}
                           >
-                            <div className="flex items-start space-x-3">
-                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                                isSelected ? 'border-primary-foreground bg-primary-foreground text-primary' : 'border-muted-foreground'
-                              }`}>
-                                {option}
-                              </div>
-                              <div className="text-wrap">{optionText}</div>
+                            <div className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 font-bold bg-background ${
+                              isSelected 
+                                ? 'border-primary text-primary shadow-sm' 
+                                : 'border-muted-foreground text-muted-foreground'
+                            }`}>
+                              {option}
                             </div>
+                            <div className="text-wrap text-base ml-2 leading-tight">{optionText}</div>
                           </Button>
                         );
                       })}
@@ -1066,61 +1093,80 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         </div>
 
         {/* Navigation Panel */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Question Navigator</CardTitle>
+        <div className="space-y-4 lg:sticky lg:top-4 h-fit">
+          <Card className="flex flex-col">
+            <CardHeader className="pb-3 border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Navigator</CardTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="lg:hidden"
+                  onClick={() => {
+                    const el = document.getElementById('mobile-navigator-content');
+                    if (el) el.classList.toggle('hidden');
+                  }}
+                >
+                  Toggle
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-5 gap-2">
-                {questions.map((_, index) => (
-                  <Button
-                    key={index}
-                    variant={
-                      index === currentQuestionIndex 
-                        ? "default" 
-                        : answers[questions[index].id] 
-                        ? "secondary" 
-                        : "outline"
-                    }
-                    size="sm"
-                    className={`relative ${flaggedQuestions.has(index) ? 'ring-2 ring-warning' : ''}`}
-                    onClick={() => {
-                      if (displayMode === 'all') {
-                        // Scroll to question in all mode
-                        const questionElement = document.getElementById(`question-${index}`);
-                        if (questionElement) {
-                          questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            <CardContent id="mobile-navigator-content" className="hidden lg:block pt-4">
+              <div className="grid grid-cols-5 md:grid-cols-8 lg:grid-cols-5 gap-2">
+                {questions.map((_, index) => {
+                  const isCurrent = index === currentQuestionIndex;
+                  const isAnswered = !!answers[questions[index].id];
+                  const isFlagged = flaggedQuestions.has(index);
+                  
+                  return (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "relative h-10 w-full transition-all border-2",
+                        isCurrent && "border-primary bg-primary/10 text-primary font-bold shadow-sm ring-1 ring-primary",
+                        !isCurrent && isAnswered && "border-success/50 bg-success/20 text-green-950 dark:text-green-50 font-medium",
+                        !isCurrent && !isAnswered && !isFlagged && "border-muted-foreground/30 hover:border-primary/50 text-muted-foreground",
+                        isFlagged && "border-warning bg-warning/10 text-warning-foreground shadow-sm"
+                      )}
+                      onClick={() => {
+                        if (displayMode === 'all') {
+                          // Scroll to question in all mode
+                          const questionElement = document.getElementById(`question-${index}`);
+                          if (questionElement) {
+                            questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        } else {
+                          // Navigate to question in single mode
+                          navigateToQuestion(index);
                         }
-                      } else {
-                        // Navigate to question in single mode
-                        navigateToQuestion(index);
-                      }
-                    }}
-                  >
-                    {index + 1}
-                    {flaggedQuestions.has(index) && (
-                      <Flag className="w-2 h-2 absolute -top-1 -right-1 fill-current text-warning" />
-                    )}
-                  </Button>
-                ))}
+                      }}
+                    >
+                      {index + 1}
+                      {isFlagged && (
+                        <Flag className="w-3 h-3 absolute -top-1.5 -right-1.5 fill-warning text-warning drop-shadow-sm" />
+                       )}
+                    </Button>
+                  );
+                })}
               </div>
               
-              <div className="mt-4 space-y-2 text-xs">
+              <div className="mt-4 space-y-2 text-xs font-medium">
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-primary rounded"></div>
+                  <div className="w-3 h-3 border-2 border-primary bg-primary/10 rounded-sm"></div>
                   <span>{displayMode === 'single' ? 'Current' : 'Viewing'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-secondary rounded"></div>
+                  <div className="w-3 h-3 border-2 border-success/50 bg-success/10 rounded-sm"></div>
                   <span>Answered</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 border border-muted-foreground rounded"></div>
+                  <div className="w-3 h-3 border-2 border-muted-foreground/30 bg-background rounded-sm"></div>
                   <span>Not Answered</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 border-2 border-warning rounded"></div>
+                  <div className="w-3 h-3 border-2 border-warning bg-warning/10 rounded-sm"></div>
                   <span>Flagged</span>
                 </div>
               </div>
@@ -1147,7 +1193,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                 {isSubmitting ? 'Pausing...' : 'Pause Test'}
               </Button>
               
-              <div className="mt-4 text-xs text-muted-foreground text-center space-y-1">
+              <div className="mt-4 text-xs text-muted-foreground text-center space-y-1 pb-2">
                 <p>Questions answered: {getAnsweredCount()}/{questions.length}</p>
                 <p>Questions flagged: {flaggedQuestions.size}</p>
                 <div className="flex items-center justify-center space-x-2 mt-2">
@@ -1200,13 +1246,18 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                     {unansweredQuestions.slice(0, 20).map((questionIndex) => (
                       <Button
                         key={questionIndex}
-                        variant="outline"
-                        size="sm"
                         onClick={() => {
-                          navigateToQuestion(questionIndex);
                           setShowReviewDialog(false);
+                          setTimeout(() => {
+                            if (displayMode === 'all') {
+                              const el = document.getElementById(`question-${questionIndex}`);
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } else {
+                              navigateToQuestion(questionIndex);
+                            }
+                          }, 100);
                         }}
-                        className="h-8 px-2 text-xs border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        className="h-8 px-2 text-sm border-2 border-destructive text-destructive font-medium hover:bg-destructive hover:text-destructive-foreground transition-colors"
                       >
                         Q{questionIndex + 1}
                       </Button>
@@ -1233,13 +1284,18 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                     {getFlaggedUnansweredQuestions().slice(0, 10).map((questionIndex) => (
                       <Button
                         key={questionIndex}
-                        variant="outline"
-                        size="sm"
                         onClick={() => {
-                          navigateToQuestion(questionIndex);
                           setShowReviewDialog(false);
+                          setTimeout(() => {
+                            if (displayMode === 'all') {
+                              const el = document.getElementById(`question-${questionIndex}`);
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } else {
+                              navigateToQuestion(questionIndex);
+                            }
+                          }, 100);
                         }}
-                        className="h-8 px-2 text-xs border-warning text-warning hover:bg-warning hover:text-warning-foreground"
+                        className="h-8 px-2 text-sm border-2 border-warning text-warning font-medium hover:bg-warning hover:text-warning-foreground transition-colors"
                       >
                         Q{questionIndex + 1}
                       </Button>
@@ -1267,8 +1323,16 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
               <Button
                 variant="outline"
                 onClick={() => {
-                  navigateToQuestion(unansweredQuestions[0]);
                   setShowReviewDialog(false);
+                  setTimeout(() => {
+                    const firstUnanswered = unansweredQuestions[0];
+                    if (displayMode === 'all') {
+                      const el = document.getElementById(`question-${firstUnanswered}`);
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                      navigateToQuestion(firstUnanswered);
+                    }
+                  }, 100);
                 }}
               >
                 Go to First Unanswered

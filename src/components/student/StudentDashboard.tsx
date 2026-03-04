@@ -521,7 +521,7 @@ const StudentDashboardContent = () => {
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
                                 <p className="text-sm text-muted-foreground mb-2">
-                                  {test.subjects_parent?.subject_name} • Question {currentQuestion} of {totalQuestions}
+                                  {test.subjects_parent?.subject_name} • {test.total_questions} total questions
                                 </p>
                               </div>
                               
@@ -537,11 +537,11 @@ const StudentDashboardContent = () => {
                             </div>
                             
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between text-xs">
-                                <span>Progress</span>
-                                <span>{progress}%</span>
+                              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                                <span>Question {currentQuestion} of {totalQuestions}</span>
+                                <span>{progress}% Completed</span>
                               </div>
-                              <Progress value={progress} className="h-2" />
+                              <Progress value={progress} className="h-2.5 bg-quiz/20 [&>div]:bg-quiz" />
                               
                               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <span className="flex items-center">
@@ -583,9 +583,12 @@ const StudentDashboardContent = () => {
                     <TestCardSkeleton />
                   </div>
                 ) : availableTests.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No tests available at the moment</p>
+                  <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
+                    <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <h3 className="text-lg font-medium text-foreground mb-1">No Tests Right Now</h3>
+                    <p className="text-muted-foreground text-sm max-w-[250px] mx-auto">
+                      You're all caught up! Check back later for new upcoming tests or review your past results.
+                    </p>
                   </div>
                 ) : (
                    <div className="space-y-4">
@@ -607,14 +610,14 @@ const StudentDashboardContent = () => {
                                <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
                                
                                {status === 'scheduled' && timeUntilStart && (
-                                 <Badge variant="outline" className="text-xs">
-                                   {timeUntilStart}
+                                 <Badge variant="secondary" className="text-xs font-mono tracking-tight bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                                   ⏳ {timeUntilStart}
                                  </Badge>
                                )}
                                
                                {status === 'active' && (
-                                 <Badge variant="default" className="text-xs bg-quiz">
-                                   {timeRemaining} remaining
+                                 <Badge variant="default" className="text-xs bg-quiz animate-pulse shadow-sm">
+                                   🔴 {timeRemaining} remaining
                                  </Badge>
                                )}
                                
@@ -659,6 +662,89 @@ const StudentDashboardContent = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Completed Tests - Quick Stats View */}
+            {completedTests.length > 0 && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <CheckCircle2 className="w-5 h-5 mr-2" />
+                    Completed Tests
+                  </CardTitle>
+                  <CardDescription>
+                    Recent performance and quick stats
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {completedTests.map((test) => {
+                      // Get highest score attempt or most recent completed attempt
+                      const bestAttempt = test.paper_attempts
+                        .filter(a => a.completed_at)
+                        .sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+
+                      if (!bestAttempt) return null;
+
+                      // Calculate time taken safely
+                      let timeTaken = 'Unknown';
+                      if (bestAttempt.started_at && bestAttempt.completed_at) {
+                        const start = new Date(bestAttempt.started_at).getTime();
+                        const end = new Date(bestAttempt.completed_at).getTime();
+                        const diffMins = Math.round((end - start) / 60000);
+                        timeTaken = `${diffMins}m / ${test.time_limit_minutes}m`;
+                      }
+
+                      return (
+                        <div key={test.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg bg-muted/5 space-y-3 sm:space-y-0">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium truncate pr-2">{test.title}</h4>
+                            <p className="text-sm text-muted-foreground truncate mb-2">
+                              {test.subjects_parent?.subject_name || 'No subject'} • Completed {new Date(bestAttempt.completed_at).toLocaleDateString()}
+                            </p>
+                            
+                            <div className="flex flex-wrap items-center gap-4 text-sm mt-1">
+                              {bestAttempt.show_results ? (
+                                <div className="flex items-center">
+                                  <span className="text-muted-foreground mr-1">Score:</span>
+                                  <span className={cn(
+                                    "font-semibold",
+                                    (bestAttempt.score || 0) >= 80 ? "text-success" : 
+                                    (bestAttempt.score || 0) >= 60 ? "text-warning" : "text-destructive"
+                                  )}>{bestAttempt.score}%</span>
+                                </div>
+                              ) : (
+                                <Badge variant="secondary" className="text-xs">Results Pending</Badge>
+                              )}
+                              
+                              <div className="flex items-center text-muted-foreground">
+                                <Timer className="w-3.5 h-3.5 mr-1" />
+                                <span>{timeTaken}</span>
+                              </div>
+                              
+                              <div className="flex items-center text-muted-foreground">
+                                <Award className="w-3.5 h-3.5 mr-1" />
+                                <span>Attempt {bestAttempt.attempt_number} of {test.max_attempts}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex-shrink-0 w-full sm:w-auto">
+                            <Button 
+                              variant="outline"
+                              onClick={() => handleTabChange('results')}
+                              className="w-full sm:w-auto text-xs"
+                              size="sm"
+                            >
+                              View Full Analysis
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    }).filter(Boolean)}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
                   </>
                 )}
