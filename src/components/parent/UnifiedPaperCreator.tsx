@@ -593,6 +593,42 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     }));
   };
 
+  const handleSelectRandomly = () => {
+    // Only select from all valid filtered questions that haven't been selected yet
+    const availableQuestions = filteredQuestions.filter(q => !formData.selected_questions?.includes(q.id));
+    
+    // Amount we still need to select
+    const amountToSelect = Math.min(
+      availableQuestions.length,
+      formData.total_questions - (formData.selected_questions?.length || 0)
+    );
+    
+    if (amountToSelect <= 0) {
+      toast({
+        title: "Selection Limit",
+        description: `You have already selected ${formData.total_questions} questions total`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Shuffle and pick
+    const shuffled = [...availableQuestions].sort(() => 0.5 - Math.random());
+    const randomSelections = shuffled.slice(0, amountToSelect);
+    const newSelectionIds = randomSelections.map(q => q.id);
+    
+    setSelectedQuestions(prev => [...prev, ...randomSelections]);
+    setFormData(prev => ({
+      ...prev,
+      selected_questions: [...(prev.selected_questions || []), ...newSelectionIds]
+    }));
+    
+    toast({
+      title: "Random Selection",
+      description: `Randomly selected ${amountToSelect} question${amountToSelect !== 1 ? 's' : ''}.`
+    });
+  };
+
   const handleQuestionSelect = (questionId: string, checked: boolean) => {
     if (checked) {
       if ((formData.selected_questions?.length || 0) >= formData.total_questions) {
@@ -1187,18 +1223,32 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                           Clear Filters
                         </Button>
                         
-                        <Button 
-                          type="button"
-                          variant="outline" 
-                          size="sm"
-                          onClick={handleSelectAllVisible}
-                          disabled={
-                            paginatedQuestions.length === 0 || 
-                            (formData.selected_questions?.length || 0) >= formData.total_questions
-                          }
-                        >
-                          Select All Visible
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleSelectRandomly}
+                            disabled={
+                              filteredQuestions.length === 0 || 
+                              (formData.selected_questions?.length || 0) >= formData.total_questions
+                            }
+                          >
+                            Select Randomly
+                          </Button>
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleSelectAllVisible}
+                            disabled={
+                              paginatedQuestions.length === 0 || 
+                              (formData.selected_questions?.length || 0) >= formData.total_questions
+                            }
+                          >
+                            Select All Visible
+                          </Button>
+                        </div>
                       </div>
                       
                       {isLoadingQuestions ? (

@@ -67,6 +67,9 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   
+  // Track if any filter has been applied yet
+  const [hasAppliedFilter, setHasAppliedFilter] = useState(false);
+  
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
 
@@ -77,7 +80,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const difficulties = ['easy', 'medium', 'difficult'];
 
   useEffect(() => {
-    fetchData();
+    // Only load initial data dependencies, do not auto-fetch questions yet.
   }, []);
 
   const fetchData = async () => {
@@ -145,6 +148,8 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     setSelectedDifficulty(tempSelectedDifficulty);
     setSelectedClass(tempSelectedClass);
     setDateRange(tempDateRange);
+    setHasAppliedFilter(true);
+    fetchData();
   };
   
   const clearAllFilters = () => {
@@ -158,6 +163,8 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     setSelectedDifficulty('all');
     setSelectedClass('all');
     setDateRange({});
+    setHasAppliedFilter(false);
+    setQuestions([]); // Clear questions
   };
 
   const getDifficultyBadgeVariant = (difficulty: string) => {
@@ -398,7 +405,13 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {!hasAppliedFilter ? (
+            <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+              <Filter className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+              <h3 className="text-lg font-medium text-foreground mb-1">Apply Filters to View Questions</h3>
+              <p>Please select at least one filter criterion above and click "Apply Filters" to load the question bank.</p>
+            </div>
+          ) : isLoading ? (
             <TableSkeleton rows={10} columns={6} />
           ) : filteredQuestions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
