@@ -113,7 +113,7 @@ const display = selectedPages.length > 0
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="z-50 bg-background border shadow-md w-80 p-0">
-        <div className="border-b px-3 py-2 text-xs text-muted-foreground">
+        <div className="border-b px-3 py-2 text-sm md:text-xs text-muted-foreground">
           <span className="font-medium">Selected:</span> {selectedSummary}
         </div>
         <ScrollArea className="max-h-64">
@@ -121,7 +121,7 @@ const display = selectedPages.length > 0
             {currentViewPages.map((page) => {
               const isDisabled = disabledSet.has(page);
               return (
-                <label key={page} className={cn('flex items-center gap-2 text-sm', isDisabled && 'opacity-50 cursor-not-allowed')}>
+                <label key={page} className={cn('flex items-center gap-2 text-base md:text-sm', isDisabled && 'opacity-50 cursor-not-allowed')}>
                   <Checkbox
                     id={`page-${page}`}
                     checked={selectedPages.includes(page)}
