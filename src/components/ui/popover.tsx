@@ -21,6 +21,10 @@ const PopoverContent = React.forwardRef<
         className
       )}
       {...props}
+      onInteractOutside={(e) => {
+        e.preventDefault();
+        props.onInteractOutside?.(e);
+      }}
     />
   </PopoverPrimitive.Portal>
 ))

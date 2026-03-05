@@ -15,7 +15,7 @@ import { useChildClasses } from '@/hooks/useChildClasses';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?worker';
 // pdf.js core
 import * as pdfjs from 'pdfjs-dist';
-import { createWorker } from 'tesseract.js';
+import { createWorker, PSM } from 'tesseract.js';
 
 // Initialize pdf.js worker
 // @ts-ignore
@@ -262,14 +262,39 @@ export const DocumentUpload = ({
         const page = await doc.getPage(pdfPageIndex);
         const textContent = await page.getTextContent();
         
-        // Extract and clean text from page
-        let pageText = textContent.items
-          .map((item: any) => {
-            const text = item?.str || item?.text || '';
-            return typeof text === 'string' ? text.trim() : '';
-          })
-          .filter((str: string) => str.length > 0)
-          .join(' ')
+        // Extract and clean text from page using positional awareness to preserve formatting
+        let pageText = '';
+        let lastY = -1;
+        let lastX = -1;
+        
+        textContent.items.forEach((item: any) => {
+          if (!item.str || typeof item.str !== 'string') return;
+          
+          const y = item.transform[5];
+          const x = item.transform[4];
+          const width = item.width || 0;
+          
+          if (lastY !== -1) {
+            // Use a threshold to determine if it's a new line (Y difference)
+            if (Math.abs(y - lastY) > 5) {
+              pageText += '\n';
+            } 
+            // If on the same line, check if there's a significant gap between words
+            else if (lastX !== -1 && (x - lastX) > 5) {
+              pageText += ' ';
+            }
+          }
+          
+          pageText += item.str;
+          
+          lastY = y;
+          lastX = x + width;
+        });
+        
+        pageText = pageText
+          .replace(/ +/g, ' ')       // Remove multiple horizontal spaces
+          .replace(/\n +/g, '\n')    // Remove leading spaces on new lines
+          .replace(/\n{3,}/g, '\n\n')// Limit consecutive newlines to 2 (paragraphs)
           .trim();
         
         console.log(`PDF Page ${pdfPageIndex} -> Selected Page ${selectedPageNumber}: Initial extraction: ${pageText.length} characters`);
@@ -279,8 +304,8 @@ export const DocumentUpload = ({
           console.log(`PDF Page ${pdfPageIndex}: Text layer insufficient, attempting OCR...`);
           
           try {
-            // Render page to canvas for OCR
-            const viewport = page.getViewport({ scale: 2.0 });
+            // Render page to canvas for OCR at higher resolution (scale: 2.5)
+            const viewport = page.getViewport({ scale: 2.5 });
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             
@@ -296,6 +321,10 @@ export const DocumentUpload = ({
               // Initialize OCR worker if not already done
               if (!ocrWorker) {
                 ocrWorker = await createWorker('eng');
+                await ocrWorker.setParameters({
+                  preserve_interword_spaces: '1',
+                  tessedit_pageseg_mode: PSM.AUTO_OSD // Automatic page segmentation with OSD
+                });
               }
               
               // Perform OCR on canvas
