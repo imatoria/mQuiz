@@ -58,7 +58,7 @@ export const CompactRoleSelector = ({
         </div>
         
         <Tabs value={selectedRole || ''} onValueChange={value => onRoleSelect(value as any)}>
-          <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsList className="w-full h-auto">
             {Object.entries(roleInfo).map(([role, info]) => <TabsTrigger value={role} className="text-xs sm:text-sm flex flex-row gap-2">
               <Tooltip key={role}>
                 <span className="text-xs font-medium">{info.title}</span>

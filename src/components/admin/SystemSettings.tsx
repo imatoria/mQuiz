@@ -124,7 +124,7 @@ export const SystemSettings = () => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={handleSettingsTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="w-full">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="limits">Limits</TabsTrigger>

@@ -982,7 +982,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
             </div>
               
               <Tabs value={questionTabValue} onValueChange={setQuestionTabValue} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="w-full">
                   <TabsTrigger value="selected" className="flex items-center gap-2">
                     Selected Questions
                     {selectedQuestions.length > 0 && (

@@ -364,7 +364,7 @@ export const ComparativeAnalysis = () => {
 
       {selectedComparison === 'students' && (
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="w-full">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="trends">Trends</TabsTrigger>

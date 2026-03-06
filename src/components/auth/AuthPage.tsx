@@ -195,7 +195,7 @@ export const AuthPage = ({
           
           <CardContent className="space-y-4 px-4 sm:px-6">
             <Tabs value={authMode} onValueChange={value => setAuthMode(value as any)}>
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="w-full">
                 <TabsTrigger value="signin" className="text-xs sm:text-sm">Sign In</TabsTrigger>
                 <TabsTrigger value="signup" className="text-xs sm:text-sm">Sign Up</TabsTrigger>
                 <TabsTrigger value="reset" className="text-xs sm:text-sm">Reset</TabsTrigger>

@@ -226,7 +226,7 @@ export const ImprovedWorkflows = () => {
       </div>
 
       <Tabs defaultValue="workflows" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="w-full">
           <TabsTrigger value="workflows">Guided Workflows</TabsTrigger>
           <TabsTrigger value="quick-actions">Quick Actions</TabsTrigger>
         </TabsList>

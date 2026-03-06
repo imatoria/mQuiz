@@ -418,7 +418,7 @@ export const TestResults = () => {
             // Breakdown with Tabs
             selectedAttempt && (
               <Tabs defaultValue="breakdown" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="w-full">
                   <TabsTrigger value="breakdown">Test Breakdown</TabsTrigger>
                   <TabsTrigger value="violations">
                     <ShieldAlert className="h-4 w-4 mr-2" />
