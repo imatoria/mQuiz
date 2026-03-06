@@ -297,7 +297,7 @@ export default function BulkQuestionOperations() {
       </div>
 
       <Tabs defaultValue="import" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="w-full">
           <TabsTrigger value="import">Import Questions</TabsTrigger>
           <TabsTrigger value="export">Export Questions</TabsTrigger>
         </TabsList>

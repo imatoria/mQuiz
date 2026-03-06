@@ -42,7 +42,7 @@ export const CommunicationHub = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleCommTabChange}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="w-full">
           <TabsTrigger value="messages" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             Messages

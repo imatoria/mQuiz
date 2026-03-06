@@ -498,7 +498,7 @@ export const PapersManager: React.FC = () => {
         renderCurrentView()
       ) : (
         <Tabs value={activeTab} onValueChange={handleSubTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="w-full">
             <TabsTrigger value="prepare" className="flex items-center gap-2">
               <FilePlus className="h-4 w-4" />
               Prepare Paper

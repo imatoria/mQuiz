@@ -50,7 +50,7 @@ export const ContentCreation = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleSubTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="w-full">
           <TabsTrigger value="upload">Upload</TabsTrigger>
           <TabsTrigger value="book">
             <Book className="h-4 w-4 mr-2" />

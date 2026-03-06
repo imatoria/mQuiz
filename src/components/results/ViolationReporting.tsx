@@ -143,7 +143,7 @@ export const ViolationReporting = ({ attemptId }: ViolationReportingProps) => {
 
       {/* Violations by Severity */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="w-full">
           <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
           <TabsTrigger value="critical">Critical ({stats.critical})</TabsTrigger>
           <TabsTrigger value="high">High ({stats.high})</TabsTrigger>
