@@ -20,6 +20,10 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         this.db = { ...seedData };
         this.persist();
       }
+      if (!this.db.profiles || this.db.profiles.length === 0) {
+        this.db.profiles = (seedData.profiles as any[]) || [];
+        this.persist();
+      }
       this.isInitialized = true;
       console.log('[SqliteWasmProvider] In-Browser Database initialized successfully.');
     } catch (err) {
@@ -100,18 +104,18 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       // Basic id or equality matching
       if (params.length > 0) {
         const paramVal = params[0];
-        if (cleanSql.includes('id =')) {
-          rows = rows.filter(r => r.id === paramVal);
-        } else if (cleanSql.includes('user_id =')) {
+        if (/\buser_id\s*=/i.test(cleanSql)) {
           rows = rows.filter(r => r.user_id === paramVal);
-        } else if (cleanSql.includes('parent_id =')) {
+        } else if (/\bparent_id\s*=/i.test(cleanSql)) {
           rows = rows.filter(r => r.parent_id === paramVal);
-        } else if (cleanSql.includes('class_parent_id =')) {
+        } else if (/\bclass_parent_id\s*=/i.test(cleanSql)) {
           rows = rows.filter(r => r.class_parent_id === paramVal);
-        } else if (cleanSql.includes('subject_parent_id =')) {
+        } else if (/\bsubject_parent_id\s*=/i.test(cleanSql)) {
           rows = rows.filter(r => r.subject_parent_id === paramVal);
-        } else if (cleanSql.includes('is_deleted =')) {
+        } else if (/\bis_deleted\s*=/i.test(cleanSql)) {
           rows = rows.filter(r => r.is_deleted === (paramVal ? 1 : 0));
+        } else if (/\bid\s*=/i.test(cleanSql)) {
+          rows = rows.filter(r => r.id === paramVal);
         }
       }
     }
