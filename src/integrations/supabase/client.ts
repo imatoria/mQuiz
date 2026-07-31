@@ -5,6 +5,7 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
   private tableName: string;
   private conditions: { col: string; val: any; op?: string }[] = [];
   private orderCol: string | null = null;
+  private limitCount: number | null = null;
   private isSingle = false;
   private isMaybeSingle = false;
 
@@ -26,6 +27,11 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
     return this;
   }
 
+  is(col: string, val: any) {
+    this.conditions.push({ col, val, op: val === null ? 'IS' : '=' });
+    return this;
+  }
+
   not(col: string, op: string, val: any) {
     this.conditions.push({ col, val, op: '!=' });
     return this;
@@ -36,8 +42,38 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
     return this;
   }
 
+  gte(col: string, val: any) {
+    this.conditions.push({ col, val, op: '>=' });
+    return this;
+  }
+
+  lte(col: string, val: any) {
+    this.conditions.push({ col, val, op: '<=' });
+    return this;
+  }
+
+  gt(col: string, val: any) {
+    this.conditions.push({ col, val, op: '>' });
+    return this;
+  }
+
+  lt(col: string, val: any) {
+    this.conditions.push({ col, val, op: '<' });
+    return this;
+  }
+
   order(col: string, opts?: any) {
     this.orderCol = col;
+    return this;
+  }
+
+  limit(count: number) {
+    this.limitCount = count;
+    return this;
+  }
+
+  range(from: number, to: number) {
+    this.limitCount = (to - from) + 1;
     return this;
   }
 
@@ -63,6 +99,9 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
           params.push(...c.val);
           return `${c.col} IN (${placeholders})`;
         }
+        if (c.op === 'IS' && c.val === null) {
+          return `${c.col} IS NULL`;
+        }
         params.push(c.val);
         return `${c.col} ${c.op || '='} ?`;
       });
@@ -78,7 +117,11 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
       return { data: null, error: result.error, count: 0 };
     }
 
-    const rows = result.data || [];
+    let rows = result.data || [];
+    if (this.limitCount !== null) {
+      rows = rows.slice(0, this.limitCount);
+    }
+
     if (this.isSingle || this.isMaybeSingle) {
       return { data: rows.length > 0 ? rows[0] : null, error: null, count: rows.length };
     }
