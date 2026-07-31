@@ -1,0 +1,110 @@
+{
+  "ai_providers": [
+    {
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Google Gemini",
+      "provider_key": "gemini",
+      "is_active": 1,
+      "description": "Google Gemini Pro AI model for question generation",
+      "created_at": "2026-07-31T00:00:00.000Z",
+      "updated_at": "2026-07-31T00:00:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "OpenAI ChatGPT",
+      "provider_key": "openai",
+      "is_active": 1,
+      "description": "OpenAI GPT-4o model for advanced evaluation",
+      "created_at": "2026-07-31T00:00:00.000Z",
+      "updated_at": "2026-07-31T00:00:00.000Z"
+    }
+  ],
+  "announcements": [],
+  "announcement_recipients": [],
+  "audit_logs": [],
+  "classes_parent": [
+    {
+      "id": "class-10-id",
+      "parent_id": "system-admin-id",
+      "class_name": "Class 10",
+      "class_key": "class_10",
+      "display_order": 10,
+      "is_active": 1,
+      "created_at": "2026-07-31T00:00:00.000Z",
+      "updated_at": "2026-07-31T00:00:00.000Z"
+    },
+    {
+      "id": "class-12-id",
+      "parent_id": "system-admin-id",
+      "class_name": "Class 12",
+      "class_key": "class_12",
+      "display_order": 12,
+      "is_active": 1,
+      "created_at": "2026-07-31T00:00:00.000Z",
+      "updated_at": "2026-07-31T00:00:00.000Z"
+    }
+  ],
+  "subjects_parent": [
+    {
+      "id": "subj-math-id",
+      "parent_id": "system-admin-id",
+      "subject_name": "Mathematics",
+      "subject_code": "MATH",
+      "icon_name": "calculator",
+      "color": "#3B82F6",
+      "display_order": 1,
+      "is_active": 1,
+      "created_at": "2026-07-31T00:00:00.000Z",
+      "updated_at": "2026-07-31T00:00:00.000Z"
+    },
+    {
+      "id": "subj-sci-id",
+      "parent_id": "system-admin-id",
+      "subject_name": "Science",
+      "subject_code": "SCI",
+      "icon_name": "flask",
+      "color": "#10B981",
+      "display_order": 2,
+      "is_active": 1,
+      "created_at": "2026-07-31T00:00:00.000Z",
+      "updated_at": "2026-07-31T00:00:00.000Z"
+    }
+  ],
+  "child_class_assignments": [],
+  "child_subject_assignments": [],
+  "documents": [],
+  "document_pages": [],
+  "email_queue": [],
+  "messages": [],
+  "notifications": [],
+  "paper_assignments": [],
+  "paper_attempts": [],
+  "paper_sessions": [],
+  "paper_violations": [],
+  "parent_child_relationships": [],
+  "profiles": [
+    {
+      "id": "prof-admin-id",
+      "user_id": "usr-admin-001",
+      "full_name": "Administrator",
+      "avatar_url": null,
+      "role": "admin",
+      "is_approved": 1,
+      "email": "admin@mquiz.com",
+      "created_at": "2026-07-31T00:00:00.000Z",
+      "updated_at": "2026-07-31T00:00:00.000Z"
+    }
+  ],
+  "questions": [],
+  "question_papers": [],
+  "question_paper_questions": [],
+  "system_settings": [
+    {
+      "id": "sett-01",
+      "key": "app_name",
+      "value": "mQuiz",
+      "created_at": "2026-07-31T00:00:00.000Z",
+      "updated_at": "2026-07-31T00:00:00.000Z"
+    }
+  ]
+}
