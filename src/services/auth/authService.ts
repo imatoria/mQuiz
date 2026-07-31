@@ -8,9 +8,11 @@ export interface UserSession {
 }
 
 const AUTH_STORAGE_KEY = 'mquiz_auth_session';
+type AuthListener = (user: UserSession | null) => void;
 
 class AuthService {
   private currentSession: UserSession | null = null;
+  private listeners: Set<AuthListener> = new Set();
 
   constructor() {
     this.loadSession();
@@ -19,10 +21,12 @@ class AuthService {
   private loadSession() {
     try {
       const data = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (data) {
+      if (data === 'unauthenticated') {
+        this.currentSession = null;
+      } else if (data) {
         this.currentSession = JSON.parse(data);
       } else {
-        // Default admin session
+        // First app run: default admin session
         this.currentSession = {
           id: 'usr-admin-001',
           email: 'admin@mquiz.com',
@@ -33,6 +37,7 @@ class AuthService {
       }
     } catch (e) {
       console.warn('[AuthService] Failed loading session:', e);
+      this.currentSession = null;
     }
   }
 
@@ -40,8 +45,18 @@ class AuthService {
     if (this.currentSession) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentSession));
     } else {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.setItem(AUTH_STORAGE_KEY, 'unauthenticated');
     }
+    this.notifyListeners();
+  }
+
+  subscribe(listener: AuthListener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach(l => l(this.currentSession));
   }
 
   getCurrentUser(): UserSession | null {
@@ -50,7 +65,8 @@ class AuthService {
 
   async login(email: string): Promise<{ user: UserSession | null; error: Error | null }> {
     const { data: profiles } = await dbService.getProfiles();
-    const match = profiles?.find((p: any) => p.email === email);
+    const match = profiles?.find((p: any) => p.email?.toLowerCase() === email.toLowerCase());
+    
     if (match) {
       this.currentSession = {
         id: match.user_id || match.id,
@@ -61,7 +77,47 @@ class AuthService {
       this.saveSession();
       return { user: this.currentSession, error: null };
     }
-    return { user: null, error: new Error('User not found') };
+
+    // Default admin fallback for demo
+    if (email.toLowerCase() === 'admin@mquiz.com') {
+      this.currentSession = {
+        id: 'usr-admin-001',
+        email: 'admin@mquiz.com',
+        role: 'admin',
+        fullName: 'Administrator'
+      };
+      this.saveSession();
+      return { user: this.currentSession, error: null };
+    }
+
+    return { user: null, error: new Error('User email not found. Please sign up.') };
+  }
+
+  async signUp(details: { email: string; fullName: string; role: string }): Promise<{ user: UserSession | null; error: Error | null }> {
+    const userId = crypto.randomUUID();
+    const profile = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      full_name: details.fullName,
+      email: details.email,
+      role: details.role,
+      is_approved: details.role === 'admin' ? 1 : 1,
+      avatar_url: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    await dbService.createProfile(profile);
+
+    this.currentSession = {
+      id: userId,
+      email: details.email,
+      role: details.role,
+      fullName: details.fullName
+    };
+    this.saveSession();
+
+    return { user: this.currentSession, error: null };
   }
 
   async logout() {

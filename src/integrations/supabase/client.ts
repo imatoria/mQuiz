@@ -182,11 +182,41 @@ export const supabase = {
   from: (table: string) => new SupabaseQueryBuilder(table),
   auth: {
     getUser: async () => ({ data: { user: authService.getCurrentUser() }, error: null }),
-    getSession: async () => ({ data: { session: { user: authService.getCurrentUser() } }, error: null }),
-    signOut: async () => { authService.logout(); return { error: null }; },
+    getSession: async () => {
+      const user = authService.getCurrentUser();
+      return { data: { session: user ? { user } : null }, error: null };
+    },
+    signInWithPassword: async ({ email }: any) => {
+      const res = await authService.login(email);
+      if (res.error) return { data: null, error: res.error };
+      return { data: { user: res.user, session: { user: res.user } }, error: null };
+    },
+    signUp: async ({ email, options }: any) => {
+      const res = await authService.signUp({
+        email,
+        fullName: options?.data?.full_name || 'New User',
+        role: options?.data?.role || 'student'
+      });
+      return { data: { user: res.user, session: { user: res.user } }, error: null };
+    },
+    signInWithOAuth: async ({ provider }: any) => {
+      const res = await authService.login('admin@mquiz.com');
+      return { data: { user: res.user, session: { user: res.user } }, error: null };
+    },
+    resetPasswordForEmail: async (email: string) => {
+      return { data: {}, error: null };
+    },
+    signOut: async () => {
+      await authService.logout();
+      return { error: null };
+    },
     onAuthStateChange: (cb: any) => {
-      cb('SIGNED_IN', { user: authService.getCurrentUser() });
-      return { data: { subscription: { unsubscribe: () => {} } } };
+      const unsubscribe = authService.subscribe((user) => {
+        cb(user ? 'SIGNED_IN' : 'SIGNED_OUT', user ? { user } : null);
+      });
+      const currentUser = authService.getCurrentUser();
+      cb(currentUser ? 'SIGNED_IN' : 'SIGNED_OUT', currentUser ? { user: currentUser } : null);
+      return { data: { subscription: { unsubscribe } } };
     }
   },
   channel: () => ({
