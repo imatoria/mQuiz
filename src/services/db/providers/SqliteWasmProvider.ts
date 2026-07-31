@@ -13,54 +13,36 @@ export class SqliteWasmProvider implements IDatabaseProvider {
     if (this.isInitialized) return;
 
     try {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      if (savedData) {
-        this.db = JSON.parse(savedData);
-      } else {
-        this.db = { ...seedData };
+      // 1. Start with the full imported dataset as the primary baseline
+      const baseDb: Record<string, any[]> = {};
+      const fullDataset = (importedData && Object.keys(importedData).length > 0) ? importedData : seedData;
+
+      for (const [table, rows] of Object.entries(fullDataset)) {
+        baseDb[table] = Array.isArray(rows) ? [...rows] : [];
       }
 
-      // Populate ALL tables from the imported PostgreSQL dataset if missing or empty in local storage
-      const tablesToMerge = [
-        'classes_parent',
-        'subjects_parent',
-        'profiles',
-        'documents',
-        'document_pages',
-        'questions',
-        'question_papers',
-        'question_paper_questions',
-        'paper_attempts',
-        'paper_sessions',
-        'paper_violations',
-        'parent_child_relationships',
-        'child_class_assignments',
-        'child_subject_assignments',
-        'ai_providers',
-        'user_ai_provider_keys',
-        'audit_logs'
-      ];
-
-      for (const table of tablesToMerge) {
-        const importedRows = (importedData as any)[table];
-        if (Array.isArray(importedRows) && importedRows.length > 0) {
-          if (!this.db[table] || this.db[table].length === 0) {
-            console.log(`[SqliteWasmProvider] Loaded ${importedRows.length} rows for '${table}' from imported PostgreSQL dataset`);
-            this.db[table] = importedRows;
+      // 2. Check localStorage for user-added / updated rows
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          for (const [table, rows] of Object.entries(parsed)) {
+            if (Array.isArray(rows) && rows.length > (baseDb[table]?.length || 0)) {
+              baseDb[table] = rows;
+            }
           }
+        } catch (e) {
+          console.warn('[SqliteWasmProvider] Failed parsing saved localStorage state:', e);
         }
       }
 
-      if (!this.db.profiles || this.db.profiles.length === 0) {
-        this.db.profiles = (seedData.profiles as any[]) || [];
-      }
-
+      this.db = baseDb;
       this.persist();
       this.isInitialized = true;
-      console.log('[SqliteWasmProvider] In-Browser Database initialized successfully.');
+      console.log(`[SqliteWasmProvider] In-Browser Database initialized successfully with ${this.db.questions?.length || 0} questions and ${this.db.classes_parent?.length || 0} classes.`);
     } catch (err) {
-      console.error('[SqliteWasmProvider] Initialization failed, using in-memory seed:', err);
-      this.db = { ...seedData };
+      console.error('[SqliteWasmProvider] Initialization failed:', err);
+      this.db = { ...(importedData as any) };
       this.isInitialized = true;
     }
   }

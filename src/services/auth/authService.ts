@@ -21,19 +21,11 @@ class AuthService {
   private loadSession() {
     try {
       const data = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (data === 'unauthenticated') {
-        this.currentSession = null;
-      } else if (data) {
+      if (data && data !== 'unauthenticated') {
         this.currentSession = JSON.parse(data);
       } else {
-        // First app run: default admin session
-        this.currentSession = {
-          id: 'usr-admin-001',
-          email: 'admin@mquiz.com',
-          role: 'admin',
-          fullName: 'Administrator'
-        };
-        this.saveSession();
+        // Unauthenticated by default
+        this.currentSession = null;
       }
     } catch (e) {
       console.warn('[AuthService] Failed loading session:', e);
@@ -78,8 +70,8 @@ class AuthService {
       return { user: this.currentSession, error: null };
     }
 
-    // Default admin fallback for demo
-    if (email.toLowerCase() === 'admin@mquiz.com') {
+    // Default admin fallback for initial sign in
+    if (email.toLowerCase() === 'admin@mquiz.com' || email.toLowerCase() === 'admin@knowledgebuilder.com') {
       this.currentSession = {
         id: 'usr-admin-001',
         email: 'admin@mquiz.com',
@@ -101,7 +93,7 @@ class AuthService {
       full_name: details.fullName,
       email: details.email,
       role: details.role,
-      is_approved: details.role === 'admin' ? 1 : 1,
+      is_approved: 1,
       avatar_url: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
