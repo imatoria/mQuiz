@@ -1,5 +1,6 @@
 import { IDatabaseProvider, QueryResult, SingleQueryResult } from '../types';
 import seedData from '../initialSeedData.json';
+import importedData from '../importedFullDatabase.json';
 
 const STORAGE_KEY = 'mquiz_sqlite_db_v1';
 
@@ -16,32 +17,38 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       if (savedData) {
         this.db = JSON.parse(savedData);
       } else {
-        // Check if a one-time imported PostgreSQL database snapshot exists
-        try {
-          const importedRes = await fetch('./importedFullDatabase.json');
-          if (importedRes.ok) {
-            const importedData = await importedRes.json();
-            const hasData = Object.values(importedData).some((arr: any) => Array.isArray(arr) && arr.length > 0);
-            if (hasData) {
-              this.db = importedData;
-              this.persist();
-              console.log('[SqliteWasmProvider] Initialized SQLite with one-time imported PostgreSQL dataset!');
-            }
-          }
-        } catch (e) {
-          // Ignore if not present
-        }
+        this.db = { ...seedData };
+      }
 
-        if (!this.db || Object.keys(this.db).length === 0) {
-          // Seed with default template seed data
-          this.db = { ...seedData };
-          this.persist();
+      // Check if imported dataset contains questions that are missing from local state
+      const importedQuestions = (importedData as any).questions || [];
+      if (importedQuestions.length > 0 && (!this.db.questions || this.db.questions.length === 0)) {
+        console.log(`[SqliteWasmProvider] Auto-populating ${importedQuestions.length} questions from imported PostgreSQL snapshot...`);
+        this.db.questions = importedQuestions;
+        if ((importedData as any).question_papers?.length > 0) {
+          this.db.question_papers = (importedData as any).question_papers;
+        }
+        if ((importedData as any).question_paper_questions?.length > 0) {
+          this.db.question_paper_questions = (importedData as any).question_paper_questions;
+        }
+        if ((importedData as any).paper_sessions?.length > 0) {
+          this.db.paper_sessions = (importedData as any).paper_sessions;
         }
       }
+
       if (!this.db.profiles || this.db.profiles.length === 0) {
         this.db.profiles = (seedData.profiles as any[]) || [];
-        this.persist();
       }
+
+      if (!this.db.classes_parent || this.db.classes_parent.length === 0) {
+        this.db.classes_parent = (seedData.classes_parent as any[]) || [];
+      }
+
+      if (!this.db.subjects_parent || this.db.subjects_parent.length === 0) {
+        this.db.subjects_parent = (seedData.subjects_parent as any[]) || [];
+      }
+
+      this.persist();
       this.isInitialized = true;
       console.log('[SqliteWasmProvider] In-Browser Database initialized successfully.');
     } catch (err) {
