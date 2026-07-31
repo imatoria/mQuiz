@@ -16,9 +16,27 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       if (savedData) {
         this.db = JSON.parse(savedData);
       } else {
-        // Seed database with initialSeedData
-        this.db = { ...seedData };
-        this.persist();
+        // Check if a one-time imported PostgreSQL database snapshot exists
+        try {
+          const importedRes = await fetch('./importedFullDatabase.json');
+          if (importedRes.ok) {
+            const importedData = await importedRes.json();
+            const hasData = Object.values(importedData).some((arr: any) => Array.isArray(arr) && arr.length > 0);
+            if (hasData) {
+              this.db = importedData;
+              this.persist();
+              console.log('[SqliteWasmProvider] Initialized SQLite with one-time imported PostgreSQL dataset!');
+            }
+          }
+        } catch (e) {
+          // Ignore if not present
+        }
+
+        if (!this.db || Object.keys(this.db).length === 0) {
+          // Seed with default template seed data
+          this.db = { ...seedData };
+          this.persist();
+        }
       }
       if (!this.db.profiles || this.db.profiles.length === 0) {
         this.db.profiles = (seedData.profiles as any[]) || [];

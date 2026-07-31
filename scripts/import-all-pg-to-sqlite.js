@@ -9,7 +9,6 @@ const __dirname = path.dirname(__filename);
 const SUPABASE_HOST = "bdnolakqylcvspodpwyb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkbm9sYWtxeWxjdnNwb2Rwd3liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2OTY2MTcsImV4cCI6MjA2OTI3MjYxN30.HQ7nSVk61iT3Asy-7cn1-K_-TLAnu9nkdfuO-KfM1o8";
 
-// All supported database tables
 const ALL_TABLES = [
   'ai_providers',
   'announcements',
@@ -35,19 +34,6 @@ const ALL_TABLES = [
   'question_paper_questions',
   'system_settings'
 ];
-
-// Default essential tables to import if no arguments are passed
-const DEFAULT_SEED_TABLES = [
-  'classes_parent',
-  'subjects_parent',
-  'ai_providers',
-  'system_settings',
-  'profiles'
-];
-
-// Read requested tables from CLI arguments (e.g. node scripts/export-supabase-data.js classes_parent subjects_parent)
-const cliArgs = process.argv.slice(2);
-const selectedTables = cliArgs.length > 0 ? cliArgs : DEFAULT_SEED_TABLES;
 
 function fetchTableData(table) {
   return new Promise((resolve) => {
@@ -88,34 +74,38 @@ function fetchTableData(table) {
 }
 
 async function main() {
-  console.log(`Selective Supabase Data Export: Target tables [${selectedTables.join(', ')}]`);
-  const exportDataMap = {};
+  console.log('=== One-Time Full PostgreSQL to SQLite Import Script ===');
+  const fullImportMap = {};
 
+  // Check if a local dump file was passed (e.g. node scripts/import-all-pg-to-sqlite.js ./my-pg-dump.json)
+  const customDumpPath = process.argv[2];
+  if (customDumpPath && fs.existsSync(customDumpPath)) {
+    console.log(`Reading local PostgreSQL dump file: ${customDumpPath}`);
+    const dumpContent = JSON.parse(fs.readFileSync(customDumpPath, 'utf-8'));
+    const outputPath = path.join(__dirname, '..', 'public', 'importedFullDatabase.json');
+    fs.writeFileSync(outputPath, JSON.stringify(dumpContent, null, 2), 'utf-8');
+    console.log(`[SUCCESS] Full import saved to ${outputPath}`);
+    return;
+  }
+
+  // Otherwise, attempt live fetch from Supabase
   for (const table of ALL_TABLES) {
-    if (selectedTables.includes(table)) {
-      process.stdout.write(`Fetching ${table}... `);
-      const result = await fetchTableData(table);
-      if (result.error) {
-        console.log(`[WARNING] ${result.error}`);
-        exportDataMap[table] = [];
-      } else {
-        console.log(`[OK] ${result.data.length} rows`);
-        exportDataMap[table] = result.data;
-      }
+    process.stdout.write(`Fetching ${table}... `);
+    const result = await fetchTableData(table);
+    if (result.error) {
+      console.log(`[NOTICE] ${result.error}`);
+      fullImportMap[table] = [];
     } else {
-      // Keep non-selected tables empty in seed data
-      exportDataMap[table] = [];
+      console.log(`[OK] ${result.data.length} rows`);
+      fullImportMap[table] = result.data;
     }
   }
 
-  const outputDir = path.join(__dirname, '..', 'src', 'services', 'db');
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-
-  const outputPath = path.join(outputDir, 'initialSeedData.json');
-  fs.writeFileSync(outputPath, JSON.stringify(exportDataMap, null, 2), 'utf-8');
-  console.log(`Selective seed export complete! Saved to ${outputPath}`);
+  const outputPath = path.join(__dirname, '..', 'public', 'importedFullDatabase.json');
+  fs.writeFileSync(outputPath, JSON.stringify(fullImportMap, null, 2), 'utf-8');
+  console.log(`\n[SUCCESS] One-time import complete! Saved snapshot to ${outputPath}`);
+  console.log(`To load this snapshot into your browser's SQLite database, open Developer Tools Console in mQuiz and run:`);
+  console.log(`fetch('/importedFullDatabase.json').then(r=>r.json()).then(data=>{ localStorage.setItem('mquiz_sqlite_db_v1', JSON.stringify(data)); location.reload(); });`);
 }
 
 main();
