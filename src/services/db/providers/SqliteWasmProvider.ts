@@ -20,32 +20,39 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         this.db = { ...seedData };
       }
 
-      // Check if imported dataset contains questions that are missing from local state
-      const importedQuestions = (importedData as any).questions || [];
-      if (importedQuestions.length > 0 && (!this.db.questions || this.db.questions.length === 0)) {
-        console.log(`[SqliteWasmProvider] Auto-populating ${importedQuestions.length} questions from imported PostgreSQL snapshot...`);
-        this.db.questions = importedQuestions;
-        if ((importedData as any).question_papers?.length > 0) {
-          this.db.question_papers = (importedData as any).question_papers;
-        }
-        if ((importedData as any).question_paper_questions?.length > 0) {
-          this.db.question_paper_questions = (importedData as any).question_paper_questions;
-        }
-        if ((importedData as any).paper_sessions?.length > 0) {
-          this.db.paper_sessions = (importedData as any).paper_sessions;
+      // Populate ALL tables from the imported PostgreSQL dataset if missing or empty in local storage
+      const tablesToMerge = [
+        'classes_parent',
+        'subjects_parent',
+        'profiles',
+        'documents',
+        'document_pages',
+        'questions',
+        'question_papers',
+        'question_paper_questions',
+        'paper_attempts',
+        'paper_sessions',
+        'paper_violations',
+        'parent_child_relationships',
+        'child_class_assignments',
+        'child_subject_assignments',
+        'ai_providers',
+        'user_ai_provider_keys',
+        'audit_logs'
+      ];
+
+      for (const table of tablesToMerge) {
+        const importedRows = (importedData as any)[table];
+        if (Array.isArray(importedRows) && importedRows.length > 0) {
+          if (!this.db[table] || this.db[table].length === 0) {
+            console.log(`[SqliteWasmProvider] Loaded ${importedRows.length} rows for '${table}' from imported PostgreSQL dataset`);
+            this.db[table] = importedRows;
+          }
         }
       }
 
       if (!this.db.profiles || this.db.profiles.length === 0) {
         this.db.profiles = (seedData.profiles as any[]) || [];
-      }
-
-      if (!this.db.classes_parent || this.db.classes_parent.length === 0) {
-        this.db.classes_parent = (seedData.classes_parent as any[]) || [];
-      }
-
-      if (!this.db.subjects_parent || this.db.subjects_parent.length === 0) {
-        this.db.subjects_parent = (seedData.subjects_parent as any[]) || [];
       }
 
       this.persist();
@@ -117,16 +124,13 @@ export class SqliteWasmProvider implements IDatabaseProvider {
 
   private evaluateQuery<T>(sql: string, params: any[]): T[] {
     const cleanSql = sql.trim();
-    // Simple table parser
     const fromMatch = cleanSql.match(/FROM\s+([a-zA-Z0-9_]+)/i);
     if (!fromMatch) return [];
 
     const tableName = fromMatch[1];
     let rows = [...this.getTable(tableName)];
 
-    // Basic filtering if WHERE clause exists
     if (/WHERE/i.test(cleanSql)) {
-      // Basic id or equality matching
       if (params.length > 0) {
         const paramVal = params[0];
         if (/\buser_id\s*=/i.test(cleanSql)) {
@@ -154,7 +158,6 @@ export class SqliteWasmProvider implements IDatabaseProvider {
     if (insertMatch && params.length > 0) {
       const table = insertMatch[1];
       const rows = this.getTable(table);
-      // Assuming params is an object or array of column values
       if (typeof params[0] === 'object' && !Array.isArray(params[0])) {
         rows.push(params[0]);
       } else {

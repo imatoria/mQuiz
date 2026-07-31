@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SUPABASE_HOST = "bdnolakqylcvspodpwyb.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkbm9sYWtxeWxjdnNwb2Rwd3liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2OTY2MTcsImV4cCI6MjA2OTI3MjYxN30.HQ7nSVk61iT3Asy-7cn1-K_-TLAnu9nkdfuO-KfM1o8";
+// Service Role Key provided by user to bypass RLS policies
+const SERVICE_ROLE_KEY = process.argv[2] || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkbm9sYWtxeWxjdnNwb2Rwd3liIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzY5NjYxNywiZXhwIjoyMDY5MjcyNjE3fQ.h30lec-aYJvhWLZslbX0MKJUJuULM7_SJUYyNvIZgFQ";
 
 const ALL_TABLES = [
   'ai_providers',
@@ -32,7 +33,8 @@ const ALL_TABLES = [
   'questions',
   'question_papers',
   'question_paper_questions',
-  'system_settings'
+  'system_settings',
+  'user_ai_provider_keys'
 ];
 
 function fetchTableData(table) {
@@ -42,8 +44,8 @@ function fetchTableData(table) {
       path: `/rest/v1/${table}?select=*`,
       method: 'GET',
       headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json'
       }
     };
@@ -74,21 +76,9 @@ function fetchTableData(table) {
 }
 
 async function main() {
-  console.log('=== One-Time Full PostgreSQL to SQLite Import Script ===');
+  console.log('=== One-Time Full PostgreSQL to SQLite Import Script (Service Role Key) ===');
   const fullImportMap = {};
 
-  // Check if a local dump file was passed (e.g. node scripts/import-all-pg-to-sqlite.js ./my-pg-dump.json)
-  const customDumpPath = process.argv[2];
-  if (customDumpPath && fs.existsSync(customDumpPath)) {
-    console.log(`Reading local PostgreSQL dump file: ${customDumpPath}`);
-    const dumpContent = JSON.parse(fs.readFileSync(customDumpPath, 'utf-8'));
-    const outputPath = path.join(__dirname, '..', 'public', 'importedFullDatabase.json');
-    fs.writeFileSync(outputPath, JSON.stringify(dumpContent, null, 2), 'utf-8');
-    console.log(`[SUCCESS] Full import saved to ${outputPath}`);
-    return;
-  }
-
-  // Otherwise, attempt live fetch from Supabase
   for (const table of ALL_TABLES) {
     process.stdout.write(`Fetching ${table}... `);
     const result = await fetchTableData(table);
@@ -101,11 +91,16 @@ async function main() {
     }
   }
 
-  const outputPath = path.join(__dirname, '..', 'public', 'importedFullDatabase.json');
-  fs.writeFileSync(outputPath, JSON.stringify(fullImportMap, null, 2), 'utf-8');
-  console.log(`\n[SUCCESS] One-time import complete! Saved snapshot to ${outputPath}`);
-  console.log(`To load this snapshot into your browser's SQLite database, open Developer Tools Console in mQuiz and run:`);
-  console.log(`fetch('/importedFullDatabase.json').then(r=>r.json()).then(data=>{ localStorage.setItem('mquiz_sqlite_db_v1', JSON.stringify(data)); location.reload(); });`);
+  const publicOutputPath = path.join(__dirname, '..', 'public', 'importedFullDatabase.json');
+  const srcOutputPath = path.join(__dirname, '..', 'src', 'services', 'db', 'importedFullDatabase.json');
+
+  fs.writeFileSync(publicOutputPath, JSON.stringify(fullImportMap, null, 2), 'utf-8');
+  fs.writeFileSync(srcOutputPath, JSON.stringify(fullImportMap, null, 2), 'utf-8');
+
+  console.log(`\n[SUCCESS] Full PostgreSQL export complete!`);
+  console.log(`Saved datasets to:`);
+  console.log(` - ${publicOutputPath}`);
+  console.log(` - ${srcOutputPath}`);
 }
 
 main();
