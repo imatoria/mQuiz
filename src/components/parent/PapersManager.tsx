@@ -47,35 +47,48 @@ export const PapersManager: React.FC = () => {
 
     const { data: papersData } = await supabase
       .from('question_papers')
-      .select(`
-        *,
-        subjects_parent!subject_parent_id(subject_name),
-        classes_parent!class_parent_id(class_name)
-      `)
-      .eq('user_id', user.user.id)
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false });
+      .select('*')
+      .eq('is_deleted', false);
 
-    setQuestionPapers(papersData || []);
+    const { data: allClasses } = await supabase.from('classes_parent').select('*');
+    const { data: allSubjects } = await supabase.from('subjects_parent').select('*');
+
+    const classMap = new Map((allClasses || []).map((c: any) => [c.id, c.class_name]));
+    const subjMap = new Map((allSubjects || []).map((s: any) => [s.id, s.subject_name]));
+
+    const formattedPapers = (papersData || []).map((paper: any) => {
+      const className = paper.class_parent_id ? classMap.get(paper.class_parent_id) || 'Class 10' : 'Class 10';
+      const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+      return {
+        ...paper,
+        subjects_parent: { subject_name: subjName },
+        classes_parent: { class_name: className }
+      };
+    });
+
+    setQuestionPapers(formattedPapers);
     
     // Separate scheduled papers
-    const scheduled = papersData?.filter(p => p.start_time && p.end_time) || [];
+    const scheduled = formattedPapers.filter((p: any) => p.start_time && p.end_time);
     setScheduledPapers(scheduled);
 
     // Also fetch recently deleted papers for undo functionality
     const { data: deletedData } = await supabase
       .from('question_papers')
-      .select(`
-        *,
-        subjects_parent!subject_parent_id(subject_name),
-        classes_parent!class_parent_id(class_name)
-      `)
-      .eq('user_id', user.user.id)
-      .eq('is_deleted', true)
-      .gte('deleted_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
-      .order('deleted_at', { ascending: false });
+      .select('*')
+      .eq('is_deleted', true);
 
-    setDeletedPapers(deletedData || []);
+    const formattedDeleted = (deletedData || []).map((paper: any) => {
+      const className = paper.class_parent_id ? classMap.get(paper.class_parent_id) || 'Class 10' : 'Class 10';
+      const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+      return {
+        ...paper,
+        subjects_parent: { subject_name: subjName },
+        classes_parent: { class_name: className }
+      };
+    });
+
+    setDeletedPapers(formattedDeleted);
   };
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);

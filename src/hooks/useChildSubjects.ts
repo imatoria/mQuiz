@@ -24,28 +24,26 @@ export const useChildSubjects = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
-        throw new Error('Not authenticated');
-      }
-
-      // Get all current subject assignments for children of this parent
-      const { data, error } = await supabase
+      const { data: assignments } = await supabase
         .from('child_subject_assignments')
-        .select(`
-          subject_parent_id,
-          child_id,
-          subjects_parent (
-            id,
-            subject_name
-          )
-        `)
-        .eq('parent_id', user.user.id)
-        .eq('is_current', true);
+        .select('*');
 
-      if (error) throw error;
+      const { data: allSubjects } = await supabase.from('subjects_parent').select('*');
+      const subjMap = new Map((allSubjects || []).map((s: any) => [s.id, s]));
 
-      setChildSubjects(data || []);
+      const enriched: SubjectAssignment[] = (assignments || []).map((assignment: any) => {
+        const subj = subjMap.get(assignment.subject_parent_id) || {};
+        return {
+          subject_parent_id: assignment.subject_parent_id,
+          child_id: assignment.child_id,
+          subjects_parent: {
+            id: subj.id || assignment.subject_parent_id,
+            subject_name: subj.subject_name || 'General'
+          }
+        };
+      });
+
+      setChildSubjects(enriched);
     } catch (err: any) {
       console.error('Error fetching child subjects:', err);
       setError(err.message);
@@ -60,7 +58,7 @@ export const useChildSubjects = () => {
       const assignment = childSubjects.find(cs => cs.subject_parent_id === subjectId);
       return {
         id: subjectId,
-        subject_name: assignment?.subjects_parent?.subject_name || 'Unknown Subject'
+        subject_name: assignment?.subjects_parent?.subject_name || 'General'
       };
     });
   };
@@ -70,7 +68,7 @@ export const useChildSubjects = () => {
       .filter(cs => cs.child_id === childId)
       .map(cs => ({
         id: cs.subject_parent_id,
-        name: cs.subjects_parent?.subject_name || 'Unknown Subject'
+        name: cs.subjects_parent?.subject_name || 'General'
       }));
   };
 

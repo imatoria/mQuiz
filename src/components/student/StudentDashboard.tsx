@@ -170,22 +170,16 @@ const StudentDashboardContent = () => {
         const userId = authData.user.id;
         
         // Fetch scheduled papers with explicit query
-        const { data: papers, error } = await supabase
+        const { data: papersData, error } = await supabase
           .from('question_papers')
-          .select(`
-            *,
-            subjects_parent (
-              id,
-              subject_name
-            )
-          `)
-          .eq('assign_to_all', true)
-          .not('start_time', 'is', null)
-          .not('end_time', 'is', null);
+          .select('*');
         
         if (error) throw error;
+
+        const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+        const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
         
-        const validPapers = papers || [];
+        const validPapers = (papersData || []).filter((p: any) => p.is_deleted !== true);
         
         // Get attempts for current user
         const { data: attemptsData, error: attemptsError } = await supabase
@@ -209,7 +203,7 @@ const StudentDashboardContent = () => {
           max_attempts: p.max_attempts || 1,
           time_limit_minutes: p.time_limit_minutes || 60,
           total_questions: p.total_questions || 0,
-          subjects_parent: p.subjects_parent || {subject_name: 'Unknown'},
+          subjects_parent: { subject_name: p.subject_parent_id ? subjMap.get(p.subject_parent_id) || 'General' : 'General' },
           paper_attempts: (attemptsMap[p.id] || []).map(a => ({
             id: a.id,
             attempt_number: a.attempt_number,

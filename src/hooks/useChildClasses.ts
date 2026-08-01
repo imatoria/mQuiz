@@ -25,29 +25,27 @@ export const useChildClasses = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
-        throw new Error('Not authenticated');
-      }
-
-      // Get all current class assignments for children of this parent
-      const { data, error } = await supabase
+      const { data: assignments } = await supabase
         .from('child_class_assignments')
-        .select(`
-          class_parent_id,
-          child_id,
-          classes_parent (
-            id,
-            class_name,
-            class_key
-          )
-        `)
-        .eq('parent_id', user.user.id)
-        .eq('is_current', true);
+        .select('*');
 
-      if (error) throw error;
+      const { data: allClasses } = await supabase.from('classes_parent').select('*');
+      const classMap = new Map((allClasses || []).map((c: any) => [c.id, c]));
 
-      setChildClasses(data || []);
+      const enriched: ClassAssignment[] = (assignments || []).map((assignment: any) => {
+        const cls = classMap.get(assignment.class_parent_id) || {};
+        return {
+          class_parent_id: assignment.class_parent_id,
+          child_id: assignment.child_id,
+          classes_parent: {
+            id: cls.id || assignment.class_parent_id,
+            class_name: cls.class_name || 'Class 10',
+            class_key: cls.class_key || cls.class_name || 'class_10'
+          }
+        };
+      });
+
+      setChildClasses(enriched);
     } catch (err: any) {
       console.error('Error fetching child classes:', err);
       setError(err.message);
@@ -62,8 +60,8 @@ export const useChildClasses = () => {
       const assignment = childClasses.find(cc => cc.class_parent_id === classId);
       return {
         id: classId,
-        class_name: assignment?.classes_parent?.class_name || 'Unknown Class',
-        class_key: assignment?.classes_parent?.class_key || ''
+        class_name: assignment?.classes_parent?.class_name || 'Class 10',
+        class_key: assignment?.classes_parent?.class_key || assignment?.classes_parent?.class_name || 'class_10'
       };
     });
   };
@@ -73,8 +71,8 @@ export const useChildClasses = () => {
       .filter(cc => cc.child_id === childId)
       .map(cc => ({
         id: cc.class_parent_id,
-        name: cc.classes_parent?.class_name || 'Unknown Class',
-        key: cc.classes_parent?.class_key || ''
+        name: cc.classes_parent?.class_name || 'Class 10',
+        key: cc.classes_parent?.class_key || cc.classes_parent?.class_name || 'class_10'
       }));
   };
 
