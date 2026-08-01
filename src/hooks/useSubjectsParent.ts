@@ -21,33 +21,34 @@ export const useSubjectsParent = () => {
       setError(null);
 
       const { data: user } = await supabase.auth.getUser();
+      if (!user?.user) {
+        setSubjects([]);
+        return;
+      }
 
+      let parentId = user.user.id;
+
+      // If the current user is a child, find their parent_id from parent_child_relationships
+      const { data: rel } = await supabase
+        .from('parent_child_relationships')
+        .select('parent_id')
+        .eq('child_id', user.user.id)
+        .maybeSingle();
+
+      if (rel?.parent_id) {
+        parentId = rel.parent_id;
+      }
+
+      // Fetch subjects attached strictly to this parent
       const { data, error } = await supabase
         .from('subjects_parent')
         .select('*')
+        .eq('parent_id', parentId)
         .eq('is_active', true)
         .order('subject_name');
 
       if (error) throw error;
-
-      let rawSubjects: SubjectParent[] = (data || []);
-      if (user?.user) {
-        const userSubjects = rawSubjects.filter((s: any) => s.parent_id === user.user.id);
-        if (userSubjects.length > 0) {
-          rawSubjects = userSubjects;
-        }
-      }
-
-      // Deduplicate subjects by subject_name so items are never displayed twice
-      const uniqueSubjectsMap = new Map<string, SubjectParent>();
-      rawSubjects.forEach((s: SubjectParent) => {
-        const key = (s.subject_name || s.subject_key || '').trim().toLowerCase();
-        if (key && !uniqueSubjectsMap.has(key)) {
-          uniqueSubjectsMap.set(key, s);
-        }
-      });
-
-      setSubjects(Array.from(uniqueSubjectsMap.values()));
+      setSubjects(data || []);
     } catch (err: any) {
       setError(err.message);
     } finally {

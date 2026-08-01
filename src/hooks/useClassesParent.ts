@@ -21,33 +21,34 @@ export const useClassesParent = () => {
       setError(null);
 
       const { data: user } = await supabase.auth.getUser();
+      if (!user?.user) {
+        setClasses([]);
+        return;
+      }
 
+      let parentId = user.user.id;
+
+      // If the current user is a child, find their parent_id from parent_child_relationships
+      const { data: rel } = await supabase
+        .from('parent_child_relationships')
+        .select('parent_id')
+        .eq('child_id', user.user.id)
+        .maybeSingle();
+
+      if (rel?.parent_id) {
+        parentId = rel.parent_id;
+      }
+
+      // Fetch classes attached strictly to this parent
       const { data, error } = await supabase
         .from('classes_parent')
         .select('*')
+        .eq('parent_id', parentId)
         .eq('is_active', true)
         .order('display_order');
 
       if (error) throw error;
-
-      let rawClasses: ClassParent[] = (data || []);
-      if (user?.user) {
-        const userClasses = rawClasses.filter((c: any) => c.parent_id === user.user.id);
-        if (userClasses.length > 0) {
-          rawClasses = userClasses;
-        }
-      }
-
-      // Deduplicate by class_name so duplicates like 'Grade 9' are never displayed twice
-      const uniqueClassesMap = new Map<string, ClassParent>();
-      rawClasses.forEach((c: ClassParent) => {
-        const key = (c.class_name || c.class_key || '').trim().toLowerCase();
-        if (key && !uniqueClassesMap.has(key)) {
-          uniqueClassesMap.set(key, c);
-        }
-      });
-
-      setClasses(Array.from(uniqueClassesMap.values()));
+      setClasses(data || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
