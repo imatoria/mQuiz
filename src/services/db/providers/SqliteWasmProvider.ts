@@ -187,7 +187,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
 
       if (typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
         const targetId = params[params.length - 1];
-        const index = rows.findIndex(r => r.id === targetId);
+        const index = rows.findIndex(r => r.id === targetId || r.user_id === targetId || r.child_id === targetId || r.parent_id === targetId);
         if (index !== -1) {
           rows[index] = { ...rows[index], ...params[0] };
           return 1;
@@ -211,9 +211,14 @@ export class SqliteWasmProvider implements IDatabaseProvider {
 
           let updatedCount = 0;
           if (whereValues.length > 0) {
-            const targetId = whereValues[whereValues.length - 1];
             rows.forEach((r, idx) => {
-              if (r.id === targetId || whereValues.includes(r.id)) {
+              const matches = whereValues.some(val => 
+                r.id === val || 
+                r.user_id === val || 
+                r.child_id === val || 
+                r.parent_id === val
+              );
+              if (matches) {
                 rows[idx] = { ...rows[idx], ...updates };
                 updatedCount++;
               }

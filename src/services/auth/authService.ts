@@ -135,6 +135,13 @@ class AuthService {
     return { user: this.currentSession, error: null };
   }
 
+  updateSessionProfile(fullName: string) {
+    if (this.currentSession) {
+      this.currentSession.fullName = fullName;
+      this.saveSession();
+    }
+  }
+
   async logout() {
     this.currentSession = null;
     this.saveSession();

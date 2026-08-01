@@ -127,6 +127,9 @@ export const useAuth = () => {
       if (error) throw error;
 
       const updatedProfile = { ...profile, ...updates };
+      if (updatedProfile.full_name) {
+        authService.updateSessionProfile(updatedProfile.full_name);
+      }
       setProfile(updatedProfile);
       return { data: updatedProfile, error: null };
     } catch (error: any) {
