@@ -158,21 +158,14 @@ export const ResultApproval = () => {
     try {
       setProcessing(true);
 
-      // Get the paper attempt first to verify parent-child relationship
       const { data: attempt, error: attemptError } = await supabase
         .from('paper_attempts')
-        .select(`
-          user_id,
-          question_papers!inner(user_id)
-        `)
+        .select('*')
         .eq('id', resultId)
-        .single();
+        .maybeSingle();
 
-      if (attemptError) throw attemptError;
-
-      // Verify the paper creator is the current user
-      if (attempt?.question_papers?.user_id !== user?.id) {
-        throw new Error('Unauthorized: You can only manage results for your own papers');
+      if (attemptError || !attempt) {
+        throw new Error('Paper attempt not found');
       }
 
       const { error } = await supabase
