@@ -39,11 +39,19 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       this.db = baseDb;
       this.persist();
       this.isInitialized = true;
+      if (typeof window !== 'undefined') {
+        (window as any).mquizDb = this.db;
+        (window as any).getSqliteDb = () => this.db;
+      }
       console.log(`[SqliteWasmProvider] In-Browser Database initialized successfully with ${this.db.questions?.length || 0} questions and ${this.db.classes_parent?.length || 0} classes.`);
     } catch (err) {
       console.error('[SqliteWasmProvider] Initialization failed:', err);
       this.db = { ...(importedData as any) };
       this.isInitialized = true;
+      if (typeof window !== 'undefined') {
+        (window as any).mquizDb = this.db;
+        (window as any).getSqliteDb = () => this.db;
+      }
     }
   }
 
