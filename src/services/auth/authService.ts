@@ -70,13 +70,36 @@ class AuthService {
       return { user: this.currentSession, error: null };
     }
 
-    // Default admin fallback for initial sign in
-    if (email.toLowerCase() === 'admin@mquiz.com' || email.toLowerCase() === 'admin@knowledgebuilder.com') {
+    // Default role fallbacks if profile not yet in DB
+    const emailLower = email.toLowerCase();
+    if (emailLower === 'praveen.matoria@gmail.com' || emailLower === 'admin@mquiz.com' || emailLower === 'admin@knowledgebuilder.com') {
       this.currentSession = {
-        id: 'usr-admin-001',
-        email: 'admin@mquiz.com',
+        id: match?.user_id || match?.id || 'usr-admin-001',
+        email: email,
         role: 'admin',
-        fullName: 'Administrator'
+        fullName: match?.full_name || 'Praveen Matoria (Admin)'
+      };
+      this.saveSession();
+      return { user: this.currentSession, error: null };
+    }
+
+    if (emailLower === 'praveen.matoria+parent@gmail.com') {
+      this.currentSession = {
+        id: match?.user_id || match?.id || '32383bef-bf66-4b8e-81e8-69d1bea635bd',
+        email: email,
+        role: 'parent',
+        fullName: match?.full_name || 'Praveen Matoria'
+      };
+      this.saveSession();
+      return { user: this.currentSession, error: null };
+    }
+
+    if (emailLower === 'praveen.matoria+student1@gmail.com') {
+      this.currentSession = {
+        id: match?.user_id || match?.id || 'f0fc506c-f970-4351-9db4-ef11f566fd22',
+        email: email,
+        role: 'student',
+        fullName: match?.full_name || 'Praveen Matoria (Student)'
       };
       this.saveSession();
       return { user: this.currentSession, error: null };
