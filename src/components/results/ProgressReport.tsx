@@ -72,32 +72,26 @@ export const ProgressReport = () => {
     try {
       setLoading(true);
       
-      let query = supabase
+      const { data: attemptsData, error } = await supabase
         .from('paper_attempts')
-        .select(`
-          *,
-          question_papers!inner(
-            title,
-            user_id,
-            total_questions
-          )
-        `)
-        .gte('started_at', new Date(Date.now() - parseInt(timeframe) * 24 * 60 * 60 * 1000).toISOString());
-
-      // Filter by creator for parents, or by user for students
-      if (profile?.role === 'parent') {
-        query = query.eq('question_papers.user_id', profile.user_id);
-      } else if (profile?.role === 'child') {
-        query = query.eq('user_id', profile.user_id);
-      }
-
-      if (selectedStudent !== 'all') {
-        query = query.eq('user_id', selectedStudent);
-      }
-
-      const { data: attempts, error } = await query;
+        .select('*');
 
       if (error) throw error;
+
+      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
+
+      const attempts = (attemptsData || []).map((attempt: any) => {
+        const paper = paperMap.get(attempt.paper_id) || {};
+        return {
+          ...attempt,
+          question_papers: {
+            title: paper.title || 'Question Paper',
+            user_id: paper.user_id || '',
+            total_questions: paper.total_questions || attempt.total_questions || 10
+          }
+        };
+      });
 
       // Get user profiles separately
       const userIds = [...new Set(attempts?.map(attempt => attempt.user_id) || [])];

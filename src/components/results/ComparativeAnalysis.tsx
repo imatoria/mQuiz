@@ -82,27 +82,36 @@ export const ComparativeAnalysis = () => {
     try {
       setLoading(true);
       
-      let query = supabase
+      const { data: attemptsData, error } = await supabase
         .from('paper_attempts')
-        .select(`
-          *,
-          question_papers!inner(
-            title,
-            user_id,
-            class_parent_id,
-            subjects_parent!subject_parent_id(subject_name),
-            classes_parent!class_parent_id(class_name)
-          )
-        `)
-        .gte('started_at', new Date(Date.now() - parseInt(timeframe) * 24 * 60 * 60 * 1000).toISOString())
-        .not('completed_at', 'is', null);
+        .select('*');
 
-      if (profile?.role === 'parent') {
-        query = query.eq('question_papers.user_id', profile.user_id);
-      }
-
-      const { data: attempts, error } = await query;
       if (error) throw error;
+
+      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+      const { data: classesData } = await supabase.from('classes_parent').select('*');
+
+      const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
+      const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
+      const classMap = new Map((classesData || []).map((c: any) => [c.id, c.class_name]));
+
+      const attempts = (attemptsData || []).map((attempt: any) => {
+        const paper = paperMap.get(attempt.paper_id) || {};
+        const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+        const className = paper.class_parent_id ? classMap.get(paper.class_parent_id) || 'Class 10' : 'Class 10';
+
+        return {
+          ...attempt,
+          question_papers: {
+            title: paper.title || 'Question Paper',
+            user_id: paper.user_id || '',
+            class_parent_id: paper.class_parent_id || '',
+            subjects_parent: { subject_name: subjName },
+            classes_parent: { class_name: className }
+          }
+        };
+      });
 
       // Get user profiles separately
       const userIds = [...new Set(attempts?.map(attempt => attempt.user_id) || [])];

@@ -383,5 +383,15 @@ export const supabase = {
       console.log(`[Supabase Mock Function] Function '${functionName}' invoked locally.`);
       return { data: { success: true }, error: null };
     }
+  },
+  storage: {
+    from: (bucket: string) => ({
+      download: async (path: string) => ({ data: new Blob([path]), error: null }),
+      getPublicUrl: (path: string) => ({ data: { publicUrl: path } }),
+      createSignedUrl: async (path: string, expiresIn?: number) => ({ data: { signedUrl: path }, error: null }),
+      upload: async (path: string, file: any) => ({ data: { path }, error: null }),
+      remove: async (paths: string[]) => ({ data: paths, error: null }),
+      list: async () => ({ data: [], error: null })
+    })
   }
 };

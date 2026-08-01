@@ -202,13 +202,7 @@ export default function BulkQuestionOperations() {
       // Fetch all questions for the user
       const { data: questions, error } = await supabase
         .from('questions')
-        .select(`
-          *,
-          documents!inner(
-            title,
-            user_id
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

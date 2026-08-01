@@ -39,51 +39,44 @@ export const useViolations = (attemptId?: string) => {
       setLoading(true);
       setError(null);
 
-      let query = supabase
-        .from('paper_violations')
-        .select(`
-          *,
-          paper_attempts!inner (
-            user_id,
-            paper_id,
-            started_at,
-            completed_at
-          )
-        `)
-        .order('occurred_at', { ascending: false });
-
+      let query = supabase.from('paper_violations').select('*');
       if (attemptId) {
         query = query.eq('paper_attempt_id', attemptId);
       }
 
-      const { data, error: fetchError } = await query;
-
+      const { data: violationsData, error: fetchError } = await query;
       if (fetchError) throw fetchError;
 
-      // Fetch additional user and paper details
-      const enrichedData = await Promise.all((data || []).map(async (violation: any) => {
-        const [userResult, paperResult] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('full_name, email')
-            .eq('user_id', violation.paper_attempts.user_id)
-            .single(),
-          supabase
-            .from('question_papers')
-            .select('title')
-            .eq('id', violation.paper_attempts.paper_id)
-            .single()
-        ]);
+      const { data: attemptsData } = await supabase.from('paper_attempts').select('*');
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      const { data: papersData } = await supabase.from('question_papers').select('*');
+
+      const attemptMap = new Map((attemptsData || []).map((a: any) => [a.id, a]));
+      const profileMap = new Map((profilesData || []).map((p: any) => [p.user_id || p.id, p]));
+      const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
+
+      const enrichedData = (violationsData || []).map((violation: any) => {
+        const attempt = attemptMap.get(violation.paper_attempt_id) || {};
+        const profile = profileMap.get(attempt.user_id) || {};
+        const paper = paperMap.get(attempt.paper_id) || {};
 
         return {
           ...violation,
           paper_attempts: {
-            ...violation.paper_attempts,
-            profiles: userResult.data,
-            question_papers: paperResult.data
+            user_id: attempt.user_id || '',
+            paper_id: attempt.paper_id || '',
+            started_at: attempt.started_at || '',
+            completed_at: attempt.completed_at || null,
+            profiles: {
+              full_name: profile.full_name || 'User',
+              email: profile.email || ''
+            },
+            question_papers: {
+              title: paper.title || 'Question Paper'
+            }
           }
         };
-      }));
+      });
 
       setViolations(enrichedData as Violation[]);
     } catch (err) {

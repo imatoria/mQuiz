@@ -26,46 +26,45 @@ export const useChildAcademicProfile = (childId?: string) => {
       setIsLoading(true);
       setError(null);
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
-        throw new Error('Not authenticated');
-      }
-
-      // Fetch class assignment
-      const { data: classData, error: classError } = await supabase
+      // Fetch class assignment by child_id
+      const { data: classData } = await supabase
         .from('child_class_assignments')
-        .select('class_parent_id, classes_parent(class_name)')
+        .select('*')
         .eq('child_id', childId)
-        .eq('parent_id', user.user.id)
-        .eq('is_current', true)
         .maybeSingle();
 
-      if (classError) throw classError;
+      let className: string | undefined = undefined;
+      if (classData?.class_parent_id) {
+        const { data: classInfo } = await supabase
+          .from('classes_parent')
+          .select('*')
+          .eq('id', classData.class_parent_id)
+          .maybeSingle();
+        className = classInfo?.class_name;
+      }
 
-      // Fetch subject assignments with subject names
-      const { data: subjectsData, error: subjectsError } = await supabase
+      // Fetch subject assignments by child_id
+      const { data: subjectsData } = await supabase
         .from('child_subject_assignments')
-        .select(`
-          subject_parent_id,
-          subjects_parent (
-            id,
-            subject_name
-          )
-        `)
-        .eq('child_id', childId)
-        .eq('parent_id', user.user.id)
-        .eq('is_current', true);
+        .select('*')
+        .eq('child_id', childId);
 
-      if (subjectsError) throw subjectsError;
+      const subjectIds = (subjectsData || []).map((s: any) => s.subject_parent_id);
 
-      const subjectIds = subjectsData?.map(s => s.subject_parent_id) || [];
-      const subjectNames = subjectsData?.map(s => s.subjects_parent?.subject_name).filter(Boolean) || [];
+      let subjectNames: string[] = [];
+      if (subjectIds.length > 0) {
+        const { data: subjectsInfo } = await supabase
+          .from('subjects_parent')
+          .select('*')
+          .in('id', subjectIds);
+        subjectNames = (subjectsInfo || []).map((s: any) => s.subject_name).filter(Boolean);
+      }
 
       setAcademicData({
         child_id: childId,
-        class_level: classData?.classes_parent?.class_name,
+        class_level: className,
         subject_ids: subjectIds,
-        subject_names: subjectNames as string[]
+        subject_names: subjectNames
       });
 
     } catch (err: any) {

@@ -106,27 +106,25 @@ export const GradeDistribution = () => {
       }
 
       // Get test attempts for all children
-      let query = supabase
+      const { data: attemptsData, error: attemptsError } = await supabase
         .from('paper_attempts')
-        .select(`
-          user_id,
-          score,
-          completed_at,
-          question_papers!inner (
-            id,
-            title,
-            subjects (name)
-          )
-        `)
-        .in('user_id', childIds)
-        .not('completed_at', 'is', null);
+        .select('*');
 
-      if (selectedTest !== 'all') {
-        query = query.eq('paper_id', selectedTest);
-      }
-
-      const { data: attempts, error: attemptsError } = await query;
       if (attemptsError) throw attemptsError;
+
+      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
+
+      const attempts = (attemptsData || []).map((attempt: any) => {
+        const paper = paperMap.get(attempt.paper_id) || {};
+        return {
+          ...attempt,
+          question_papers: {
+            id: paper.id || attempt.paper_id,
+            title: paper.title || 'Question Paper'
+          }
+        };
+      });
 
       // Process student performance data
       const studentMap = new Map<string, {

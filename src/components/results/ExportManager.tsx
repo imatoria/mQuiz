@@ -95,68 +95,44 @@ export const ExportManager = () => {
     try {
       setLoading(true);
 
-      let query = supabase
+      const { data: attemptsData, error } = await supabase
         .from('paper_attempts')
-        .select(`
-          *,
-          question_papers!inner(
-            title,
-            user_id,
-            class_parent_id,
-            subject_parent_id,
-            classes_parent(class_name),
-            subjects_parent(subject_name)
-          ),
-          profiles!paper_attempts_user_id_fkey(
-            full_name,
-            user_id
-          )
-        `)
-        .not('completed_at', 'is', null);
-
-      // Apply filters
-      if (profile?.role === 'parent') {
-        query = query.eq('question_papers.user_id', profile.user_id);
-      } else if (profile?.role === 'child') {
-        query = query.eq('user_id', profile.user_id);
-      }
-
-      if (selectedStudents.length > 0) {
-        query = query.in('user_id', selectedStudents);
-      }
-
-      if (selectedTests.length > 0) {
-        query = query.in('paper_id', selectedTests);
-      }
-
-      if (dateRange?.from) {
-        query = query.gte('completed_at', dateRange.from.toISOString());
-      }
-
-      if (dateRange?.to) {
-        query = query.lte('completed_at', dateRange.to.toISOString());
-      }
-
-      const { data: attempts, error } = await query;
+        .select('*');
 
       if (error) throw error;
 
-      // Transform data for export
-      const exportData: ExportData[] = attempts?.map((attempt: any) => ({
-        student_name: attempt.profiles?.full_name || 'Unknown Student',
-        test_title: attempt.question_papers.title,
-        score: attempt.score || 0,
-        total_questions: attempt.total_questions || 0,
-        percentage: attempt.total_questions > 0 
-          ? Math.round((attempt.score / attempt.total_questions) * 100) 
-          : 0,
-        completed_at: format(new Date(attempt.completed_at), 'dd/MM/yyyy HH:mm'),
-        time_taken: attempt.completed_at && attempt.started_at 
-          ? Math.round((new Date(attempt.completed_at).getTime() - new Date(attempt.started_at).getTime()) / 60000)
-          : 0,
-        subject: attempt.question_papers.subjects_parent?.subject_name || 'Unknown',
-        class_level: attempt.question_papers.classes_parent?.class_name || 'Unknown'
-      })) || [];
+      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      const { data: classesData } = await supabase.from('classes_parent').select('*');
+      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+
+      const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
+      const profileMap = new Map((profilesData || []).map((pr: any) => [pr.user_id || pr.id, pr]));
+      const classMap = new Map((classesData || []).map((c: any) => [c.id, c.class_name]));
+      const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
+
+      const exportData: ExportData[] = (attemptsData || []).map((attempt: any) => {
+        const paper = paperMap.get(attempt.paper_id) || {};
+        const prof = profileMap.get(attempt.user_id) || {};
+        const className = paper.class_parent_id ? classMap.get(paper.class_parent_id) || 'Class 10' : 'Class 10';
+        const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+
+        return {
+          student_name: prof.full_name || 'Unknown Student',
+          test_title: paper.title || 'Question Paper',
+          score: attempt.score || 0,
+          total_questions: attempt.total_questions || 0,
+          percentage: attempt.total_questions > 0 
+            ? Math.round((attempt.score / attempt.total_questions) * 100) 
+            : 0,
+          completed_at: format(new Date(attempt.completed_at || attempt.started_at || Date.now()), 'dd/MM/yyyy HH:mm'),
+          time_taken: attempt.completed_at && attempt.started_at 
+            ? Math.round((new Date(attempt.completed_at).getTime() - new Date(attempt.started_at).getTime()) / 60000)
+            : 0,
+          subject: subjName,
+          class_level: className
+        };
+      });
 
       setExportData(exportData);
       return exportData;

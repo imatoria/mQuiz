@@ -99,69 +99,46 @@ export const ResultApproval = () => {
 
       const testIds = parentTests?.map(t => t.id) || [];
 
-      if (testIds.length === 0) {
-        setResults([]);
-        setLoading(false);
-        return;
-      }
-
-      // Get all paper attempts from parent's children for parent's papers
-      const { data: attempts, error: attemptsError } = await supabase
+      // Get test attempts for all children
+      const { data: attemptsData, error: attemptsError } = await supabase
         .from('paper_attempts')
-        .select(`
-          id,
-          score,
-          total_questions,
-          completed_at,
-          answers,
-          show_results,
-          feedback,
-          user_id,
-          paper_id,
-          question_papers!inner (
-            title,
-            subjects_parent (subject_name)
-          )
-        `)
-        .in('user_id', childIds)
-        .in('paper_id', testIds)
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false });
+        .select('*');
 
       if (attemptsError) throw attemptsError;
 
-      // Get user profiles separately
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email')
-        .in('user_id', childIds);
+      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+      const { data: profilesData } = await supabase.from('profiles').select('*');
 
-      if (profilesError) throw profilesError;
+      const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
+      const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
+      const profileMap = new Map((profilesData || []).map((pr: any) => [pr.user_id || pr.id, pr]));
 
-      const profileMap = profiles?.reduce((acc, profile) => {
-        acc[profile.user_id] = profile;
-        return acc;
-      }, {} as Record<string, any>) || {};
+      const formatted: TestResult[] = (attemptsData || []).map((attempt: any) => {
+        const paper = paperMap.get(attempt.paper_id) || {};
+        const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+        const prof = profileMap.get(attempt.user_id) || {};
 
-      const formatted: TestResult[] = attempts?.map(attempt => ({
-        id: attempt.id,
-        score: attempt.score || 0,
-        total_questions: attempt.total_questions || 0,
-        completed_at: attempt.completed_at,
-        show_results: attempt.show_results || false,
-        feedback: attempt.feedback,
-        answers: (attempt.answers as Record<string, string>) || {},
-        student: {
-          id: attempt.user_id,
-          full_name: profileMap[attempt.user_id]?.full_name || 'Unknown',
-          email: profileMap[attempt.user_id]?.email || ''
-        },
-        test: {
-          title: attempt.question_papers?.title || 'Unknown Test',
-          subject: attempt.question_papers?.subjects_parent?.subject_name || 'Unknown Subject',
-          question_paper_id: attempt.paper_id || ''
-        }
-      })) || [];
+        return {
+          id: attempt.id,
+          score: attempt.score || 0,
+          total_questions: attempt.total_questions || 0,
+          completed_at: attempt.completed_at || attempt.started_at || new Date().toISOString(),
+          show_results: attempt.show_results || false,
+          feedback: attempt.feedback,
+          answers: typeof attempt.answers === 'string' ? JSON.parse(attempt.answers || '{}') : (attempt.answers || {}),
+          student: {
+            id: attempt.user_id,
+            full_name: prof.full_name || 'User',
+            email: prof.email || ''
+          },
+          test: {
+            title: paper.title || 'Question Paper',
+            subject: subjName,
+            question_paper_id: attempt.paper_id || ''
+          }
+        };
+      });
 
       setResults(formatted);
 
