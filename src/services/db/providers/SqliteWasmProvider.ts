@@ -147,7 +147,14 @@ export class SqliteWasmProvider implements IDatabaseProvider {
           } else if (/\bsubject_parent_id\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => r.subject_parent_id === paramVal);
           } else if (/\bis_deleted\s*=/i.test(cleanSql)) {
-            rows = rows.filter(r => r.is_deleted === (paramVal ? 1 : 0));
+            const target = Boolean(paramVal);
+            rows = rows.filter(r => Boolean(r.is_deleted) === target);
+          } else if (/\bis_active\s*=/i.test(cleanSql)) {
+            const target = Boolean(paramVal);
+            rows = rows.filter(r => Boolean(r.is_active) === target);
+          } else if (/\bis_current\s*=/i.test(cleanSql)) {
+            const target = Boolean(paramVal);
+            rows = rows.filter(r => Boolean(r.is_current) === target);
           } else if (/\bid\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => r.id === paramVal);
           }
