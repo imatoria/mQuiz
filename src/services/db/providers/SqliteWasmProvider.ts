@@ -42,6 +42,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       if (typeof window !== 'undefined') {
         (window as any).mquizDb = this.db;
         (window as any).getSqliteDb = () => this.db;
+        (window as any).querySqlite = async (sql: string) => this.query(sql);
       }
       console.log(`[SqliteWasmProvider] In-Browser Database initialized successfully with ${this.db.questions?.length || 0} questions and ${this.db.classes_parent?.length || 0} classes.`);
     } catch (err) {
@@ -51,6 +52,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       if (typeof window !== 'undefined') {
         (window as any).mquizDb = this.db;
         (window as any).getSqliteDb = () => this.db;
+        (window as any).querySqlite = async (sql: string) => this.query(sql);
       }
     }
   }
