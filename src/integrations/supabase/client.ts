@@ -10,6 +10,10 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
   private isSingle = false;
   private isMaybeSingle = false;
 
+  private isDelete = false;
+  private isUpdate = false;
+  private updatePayload: any = null;
+
   constructor(tableName: string) {
     this.tableName = tableName;
   }
@@ -108,8 +112,83 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
     return this;
   }
 
+  update(updates: any) {
+    this.isUpdate = true;
+    this.updatePayload = updates;
+    return this;
+  }
+
+  delete() {
+    this.isDelete = true;
+    return this;
+  }
+
   async executeQuery() {
     const provider = dbService.getProvider();
+
+    if (this.isDelete) {
+      let sql = `DELETE FROM ${this.tableName}`;
+      const params: any[] = [];
+      const whereClauses: string[] = [];
+
+      if (this.conditions.length > 0) {
+        for (const c of this.conditions) {
+          if (c.op === 'in' && Array.isArray(c.val)) {
+            const placeholders = c.val.map(() => '?').join(', ');
+            params.push(...c.val);
+            whereClauses.push(`${c.col} IN (${placeholders})`);
+          } else {
+            params.push(c.val);
+            whereClauses.push(`${c.col} ${c.op || '='} ?`);
+          }
+        }
+      }
+
+      if (whereClauses.length > 0) {
+        sql += ` WHERE ${whereClauses.join(' AND ')}`;
+      }
+
+      const result = await provider.execute(sql, params);
+      return { data: null, error: result.error };
+    }
+
+    if (this.isUpdate) {
+      let sql = `UPDATE ${this.tableName}`;
+      const params: any[] = [];
+      const setClauses: string[] = [];
+      const whereClauses: string[] = [];
+
+      if (this.updatePayload && typeof this.updatePayload === 'object') {
+        for (const [k, v] of Object.entries(this.updatePayload)) {
+          setClauses.push(`${k} = ?`);
+          params.push(v);
+        }
+      }
+
+      if (setClauses.length > 0) {
+        sql += ` SET ${setClauses.join(', ')}`;
+      }
+
+      if (this.conditions.length > 0) {
+        for (const c of this.conditions) {
+          if (c.op === 'in' && Array.isArray(c.val)) {
+            const placeholders = c.val.map(() => '?').join(', ');
+            params.push(...c.val);
+            whereClauses.push(`${c.col} IN (${placeholders})`);
+          } else {
+            params.push(c.val);
+            whereClauses.push(`${c.col} ${c.op || '='} ?`);
+          }
+        }
+      }
+
+      if (whereClauses.length > 0) {
+        sql += ` WHERE ${whereClauses.join(' AND ')}`;
+      }
+
+      const result = await provider.execute(sql, params);
+    }
+
     let sql = `SELECT * FROM ${this.tableName}`;
     const params: any[] = [];
     const whereClauses: string[] = [];
@@ -202,28 +281,6 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
       then: async (resolve: any) => {
         const recs = Array.isArray(records) ? records : [records];
         return resolve({ data: recs, error: null });
-      }
-    };
-  }
-
-  update(updates: any) {
-    return {
-      eq: (col: string, val: any) => ({
-        select: () => ({
-          single: async () => ({ data: updates, error: null }),
-          then: async (resolve: any) => resolve({ data: updates, error: null })
-        }),
-        then: async (resolve: any) => resolve({ data: updates, error: null })
-      })
-    };
-  }
-
-  delete() {
-    return {
-      eq: async (col: string, val: any) => {
-        const provider = dbService.getProvider();
-        await provider.execute(`DELETE FROM ${this.tableName} WHERE ${col} = ?`, [val]);
-        return { data: null, error: null };
       }
     };
   }
