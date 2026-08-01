@@ -237,35 +237,33 @@ export const ResultApproval = () => {
       setLoadingQuestions(true);
 
       // Get all questions for this test
-      const { data: questionsData, error: questionsError } = await supabase
+      const { data: qpqData, error: qpqError } = await supabase
         .from('question_paper_questions')
-        .select(`
-          questions (
-            id,
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            correct_answer
-          )
-        `)
-        .eq('question_paper_id', result.test.question_paper_id)
-        .order('question_order');
+        .select('*')
+        .eq('question_paper_id', result.test.question_paper_id);
 
-      if (questionsError) throw questionsError;
+      if (qpqError) throw qpqError;
 
-      if (!questionsData || questionsData.length === 0) {
+      const questionIds = (qpqData || []).map((item: any) => item.question_id || item.questions?.id).filter(Boolean);
+
+      if (questionIds.length === 0) {
         toast({
-          title: "Error",
-          description: "No questions found for this test",
-          variant: "destructive"
+          title: "Notice",
+          description: "No questions mapped to this test paper",
         });
+        setQuestionResults([]);
         return;
       }
 
+      const { data: allQuestions } = await supabase
+        .from('questions')
+        .select('*')
+        .in('id', questionIds);
+
+      const qMap = new Map((allQuestions || []).map((q: any) => [q.id, q]));
+
       // Parse answers - handle both string and object formats
-      let parsedAnswers = result.answers;
+      let parsedAnswers = result.answers || {};
       if (typeof result.answers === 'string') {
         try {
           parsedAnswers = JSON.parse(result.answers);
@@ -274,19 +272,22 @@ export const ResultApproval = () => {
         }
       }
 
-      const questionResults: QuestionResult[] = questionsData.map((item: any) => {
-        const question = item.questions;
-        const userAnswer = parsedAnswers.userAnswers?.[question.id] || '';
-        const isCorrect = userAnswer && userAnswer.toLowerCase() === question.correct_answer.toLowerCase();
-        
+      const userAnswersMap = parsedAnswers.userAnswers || parsedAnswers || {};
+
+      const questionResults: QuestionResult[] = questionIds.map((qId: string) => {
+        const question = qMap.get(qId) || {};
+        const qIdKey = question.id || qId;
+        const userAnswer = userAnswersMap[qIdKey] || userAnswersMap[qId] || '';
+        const isCorrect = Boolean(userAnswer && question.correct_answer && userAnswer.toString().trim().toLowerCase() === question.correct_answer.toString().trim().toLowerCase());
+
         return {
-          question_id: question.id,
-          question_text: question.question_text,
-          option_a: question.option_a,
-          option_b: question.option_b,
-          option_c: question.option_c,
-          option_d: question.option_d,
-          correct_answer: question.correct_answer,
+          question_id: qIdKey,
+          question_text: question.question_text || 'Question Text',
+          option_a: question.option_a || 'Option A',
+          option_b: question.option_b || 'Option B',
+          option_c: question.option_c || 'Option C',
+          option_d: question.option_d || 'Option D',
+          correct_answer: question.correct_answer || 'A',
           user_answer: userAnswer || '',
           is_correct: isCorrect
         };
