@@ -325,33 +325,34 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
   const loadSelectedQuestions = async (paperId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: qpqData, error: qpqError } = await supabase
         .from('question_paper_questions')
-        .select(`
-          questions (
-            id,
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            correct_answer,
-            difficulty,
-            topic,
-            page_number,
-            created_at
-          )
-        `)
+        .select('*')
         .eq('question_paper_id', paperId);
       
-      if (error) throw error;
-      
-      const questionsList = data?.map(item => item.questions).filter(Boolean) || [];
-      setSelectedQuestions(questionsList);
-      setFormData(prev => ({
-        ...prev,
-        selected_questions: questionsList.map(q => q.id)
-      }));
+      if (qpqError) throw qpqError;
+
+      const questionIds = (qpqData || []).map((item: any) => item.question_id || item.questions?.id).filter(Boolean);
+
+      if (questionIds.length > 0) {
+        const { data: allQuestions } = await supabase
+          .from('questions')
+          .select('*')
+          .in('id', questionIds);
+
+        const qMap = new Map((allQuestions || []).map((q: any) => [q.id, q]));
+        
+        // Preserve question order
+        const questionsList = questionIds.map((qId: string) => qMap.get(qId)).filter(Boolean);
+        
+        setSelectedQuestions(questionsList);
+        setFormData(prev => ({
+          ...prev,
+          selected_questions: questionsList.map((q: any) => q.id)
+        }));
+      } else {
+        setSelectedQuestions([]);
+      }
     } catch (error) {
       console.error('Error loading selected questions:', error);
     }
