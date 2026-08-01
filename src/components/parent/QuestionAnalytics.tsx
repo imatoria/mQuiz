@@ -247,8 +247,8 @@ export default function QuestionAnalytics() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredQuestions.map((question) => (
-                  <TableRow key={question.question_id}>
+                {filteredQuestions.map((question, index) => (
+                  <TableRow key={`${question.question_id}-${index}`}>
                     <TableCell className="max-w-md">
                       <div className="truncate" title={question.question_text}>
                         {question.question_text}
@@ -307,8 +307,8 @@ export default function QuestionAnalytics() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paperPerformance.map((paper) => (
-                  <TableRow key={paper.paper_id}>
+                {paperPerformance.map((paper, index) => (
+                  <TableRow key={`${paper.paper_id}-${index}`}>
                     <TableCell className="font-medium">{paper.paper_title}</TableCell>
                     <TableCell>{paper.total_attempts}</TableCell>
                     <TableCell>

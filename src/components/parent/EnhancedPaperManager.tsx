@@ -334,12 +334,12 @@ export const EnhancedPaperManager = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPapers.map((paper) => {
+                {filteredPapers.map((paper, index) => {
                   const status = getPaperStatus(paper);
                   const stats = getAttemptStats(paper);
                   
                   return (
-                    <TableRow key={paper.id}>
+                    <TableRow key={`${paper.id}-${index}`}>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="font-medium">{paper.title}</div>

@@ -279,8 +279,8 @@ export const ContentModeration = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredDocuments.map((document) => (
-                      <TableRow key={document.id}>
+                    {filteredDocuments.map((document, index) => (
+                      <TableRow key={`${document.id}-${index}`}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <div className="p-2 bg-primary/10 rounded-lg">
@@ -413,8 +413,8 @@ export const ContentModeration = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredQuestionPapers.map((questionPaper) => (
-                      <TableRow key={questionPaper.id}>
+                    {filteredQuestionPapers.map((questionPaper, index) => (
+                      <TableRow key={`${questionPaper.id}-${index}`}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <div className="p-2 bg-secondary/10 rounded-lg">

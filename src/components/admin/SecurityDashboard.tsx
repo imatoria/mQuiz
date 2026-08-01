@@ -261,8 +261,8 @@ export const SecurityDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {securityEvents.map((event) => (
-                  <TableRow key={event.id}>
+                {securityEvents.map((event, index) => (
+                  <TableRow key={`${event.id}-${index}`}>
                     <TableCell>
                       {getEventTypeBadge(event.event_type)}
                     </TableCell>
@@ -320,8 +320,8 @@ export const SecurityDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {auditLogs.map((log) => (
-                  <TableRow key={log.id}>
+                {auditLogs.map((log, index) => (
+                  <TableRow key={`${log.id}-${index}`}>
                     <TableCell>
                       {getActionBadge(log.action)}
                     </TableCell>

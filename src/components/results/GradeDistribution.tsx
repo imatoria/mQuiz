@@ -409,8 +409,8 @@ export const GradeDistribution = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {studentPerformance.map((student) => (
-                <TableRow key={student.student_id}>
+              {studentPerformance.map((student, index) => (
+                <TableRow key={`${student.student_id}-${index}`}>
                   <TableCell>
                     <div>
                       <div className="font-medium">{student.student_name}</div>

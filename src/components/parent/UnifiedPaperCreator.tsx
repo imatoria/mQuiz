@@ -1058,14 +1058,14 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                             </TableRow>
                           </TableHeader>
                         <TableBody>
-                          {selectedQuestions.map((question) => {
+                          {selectedQuestions.map((question, index) => {
                             // Check if question matches current difficulty filter
                             const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(question.difficulty);
                             const isValid = matchesDifficulty;
                             
                             return (
                               <TableRow 
-                                key={question.id} 
+                                key={`${question.id}-${index}`} 
                                 className={cn(!isValid && "opacity-50 bg-muted/50")}
                               >
                                 <TableCell>

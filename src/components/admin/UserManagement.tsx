@@ -353,8 +353,8 @@ export const UserManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedUsers.map((user) => (
-                <TableRow key={user.id}>
+              {paginatedUsers.map((user, index) => (
+                <TableRow key={`${user.id}-${index}`}>
                   <TableCell>
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
