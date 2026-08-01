@@ -221,13 +221,20 @@ export const ApprovalWorkflow = () => {
                             <Shield className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm font-medium">Requested Role:</span>
                           </div>
-                          <Badge className={`${getRoleColor(user.role)} flex items-center gap-1 w-fit`}>
-                            {getRoleIcon(user.role)}
-                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                          </Badge>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {getRoleDescription(user.role)}
-                          </p>
+                          {(() => {
+                            const rStr = user.role || 'user';
+                            return (
+                              <>
+                                <Badge className={`${getRoleColor(rStr)} flex items-center gap-1 w-fit`}>
+                                  {getRoleIcon(rStr)}
+                                  {rStr.charAt(0).toUpperCase() + rStr.slice(1)}
+                                </Badge>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {getRoleDescription(rStr)}
+                                </p>
+                              </>
+                            );
+                          })()}
                         </div>
 
                         <div>

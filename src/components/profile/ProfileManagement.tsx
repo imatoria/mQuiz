@@ -256,10 +256,15 @@ export const ProfileManagement = () => {
               <div className="flex items-center gap-2 text-sm">
                 <Shield className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Role:</span>
-                <Badge className={`${getRoleColor(profile.role)}`}>
-                  {getRoleIcon(profile.role)}
-                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                </Badge>
+                {(() => {
+                  const roleStr = profile.role || 'user';
+                  return (
+                    <Badge className={`${getRoleColor(roleStr)}`}>
+                      {getRoleIcon(roleStr)}
+                      {roleStr.charAt(0).toUpperCase() + roleStr.slice(1)}
+                    </Badge>
+                  );
+                })()}
               </div>
               
               <div className="flex items-center gap-2 text-sm">
