@@ -183,13 +183,19 @@ export const ResultApproval = () => {
         variant: "default"
       });
 
-      // Update the local state
+      // Update local state for both main list and selected detail view
       setResults(prevResults => 
         prevResults.map(result => 
           result.id === resultId 
             ? { ...result, show_results: showResults }
             : result
         )
+      );
+
+      setSelectedResult(prevSelected => 
+        prevSelected && prevSelected.id === resultId 
+          ? { ...prevSelected, show_results: showResults } 
+          : prevSelected
       );
 
     } catch (error) {
