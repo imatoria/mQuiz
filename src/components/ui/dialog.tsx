@@ -41,7 +41,6 @@ const DialogContent = React.forwardRef<
       )}
       {...props}
       onInteractOutside={(e) => {
-        e.preventDefault();
         props.onInteractOutside?.(e);
       }}
     >
