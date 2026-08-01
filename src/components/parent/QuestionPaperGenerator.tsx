@@ -273,7 +273,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
                   <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
                 ) : (
                   uniqueClasses.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.class_key}>
+                    <SelectItem key={cls.id} value={cls.id || cls.class_key || cls.class_name || 'cls'}>
                       {cls.class_name}
                     </SelectItem>
                   ))

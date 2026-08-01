@@ -328,7 +328,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                     <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
                   ) : (
                     uniqueClasses.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.class_key}>
+                      <SelectItem key={cls.id} value={cls.id || cls.class_key || cls.class_name || 'cls'}>
                         {cls.class_name}
                       </SelectItem>
                     ))
