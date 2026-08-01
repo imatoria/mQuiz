@@ -30,9 +30,24 @@ export const useSubjectsParent = () => {
 
       if (error) throw error;
 
-      // Filter by parent_id if custom user subjects exist, or return all active subjects as global default
-      const userSubjects = user?.user ? (data || []).filter((s: any) => s.parent_id === user.user.id) : [];
-      setSubjects(userSubjects.length > 0 ? userSubjects : (data || []));
+      let rawSubjects: SubjectParent[] = (data || []);
+      if (user?.user) {
+        const userSubjects = rawSubjects.filter((s: any) => s.parent_id === user.user.id);
+        if (userSubjects.length > 0) {
+          rawSubjects = userSubjects;
+        }
+      }
+
+      // Deduplicate subjects by subject_name so items are never displayed twice
+      const uniqueSubjectsMap = new Map<string, SubjectParent>();
+      rawSubjects.forEach((s: SubjectParent) => {
+        const key = (s.subject_name || s.subject_key || '').trim().toLowerCase();
+        if (key && !uniqueSubjectsMap.has(key)) {
+          uniqueSubjectsMap.set(key, s);
+        }
+      });
+
+      setSubjects(Array.from(uniqueSubjectsMap.values()));
     } catch (err: any) {
       setError(err.message);
     } finally {

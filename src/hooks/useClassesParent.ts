@@ -30,9 +30,24 @@ export const useClassesParent = () => {
 
       if (error) throw error;
 
-      // Filter by parent_id if custom user classes exist, or return all active classes as global default
-      const userClasses = user?.user ? (data || []).filter((c: any) => c.parent_id === user.user.id) : [];
-      setClasses(userClasses.length > 0 ? userClasses : (data || []));
+      let rawClasses: ClassParent[] = (data || []);
+      if (user?.user) {
+        const userClasses = rawClasses.filter((c: any) => c.parent_id === user.user.id);
+        if (userClasses.length > 0) {
+          rawClasses = userClasses;
+        }
+      }
+
+      // Deduplicate by class_name so duplicates like 'Grade 9' are never displayed twice
+      const uniqueClassesMap = new Map<string, ClassParent>();
+      rawClasses.forEach((c: ClassParent) => {
+        const key = (c.class_name || c.class_key || '').trim().toLowerCase();
+        if (key && !uniqueClassesMap.has(key)) {
+          uniqueClassesMap.set(key, c);
+        }
+      });
+
+      setClasses(Array.from(uniqueClassesMap.values()));
     } catch (err: any) {
       setError(err.message);
     } finally {
