@@ -343,8 +343,8 @@ export const TestResults = () => {
           {!showBreakdown ? (
             // Results List
             <div className="space-y-4">
-              {attempts.map((attempt) => (
-                <Card key={attempt.id} className={`${attempt.show_results ? 'cursor-pointer hover:bg-muted/50' : ''} transition-colors`}
+              {attempts.map((attempt, index) => (
+                <Card key={`${attempt.id || 'att'}-${index}`} className={`${attempt.show_results ? 'cursor-pointer hover:bg-muted/50' : ''} transition-colors`}
                       onClick={() => {
                         if (attempt.show_results) {
                           setSelectedAttempt(attempt);
@@ -445,7 +445,7 @@ export const TestResults = () => {
                         </TableHeader>
                         <TableBody>
                           {questionResults.map((result, index) => (
-                            <TableRow key={result.question_id || index}>
+                            <TableRow key={`${result.question_id || 'q'}-${index}`}>
                               <TableCell className="font-medium">{index + 1}</TableCell>
                               <TableCell className="max-w-md">
                                 <div className="space-y-2">
