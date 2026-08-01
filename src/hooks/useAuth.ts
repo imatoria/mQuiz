@@ -119,17 +119,16 @@ export const useAuth = () => {
     if (!user || !profile) return { error: 'No user or profile found' };
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      setProfile(data as UserProfile);
-      return { data, error: null };
+      const updatedProfile = { ...profile, ...updates };
+      setProfile(updatedProfile);
+      return { data: updatedProfile, error: null };
     } catch (error: any) {
       return { data: null, error: error.message };
     }

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { GraduationCap } from 'lucide-react';
 import { 
   User, 
   Mail, 
@@ -34,6 +35,9 @@ export const ProfileManagement = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [children, setChildren] = useState<ChildProfile[]>([]);
+  const [studentClass, setStudentClass] = useState<string | null>(null);
+  const [studentSubjects, setStudentSubjects] = useState<string[]>([]);
+  const [parentGuardian, setParentGuardian] = useState<{ full_name: string; email: string } | null>(null);
   const [profileData, setProfileData] = useState({
     full_name: profile?.full_name || '',
     email: profile?.email || '',
@@ -48,9 +52,67 @@ export const ProfileManagement = () => {
       
       if (profile.role === 'parent') {
         loadChildren();
+      } else if (profile.role === 'student' || profile.role === 'child') {
+        loadStudentAcademicInfo();
       }
     }
   }, [profile]);
+
+  const loadStudentAcademicInfo = async () => {
+    if (!user) return;
+    try {
+      // Load current class assignment
+      const { data: classAssign } = await supabase
+        .from('child_class_assignments')
+        .select('*')
+        .eq('child_id', user.id)
+        .eq('is_current', true)
+        .maybeSingle();
+
+      if (classAssign?.class_parent_id) {
+        const { data: classObj } = await supabase
+          .from('classes_parent')
+          .select('class_name')
+          .eq('id', classAssign.class_parent_id)
+          .maybeSingle();
+        if (classObj) setStudentClass(classObj.class_name);
+      }
+
+      // Load subject assignments
+      const { data: subjAssigns } = await supabase
+        .from('child_subject_assignments')
+        .select('*')
+        .eq('child_id', user.id)
+        .eq('is_current', true);
+
+      if (subjAssigns && subjAssigns.length > 0) {
+        const sIds = subjAssigns.map((s: any) => s.subject_parent_id);
+        const { data: subjs } = await supabase
+          .from('subjects_parent')
+          .select('subject_name')
+          .in('id', sIds);
+        setStudentSubjects((subjs || []).map((s: any) => s.subject_name));
+      }
+
+      // Load parent guardian relationship
+      const { data: rel } = await supabase
+        .from('parent_child_relationships')
+        .select('parent_id')
+        .eq('child_id', user.id)
+        .maybeSingle();
+
+      if (rel?.parent_id) {
+        const { data: parentProf } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('user_id', rel.parent_id)
+          .maybeSingle();
+        if (parentProf) setParentGuardian({ full_name: parentProf.full_name, email: parentProf.email });
+      }
+    } catch (err) {
+      console.error('Error loading student academic info:', err);
+    }
+  };
 
   const loadChildren = async () => {
     if (!user) return;
@@ -119,7 +181,8 @@ export const ProfileManagement = () => {
     switch (role) {
       case 'admin': return <Crown className="h-5 w-5" />;
       case 'parent': return <Users className="h-5 w-5" />;
-      case 'child': return <Baby className="h-5 w-5" />;
+      case 'child':
+      case 'student': return <Baby className="h-5 w-5" />;
       default: return <User className="h-5 w-5" />;
     }
   };
@@ -128,7 +191,8 @@ export const ProfileManagement = () => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'parent': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'child': return 'bg-green-100 text-green-800 border-green-200';
+      case 'child':
+      case 'student': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -313,6 +377,46 @@ export const ProfileManagement = () => {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+      {/* Academic & Guardian Information for Students */}
+      {(profile.role === 'student' || profile.role === 'child') && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" />
+              Academic & Guardian Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Class Level:</span>
+                <p className="text-base font-semibold">{studentClass || 'Not assigned yet'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Parent / Guardian:</span>
+                <p className="text-base font-semibold">
+                  {parentGuardian ? `${parentGuardian.full_name} (${parentGuardian.email})` : 'Not linked yet'}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">Enrolled Subjects:</span>
+              {studentSubjects.length > 0 ? (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {studentSubjects.map((subject, idx) => (
+                    <Badge key={`${subject}-${idx}`} variant="secondary">
+                      {subject}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">No subjects assigned yet</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
