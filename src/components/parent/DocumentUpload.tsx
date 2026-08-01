@@ -244,20 +244,18 @@ export const DocumentUpload = ({
         subject_parent_id: subject,
         class_parent_id: classLevel,
         processing_status: 'completed',
-        total_pages: selectedPages.length // Store count of selected pages
+        total_pages: selectedPages.length > 0 ? selectedPages.length : doc.numPages
       }).select().single();
       if (dbError) throw dbError;
 
-      // Store only selected pages with their actual page numbers
-      let ocrWorker: Tesseract.Worker | null = null;
-      
-      // Sort selected pages to process them in order
-      const sortedSelectedPages = [...selectedPages].sort((a, b) => a - b);
+      // Use selected pages or default to all pages of the uploaded document (1..doc.numPages)
+      const pagesToProcess = selectedPages.length > 0 
+        ? [...selectedPages].sort((a, b) => a - b)
+        : Array.from({ length: doc.numPages }, (_, i) => i + 1);
       
       for (let pdfPageIndex = 1; pdfPageIndex <= doc.numPages; pdfPageIndex++) {
         // Map PDF page index to selected page number
-        const selectedPageNumber = sortedSelectedPages[pdfPageIndex - 1];
-        if (!selectedPageNumber) continue; // Skip if no mapping exists
+        const selectedPageNumber = pagesToProcess[pdfPageIndex - 1] || pdfPageIndex;
         
         const page = await doc.getPage(pdfPageIndex);
         const textContent = await page.getTextContent();
