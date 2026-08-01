@@ -122,19 +122,33 @@ export class SqliteWasmProvider implements IDatabaseProvider {
 
     if (/WHERE/i.test(cleanSql)) {
       if (params.length > 0) {
-        const paramVal = params[0];
-        if (/\buser_id\s*=/i.test(cleanSql)) {
-          rows = rows.filter(r => r.user_id === paramVal);
-        } else if (/\bparent_id\s*=/i.test(cleanSql)) {
-          rows = rows.filter(r => r.parent_id === paramVal);
-        } else if (/\bclass_parent_id\s*=/i.test(cleanSql)) {
-          rows = rows.filter(r => r.class_parent_id === paramVal);
-        } else if (/\bsubject_parent_id\s*=/i.test(cleanSql)) {
-          rows = rows.filter(r => r.subject_parent_id === paramVal);
-        } else if (/\bis_deleted\s*=/i.test(cleanSql)) {
-          rows = rows.filter(r => r.is_deleted === (paramVal ? 1 : 0));
-        } else if (/\bid\s*=/i.test(cleanSql)) {
-          rows = rows.filter(r => r.id === paramVal);
+        // Handle IN clauses e.g. user_id IN (?, ?), child_id IN (?, ?)
+        if (/\buser_id\s+IN\s*\(/i.test(cleanSql)) {
+          rows = rows.filter(r => params.includes(r.user_id));
+        } else if (/\bchild_id\s+IN\s*\(/i.test(cleanSql)) {
+          rows = rows.filter(r => params.includes(r.child_id));
+        } else if (/\bid\s+IN\s*\(/i.test(cleanSql)) {
+          rows = rows.filter(r => params.includes(r.id));
+        } else if (/\bparent_id\s+IN\s*\(/i.test(cleanSql)) {
+          rows = rows.filter(r => params.includes(r.parent_id));
+        } else {
+          // Handle standard equality filtering
+          const paramVal = params[0];
+          if (/\buser_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.user_id === paramVal);
+          } else if (/\bchild_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.child_id === paramVal);
+          } else if (/\bparent_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.parent_id === paramVal);
+          } else if (/\bclass_parent_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.class_parent_id === paramVal);
+          } else if (/\bsubject_parent_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.subject_parent_id === paramVal);
+          } else if (/\bis_deleted\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.is_deleted === (paramVal ? 1 : 0));
+          } else if (/\bid\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.id === paramVal);
+          }
         }
       }
     }

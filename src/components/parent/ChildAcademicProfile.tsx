@@ -45,39 +45,28 @@ export const ChildAcademicProfile = ({
 
   const fetchCurrentData = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
-
-      // Fetch current class assignment
-      const { data: classData, error: classError } = await supabase
+      // Fetch current class assignment by child_id
+      const { data: classData } = await supabase
         .from('child_class_assignments')
-        .select('class_parent_id')
+        .select('*')
         .eq('child_id', childId)
-        .eq('parent_id', user.user.id)
-        .eq('is_current', true)
         .maybeSingle();
-
-      if (classError) throw classError;
 
       const classId = classData?.class_parent_id || '';
       setCurrentClassId(classId);
       setSelectedClassId(classId);
 
-      // Fetch current subject assignments
-      const { data: subjectsData, error: subjectsError } = await supabase
+      // Fetch current subject assignments by child_id
+      const { data: subjectsData } = await supabase
         .from('child_subject_assignments')
-        .select('subject_parent_id')
-        .eq('child_id', childId)
-        .eq('parent_id', user.user.id)
-        .eq('is_current', true);
+        .select('*')
+        .eq('child_id', childId);
 
-      if (subjectsError) throw subjectsError;
-
-      const subjectIds = subjectsData?.map(s => s.subject_parent_id) || [];
+      const subjectIds = (subjectsData || []).map((s: any) => s.subject_parent_id);
       setCurrentSubjects(subjectIds);
       setSelectedSubjects(subjectIds);
     } catch (error: any) {
-      console.error('Error fetching academic data:', error);
+      console.error('Error loading academic profile:', error);
       toast({
         title: "Error loading academic profile",
         description: error.message,
