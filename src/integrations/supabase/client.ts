@@ -4,6 +4,7 @@ import { authService } from '@/services/auth/authService';
 class SupabaseQueryBuilder implements PromiseLike<any> {
   private tableName: string;
   private conditions: { col: string; val: any; op?: string }[] = [];
+  private orConditions: string[] = [];
   private orderCol: string | null = null;
   private limitCount: number | null = null;
   private isSingle = false;
@@ -77,6 +78,26 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
     return this;
   }
 
+  or(filterStr: string) {
+    this.orConditions.push(filterStr);
+    return this;
+  }
+
+  contains(col: string, val: any) {
+    this.conditions.push({ col, val: `%${val}%`, op: 'LIKE' });
+    return this;
+  }
+
+  ilike(col: string, val: any) {
+    this.conditions.push({ col, val: `%${val}%`, op: 'LIKE' });
+    return this;
+  }
+
+  like(col: string, val: any) {
+    this.conditions.push({ col, val: `%${val}%`, op: 'LIKE' });
+    return this;
+  }
+
   single() {
     this.isSingle = true;
     return this;
@@ -91,21 +112,51 @@ class SupabaseQueryBuilder implements PromiseLike<any> {
     const provider = dbService.getProvider();
     let sql = `SELECT * FROM ${this.tableName}`;
     const params: any[] = [];
+    const whereClauses: string[] = [];
 
     if (this.conditions.length > 0) {
-      const clauses = this.conditions.map(c => {
+      for (const c of this.conditions) {
         if (c.op === 'in' && Array.isArray(c.val)) {
           const placeholders = c.val.map(() => '?').join(', ');
           params.push(...c.val);
-          return `${c.col} IN (${placeholders})`;
+          whereClauses.push(`${c.col} IN (${placeholders})`);
+        } else if (c.op === 'IS' && c.val === null) {
+          whereClauses.push(`${c.col} IS NULL`);
+        } else {
+          params.push(c.val);
+          whereClauses.push(`${c.col} ${c.op || '='} ?`);
         }
-        if (c.op === 'IS' && c.val === null) {
-          return `${c.col} IS NULL`;
+      }
+    }
+
+    if (this.orConditions.length > 0) {
+      for (const orStr of this.orConditions) {
+        const parts = orStr.split(',').map(p => p.trim());
+        const subClauses: string[] = [];
+        for (const part of parts) {
+          const match = part.match(/^([a-zA-Z0-9_]+)\.(eq|neq|gt|gte|lt|lte|is)\.(.+)$/);
+          if (match) {
+            const [, col, op, rawVal] = match;
+            const val = rawVal === 'null' ? null : rawVal;
+            if (op === 'eq') {
+              subClauses.push(`${col} = ?`);
+              params.push(val);
+            } else if (op === 'neq') {
+              subClauses.push(`${col} != ?`);
+              params.push(val);
+            } else if (op === 'is' && val === null) {
+              subClauses.push(`${col} IS NULL`);
+            }
+          }
         }
-        params.push(c.val);
-        return `${c.col} ${c.op || '='} ?`;
-      });
-      sql += ` WHERE ${clauses.join(' AND ')}`;
+        if (subClauses.length > 0) {
+          whereClauses.push(`(${subClauses.join(' OR ')})`);
+        }
+      }
+    }
+
+    if (whereClauses.length > 0) {
+      sql += ` WHERE ${whereClauses.join(' AND ')}`;
     }
 
     if (this.orderCol) {
