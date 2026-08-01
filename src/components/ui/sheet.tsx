@@ -64,7 +64,6 @@ const SheetContent = React.forwardRef<
       className={cn(sheetVariants({ side }), className)}
       {...props}
       onInteractOutside={(e) => {
-        e.preventDefault();
         props.onInteractOutside?.(e);
       }}
     >
