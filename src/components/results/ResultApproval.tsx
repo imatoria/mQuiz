@@ -444,7 +444,7 @@ export const ResultApproval = () => {
                   </TableHeader>
                   <TableBody>
                     {questionResults.map((result, index) => (
-                      <TableRow key={result.question_id}>
+                      <TableRow key={`${result.question_id || 'q'}-${index}`}>
                         <TableCell className="font-medium">{index + 1}</TableCell>
                         <TableCell className="max-w-md">
                           <div className="space-y-2">
@@ -549,8 +549,8 @@ export const ResultApproval = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map((result) => (
-                <TableRow key={result.id}>
+              {results.map((result, idx) => (
+                <TableRow key={`${result.id}-${idx}`}>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <User className="w-4 h-4 text-muted-foreground" />

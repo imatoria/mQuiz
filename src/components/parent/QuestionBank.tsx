@@ -431,8 +431,8 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedQuestions.map((question) => (
-                    <TableRow key={question.id}>
+                  {paginatedQuestions.map((question, index) => (
+                    <TableRow key={`${question.id}-${index}`}>
                       <TableCell className="max-w-md">
                         <div className="truncate" title={question.question_text}>
                           {question.question_text}

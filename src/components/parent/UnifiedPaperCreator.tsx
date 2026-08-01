@@ -1277,8 +1277,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                           </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {paginatedQuestions.map((question) => (
-                              <TableRow key={question.id}>
+                            {paginatedQuestions.map((question, index) => (
+                              <TableRow key={`${question.id}-${index}`}>
                                 <TableCell>
                                   <Checkbox
                                     checked={formData.selected_questions?.includes(question.id) || false}
