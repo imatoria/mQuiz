@@ -21,17 +21,18 @@ export const useClassesParent = () => {
       setError(null);
 
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
         .from('classes_parent')
         .select('*')
-        .eq('parent_id', user.user.id)
         .eq('is_active', true)
         .order('display_order');
 
       if (error) throw error;
-      setClasses(data || []);
+
+      // Filter by parent_id if custom user classes exist, or return all active classes as global default
+      const userClasses = user?.user ? (data || []).filter((c: any) => c.parent_id === user.user.id) : [];
+      setClasses(userClasses.length > 0 ? userClasses : (data || []));
     } catch (err: any) {
       setError(err.message);
     } finally {

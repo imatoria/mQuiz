@@ -21,17 +21,18 @@ export const useSubjectsParent = () => {
       setError(null);
 
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
         .from('subjects_parent')
         .select('*')
-        .eq('parent_id', user.user.id)
         .eq('is_active', true)
         .order('subject_name');
 
       if (error) throw error;
-      setSubjects(data || []);
+
+      // Filter by parent_id if custom user subjects exist, or return all active subjects as global default
+      const userSubjects = user?.user ? (data || []).filter((s: any) => s.parent_id === user.user.id) : [];
+      setSubjects(userSubjects.length > 0 ? userSubjects : (data || []));
     } catch (err: any) {
       setError(err.message);
     } finally {
