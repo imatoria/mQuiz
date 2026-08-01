@@ -31,10 +31,10 @@ interface TestAttempt {
   completed_at: string;
   answers: Record<string, string>;
   show_results: boolean;
-  question_papers: {
+  question_papers?: {
     id: string;
     title: string;
-    subjects_parent: { subject_name: string };
+    subjects_parent?: { subject_name: string };
   };
 }
 
@@ -56,7 +56,7 @@ export const TestResults = () => {
   const [questionResults, setQuestionResults] = useState<QuestionResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,37 +67,55 @@ export const TestResults = () => {
 
   const loadTestResults = async () => {
     if (!user?.id) {
-      console.log('User not available, skipping test results load');
       setLoading(false);
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      const { data: attemptsData, error } = await supabase
         .from('paper_attempts')
-        .select(`
-          id,
-          score,
-          total_questions,
-          completed_at,
-          answers,
-          show_results,
-          question_papers!inner (
-            id,
-            title,
-            subjects_parent (subject_name)
-          )
-        `)
-        .eq('user_id', user.id)
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false });
+        .select('*')
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      setAttempts(data?.map(attempt => ({
-        ...attempt,
-        answers: (attempt.answers as Record<string, string>) || {}
-      })) || []);
+      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+
+      const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
+      const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
+
+      const formattedAttempts: TestAttempt[] = (attemptsData || []).map((attempt: any) => {
+        const paper = paperMap.get(attempt.paper_id);
+        const subjName = paper ? (subjMap.get(paper.subject_parent_id) || 'General') : 'General';
+        
+        let parsedAnswers = attempt.answers || {};
+        if (typeof attempt.answers === 'string') {
+          try {
+            parsedAnswers = JSON.parse(attempt.answers);
+          } catch {
+            parsedAnswers = {};
+          }
+        }
+
+        return {
+          id: attempt.id,
+          score: attempt.score || 0,
+          total_questions: attempt.total_questions || 0,
+          completed_at: attempt.completed_at || attempt.started_at || new Date().toISOString(),
+          answers: parsedAnswers,
+          show_results: attempt.show_results ?? true,
+          question_papers: {
+            id: paper?.id || attempt.paper_id,
+            title: paper?.title || 'Question Paper',
+            subjects_parent: {
+              subject_name: subjName
+            }
+          }
+        };
+      });
+
+      setAttempts(formattedAttempts);
     } catch (error) {
       console.error('Error loading test results:', error);
       toast({
@@ -133,40 +151,14 @@ export const TestResults = () => {
         return;
       }
 
-      // Get all questions for this test and check if answers are allowed to be shown
-      const [questionsResult] = await Promise.all([
-        supabase
-          .from('question_paper_questions')
-          .select(`
-            questions (
-              id,
-              question_text,
-              option_a,
-              option_b,
-              option_c,
-              option_d,
-              correct_answer
-            )
-          `)
-          .eq('question_paper_id', questionPaperId)
-          .order('question_order')
-      ]);
+      const { data: qpqData } = await supabase
+        .from('question_paper_questions')
+        .select('*')
+        .eq('question_paper_id', questionPaperId);
 
-      if (questionsResult.error) {
-        console.error('Database error:', questionsResult.error);
-        throw questionsResult.error;
-      }
+      const { data: allQuestions } = await supabase.from('questions').select('*');
+      const questionMap = new Map((allQuestions || []).map((q: any) => [q.id, q]));
 
-      if (!questionsResult.data || questionsResult.data.length === 0) {
-        toast({
-          title: "Error",
-          description: "No questions found for this test",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Parse answers - handle both string and object formats
       let parsedAnswers = answers;
       if (typeof answers === 'string') {
         try {
@@ -176,24 +168,28 @@ export const TestResults = () => {
         }
       }
 
-      console.log('Parsed answers:', parsedAnswers);
+      const userAnswersObj = (parsedAnswers as any)?.userAnswers || parsedAnswers || {};
 
-      const results: QuestionResult[] = questionsResult.data.map((item: any) => {
-        const question = item.questions;
+      const results: QuestionResult[] = (qpqData || []).map((item: any) => {
+        const question = questionMap.get(item.question_id) || {};
+        const userAnswer = userAnswersObj[question.id] || '';
+        const isCorrect = userAnswer && userAnswer.toLowerCase() === (question.correct_answer || '').toLowerCase();
+        
+        let opts: any[] = [];
+        try {
+          opts = typeof question.options === 'string' ? JSON.parse(question.options || '[]') : (question.options || []);
+        } catch {
+          opts = [];
+        }
 
-        const userAnswer = parsedAnswers.userAnswers[question.id] || '';
-        const isCorrect = userAnswer && userAnswer.toLowerCase() === question.correct_answer.toLowerCase();
-        
-        console.log(`Question ${question.id}: user=${userAnswer}, correct=${question.correct_answer}, match=${isCorrect}`);
-        
         return {
-          question_id: question.id,
-          question_text: question.question_text,
-          option_a: question.option_a,
-          option_b: question.option_b,
-          option_c: question.option_c,
-          option_d: question.option_d,
-          correct_answer: question.correct_answer,
+          question_id: question.id || item.question_id,
+          question_text: question.question_text || 'Question Text',
+          option_a: opts[0] || 'Option A',
+          option_b: opts[1] || 'Option B',
+          option_c: opts[2] || 'Option C',
+          option_d: opts[3] || 'Option D',
+          correct_answer: question.correct_answer || '',
           user_answer: userAnswer || '',
           is_correct: isCorrect
         };
@@ -358,9 +354,9 @@ export const TestResults = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <h4 className="font-semibold">{attempt.question_papers.title}</h4>
+                        <h4 className="font-semibold">{attempt.question_papers?.title || 'Question Paper'}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {attempt.question_papers.subjects_parent.subject_name}
+                          {attempt.question_papers?.subjects_parent?.subject_name || 'General'}
                         </p>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Clock className="w-3 h-3 mr-1" />
@@ -429,7 +425,7 @@ export const TestResults = () => {
                 <TabsContent value="breakdown" className="mt-4">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">{selectedAttempt.question_papers.title}</h3>
+                      <h3 className="text-lg font-semibold">{selectedAttempt.question_papers?.title || 'Question Paper'}</h3>
                       <p className="text-muted-foreground">
                         Score: {selectedAttempt.score}% ({Math.round((selectedAttempt.score / 100) * selectedAttempt.total_questions)}/{selectedAttempt.total_questions} correct)
                       </p>
@@ -449,7 +445,7 @@ export const TestResults = () => {
                         </TableHeader>
                         <TableBody>
                           {questionResults.map((result, index) => (
-                            <TableRow key={result.question_id}>
+                            <TableRow key={result.question_id || index}>
                               <TableCell className="font-medium">{index + 1}</TableCell>
                               <TableCell className="max-w-md">
                                 <div className="space-y-2">
@@ -463,7 +459,7 @@ export const TestResults = () => {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge variant={(selectedAttempt?.show_results && result.user_answer) ? (result.is_correct ? "success" : "destructive") : "secondary"} className="whitespace-nowrap">
+                                <Badge variant={(selectedAttempt?.show_results && result.user_answer) ? (result.is_correct ? "default" : "destructive") : "secondary"} className="whitespace-nowrap">
                                   {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
                                 </Badge>
                               </TableCell>
