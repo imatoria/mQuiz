@@ -25,9 +25,33 @@ export const useChildClasses = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data: assignments } = await supabase
+      const { data: user } = await supabase.auth.getUser();
+      if (!user?.user) {
+        setChildClasses([]);
+        return;
+      }
+
+      let parentId = user.user.id;
+
+      // If the current user is a child, find their parent_id from parent_child_relationships
+      const { data: rel } = await supabase
+        .from('parent_child_relationships')
+        .select('parent_id')
+        .eq('child_id', user.user.id)
+        .maybeSingle();
+
+      if (rel?.parent_id) {
+        parentId = rel.parent_id;
+      }
+
+      // Get current class assignments strictly for this parent
+      const { data: assignments, error: assignmentsError } = await supabase
         .from('child_class_assignments')
-        .select('*');
+        .select('*')
+        .eq('parent_id', parentId)
+        .eq('is_current', true);
+
+      if (assignmentsError) throw assignmentsError;
 
       const { data: allClasses } = await supabase.from('classes_parent').select('*');
       const classMap = new Map((allClasses || []).map((c: any) => [c.id, c]));
