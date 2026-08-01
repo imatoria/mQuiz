@@ -181,15 +181,45 @@ export class SqliteWasmProvider implements IDatabaseProvider {
     }
 
     const updateMatch = cleanSql.match(/UPDATE\s+([a-zA-Z0-9_]+)/i);
-    if (updateMatch) {
+    if (updateMatch && params.length > 0) {
       const table = updateMatch[1];
       const rows = this.getTable(table);
-      if (params.length > 1) {
+
+      if (typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
         const targetId = params[params.length - 1];
         const index = rows.findIndex(r => r.id === targetId);
         if (index !== -1) {
           rows[index] = { ...rows[index], ...params[0] };
           return 1;
+        }
+      } else {
+        const setMatch = cleanSql.match(/SET\s+(.+?)(?:\s+WHERE|$)/i);
+        if (setMatch) {
+          const setClause = setMatch[1];
+          const setCols = setClause.split(',').map(s => {
+            const parts = s.trim().split('=');
+            return parts[0].trim();
+          });
+
+          const setValues = params.slice(0, setCols.length);
+          const whereValues = params.slice(setCols.length);
+
+          const updates: Record<string, any> = {};
+          setCols.forEach((col, i) => {
+            updates[col] = setValues[i];
+          });
+
+          let updatedCount = 0;
+          if (whereValues.length > 0) {
+            const targetId = whereValues[whereValues.length - 1];
+            rows.forEach((r, idx) => {
+              if (r.id === targetId || whereValues.includes(r.id)) {
+                rows[idx] = { ...rows[idx], ...updates };
+                updatedCount++;
+              }
+            });
+          }
+          return updatedCount;
         }
       }
     }
