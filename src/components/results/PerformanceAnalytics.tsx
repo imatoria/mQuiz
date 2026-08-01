@@ -91,50 +91,47 @@ export const PerformanceAnalytics = () => {
       }
 
       // Load test performance data - ONLY approved results (show_results = true)
-      const { data: attempts, error } = await supabase
+      const { data: attemptsData, error } = await supabase
         .from('paper_attempts')
-        .select(`
-          score,
-          completed_at,
-          attempt_number,
-          show_results,
-          question_papers!inner (
-            title,
-            subjects_parent (subject_name)
-          )
-        `)
+        .select('*')
         .eq('user_id', user?.id)
-        .eq('show_results', true)
-        .not('completed_at', 'is', null)
-        .gte('completed_at', dateThreshold.toISOString())
-        .order('completed_at', { ascending: true });
+        .eq('show_results', true);
 
       if (error) throw error;
+
+      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+
+      const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
+      const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
 
       // Get total test count (including unapproved)
       const { data: allAttempts, error: allError } = await supabase
         .from('paper_attempts')
-        .select('id, show_results', { count: 'exact' })
-        .eq('user_id', user?.id)
-        .not('completed_at', 'is', null)
-        .gte('completed_at', dateThreshold.toISOString());
+        .select('*')
+        .eq('user_id', user?.id);
 
       if (allError) throw allError;
 
       const totalCount = allAttempts?.length || 0;
-      const pendingCount = allAttempts?.filter(a => !a.show_results).length || 0;
+      const pendingCount = allAttempts?.filter((a: any) => !a.show_results).length || 0;
       
       setTotalTests(totalCount);
       setPendingApprovalCount(pendingCount);
 
       // Format performance data
-      const formatted: PerformanceData[] = attempts?.map(attempt => ({
-        test_name: attempt.question_papers.title,
-        score: attempt.score,
-        date: new Date(attempt.completed_at).toLocaleDateString(),
-        subject: attempt.question_papers.subjects_parent.subject_name,
-        attempt_number: attempt.attempt_number
-      })) || [];
+      const formatted: PerformanceData[] = (attemptsData || []).map((attempt: any) => {
+        const paper = paperMap.get(attempt.paper_id);
+        const subjName = paper ? (subjMap.get(paper.subject_parent_id) || 'General') : 'General';
+
+        return {
+          test_name: paper?.title || 'Test',
+          score: attempt.score || 0,
+          date: new Date(attempt.completed_at || attempt.started_at || Date.now()).toLocaleDateString(),
+          subject: subjName,
+          attempt_number: attempt.attempt_number || 1
+        };
+      });
 
       setPerformanceData(formatted);
 
