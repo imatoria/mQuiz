@@ -72,11 +72,20 @@ export const ProgressReport = () => {
     try {
       setLoading(true);
       
-      const { data: attemptsData, error } = await supabase
+      const { data: rawAttemptsData, error } = await supabase
         .from('paper_attempts')
         .select('*');
 
       if (error) throw error;
+
+      const days = parseInt(timeframe, 10) || 30;
+      const dateThreshold = new Date();
+      dateThreshold.setDate(dateThreshold.getDate() - days);
+
+      const attemptsData = (rawAttemptsData || []).filter((a: any) => {
+        const completedDate = new Date(a.completed_at || a.started_at || a.created_at || Date.now());
+        return completedDate >= dateThreshold;
+      });
 
       const { data: papersData } = await supabase.from('question_papers').select('*');
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));

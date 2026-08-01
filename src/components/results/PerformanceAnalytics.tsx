@@ -91,13 +91,19 @@ export const PerformanceAnalytics = () => {
       }
 
       // Load test performance data - ONLY approved results (show_results = true)
-      const { data: attemptsData, error } = await supabase
+      const { data: rawAttemptsData, error } = await supabase
         .from('paper_attempts')
         .select('*')
         .eq('user_id', user?.id)
         .eq('show_results', true);
 
       if (error) throw error;
+
+      // Filter attempts by dateThreshold based on selected timeRange (1month, 3months, 6months, 1year)
+      const attemptsData = (rawAttemptsData || []).filter((a: any) => {
+        const completedDate = new Date(a.completed_at || a.started_at || a.created_at || Date.now());
+        return completedDate >= dateThreshold;
+      });
 
       const { data: papersData } = await supabase.from('question_papers').select('*');
       const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
