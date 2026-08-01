@@ -171,10 +171,15 @@ export const ProfileManagement = () => {
             
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
-                <Badge className={`flex items-center gap-1 ${getRoleColor(profile.role)}`}>
-                  {getRoleIcon(profile.role)}
-                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                </Badge>
+                {(() => {
+                  const roleStr = profile.role || 'user';
+                  return (
+                    <Badge className={`flex items-center gap-1 ${getRoleColor(roleStr)}`}>
+                      {getRoleIcon(roleStr)}
+                      {roleStr.charAt(0).toUpperCase() + roleStr.slice(1)}
+                    </Badge>
+                  );
+                })()}
                 <Badge variant={profile.is_approved ? "default" : "secondary"}>
                   {profile.is_approved ? "Approved" : "Pending Approval"}
                 </Badge>
