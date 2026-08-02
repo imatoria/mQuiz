@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { Bell, BellDot, Check, X, AlertCircle, MessageSquare, Calendar, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -73,12 +73,10 @@ export const NotificationCenter = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+        [user.id]
+      );
 
       if (error) throw error;
 
@@ -98,41 +96,16 @@ export const NotificationCenter = () => {
 
   const subscribeToNotifications = () => {
     if (!user) return;
-
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          
-          toast({
-            title: newNotification.title,
-            description: newNotification.message,
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
   };
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE notifications SET is_read = ? WHERE id = ?',
+        [true, notificationId]
+      );
 
       if (error) throw error;
 
@@ -151,11 +124,10 @@ export const NotificationCenter = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE notifications SET is_read = ? WHERE user_id = ? AND is_read = false',
+        [true, user.id]
+      );
 
       if (error) throw error;
 
@@ -168,10 +140,10 @@ export const NotificationCenter = () => {
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId);
+      const { error } = await dbService.getProvider().execute(
+        'DELETE FROM notifications WHERE id = ?',
+        [notificationId]
+      );
 
       if (error) throw error;
 

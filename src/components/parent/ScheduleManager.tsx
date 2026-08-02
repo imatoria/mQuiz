@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 
 import { useToast } from '@/components/ui/use-toast';
 import { Edit, Trash2, Users, Clock, Calendar } from 'lucide-react';
@@ -34,21 +35,27 @@ export const ScheduleManager = () => {
   }, [refreshKey]);
 
   const fetchScheduledTests = async () => {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return;
+    const user = authService.getCurrentUser();
+    if (!user) return;
 
-    const { data: testsData } = await supabase
-      .from('question_papers')
-      .select(`
-        *,
-        subjects(subject_name)
-      `)
-      .eq('user_id', user.user.id)
-      .neq('start_time', null)
-      .neq('end_time', null)
-      .order('created_at', { ascending: false });
+    const { data: testsData } = await dbService.getProvider().query(`
+      SELECT 
+        qp.*,
+        s.subject_name
+      FROM question_papers qp
+      LEFT JOIN subjects s ON qp.subject_id = s.id
+      WHERE qp.user_id = ? 
+        AND qp.start_time IS NOT NULL 
+        AND qp.end_time IS NOT NULL
+      ORDER BY qp.created_at DESC
+    `, [user.id]);
 
-    setScheduledTests(testsData || []);
+    const formattedData = (testsData || []).map((test: any) => ({
+      ...test,
+      subjects: { subject_name: test.subject_name }
+    }));
+
+    setScheduledTests(formattedData);
   };
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
@@ -61,21 +68,16 @@ export const ScheduleManager = () => {
   const handleDelete = async (testId: string, testTitle: string) => {
     try {
       // First delete paper assignments
-      await supabase
-        .from('paper_assignments')
-        .delete()
-        .eq('paper_id', testId);
+      await dbService.getProvider().execute(
+        'DELETE FROM paper_assignments WHERE paper_id = ?',
+        [testId]
+      );
 
       // Then unschedule the paper (remove scheduling)
-      const { error } = await supabase
-        .from('question_papers')
-        .update({ 
-          start_time: null,
-          end_time: null,
-          max_attempts: 1,
-          assign_to_all: true
-        })
-        .eq('id', testId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE question_papers SET start_time = NULL, end_time = NULL, max_attempts = 1, assign_to_all = 1 WHERE id = ?',
+        [testId]
+      );
 
       if (error) throw error;
 

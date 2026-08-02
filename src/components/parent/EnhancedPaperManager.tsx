@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -84,24 +84,33 @@ export const EnhancedPaperManager = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('question_papers')
-        .select(`
-          *,
-          subjects (subject_name),
-          paper_attempts (
-            id,
-            user_id,
-            completed_at,
-            score
-          )
-        `)
-        .eq('user_id', user?.id)
-        .order('updated_at', { ascending: false });
+      const { data, error } = await dbService.getProvider().query(`
+        SELECT 
+          qp.*,
+          s.subject_name
+        FROM question_papers qp
+        LEFT JOIN subjects s ON qp.subject_id = s.id
+        WHERE qp.user_id = ?
+        ORDER BY qp.updated_at DESC
+      `, [user?.id]);
       
       if (error) throw error;
       
-      setPapers(data || []);
+      const formattedData = await Promise.all((data || []).map(async (paper: any) => {
+        const { data: attempts } = await dbService.getProvider().query(`
+          SELECT id, user_id, completed_at, score 
+          FROM paper_attempts 
+          WHERE question_paper_id = ?
+        `, [paper.id]);
+        
+        return {
+          ...paper,
+          subjects: { subject_name: paper.subject_name },
+          paper_attempts: attempts || []
+        };
+      }));
+      
+      setPapers(formattedData || []);
     } catch (error) {
       console.error('Error loading papers:', error);
       toast({
@@ -201,10 +210,10 @@ export const EnhancedPaperManager = () => {
         return;
       }
       
-      const { error } = await supabase
-        .from('question_papers')
-        .delete()
-        .eq('id', selectedPaper.id);
+      const { error } = await dbService.getProvider().execute(
+        'DELETE FROM question_papers WHERE id = ?',
+        [selectedPaper.id]
+      );
       
       if (error) throw error;
       

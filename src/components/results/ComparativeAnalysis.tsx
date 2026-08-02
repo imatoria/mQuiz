@@ -18,7 +18,7 @@ import {
   Legend,
   RadialLinearScale,
 } from 'chart.js';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Users, 
@@ -82,15 +82,11 @@ export const ComparativeAnalysis = () => {
     try {
       setLoading(true);
       
-      const { data: attemptsData, error } = await supabase
-        .from('paper_attempts')
-        .select('*');
+      const attemptsData = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
-      if (error) throw error;
-
-      const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: subjectsData } = await supabase.from('subjects').select('*');
-      const { data: classesData } = await supabase.from('classes').select('*');
+      const papersData = await dbService.getProvider().query('SELECT * FROM question_papers');
+      const subjectsData = await dbService.getProvider().query('SELECT * FROM subjects');
+      const classesData = await dbService.getProvider().query('SELECT * FROM classes');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
@@ -115,12 +111,13 @@ export const ComparativeAnalysis = () => {
 
       // Get user profiles separately
       const userIds = [...new Set(attempts?.map(attempt => attempt.user_id) || [])];
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', userIds);
-
-      if (profilesError) throw profilesError;
+      let profiles: any[] = [];
+      if (userIds.length > 0) {
+        profiles = await dbService.getProvider().query(
+          `SELECT user_id, full_name FROM profiles WHERE user_id IN (${userIds.map(() => '?').join(',')})`,
+          userIds
+        );
+      }
 
       const profileMap = profiles?.reduce((acc, profile) => {
         acc[profile.user_id] = profile;

@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { useAuth } from '@/hooks/useAuth';
 import { useTestSecurity } from '@/hooks/useTestSecurity';
 import { SecurityWarningModal } from './SecurityWarningModal';
@@ -331,9 +332,17 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     
     try {
       const saveStartTime = Date.now();
-      const { data, error } = await supabase.functions.invoke('save-paper-progress', {
-        body: progressData
-      });
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE paper_attempts SET answers = ?, current_question_index = ?, progress_percentage = ?, time_remaining = ? WHERE id = ?',
+        [
+          JSON.stringify(progressData.answers),
+          progressData.currentQuestionIndex,
+          progressData.progressPercentage,
+          progressData.timeRemaining,
+          progressData.paperAttemptId
+        ]
+      );
+      const data = { autoSubmitted: false, message: '' };
 
       const saveResponseTime = Date.now() - saveStartTime;
 
@@ -442,20 +451,16 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
   const initializeTest = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const authUser = authService.getCurrentUser();
       if (!authUser) {
         throw new Error('User not authenticated');
       }
 
       // Check for existing active attempt first
-      const { data: existingAttempt, error: existingError } = await supabase
-        .from('paper_attempts')
-        .select('*')
-        .eq('paper_id', test.id)
-        .eq('user_id', authUser.id)
-        .is('completed_at', null)
-        .order('started_at', { ascending: false })
-        .limit(1);
+      const { data: existingAttempt, error: existingError } = await dbService.getProvider().query(
+        'SELECT * FROM paper_attempts WHERE paper_id = ? AND user_id = ? AND completed_at IS NULL ORDER BY started_at DESC LIMIT 1',
+        [test.id, authUser.id]
+      );
 
       if (existingError) throw existingError;
 
@@ -475,34 +480,15 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         setTestAttemptId(attemptData.id);
         setCurrentQuestionIndex(attemptData.current_question_index || 0);
         
-        if (attemptData.answers && attemptData.answers.encrypted) {
+        if (attemptData.answers && typeof attemptData.answers === 'string') {
           try {
-            const decryptedAnswers = JSON.parse(atob(attemptData.answers.encrypted));
-            setAnswers(decryptedAnswers);
-            console.log('Restored answers:', decryptedAnswers);
-          } catch (error) {
-            console.error('Error decrypting answers:', error);
-            // Try fallback format
-            if (attemptData.answers && typeof attemptData.answers === 'object') {
-              setAnswers(attemptData.answers);
-              console.log('Restored answers from fallback:', attemptData.answers);
-            }
+            const parsed = JSON.parse(attemptData.answers);
+            setAnswers(parsed);
+          } catch (e) {
+            console.error('Error parsing answers:', e);
           }
-        } else if (attemptData.answers && typeof attemptData.answers === 'object') {
-          // Direct object format (fallback)
-          setAnswers(attemptData.answers);
-          console.log('Restored answers from direct format:', attemptData.answers);
         }
         
-        if (attemptData.answers && attemptData.answers.flagged) {
-          try {
-            const flaggedArray = JSON.parse(atob(attemptData.answers.flagged));
-            setFlaggedQuestions(new Set(flaggedArray));
-          } catch (error) {
-            console.error('Error decrypting flagged questions:', error);
-          }
-        }
-
         toast({
           title: "Test Resumed",
           description: "Continuing your previous attempt",
@@ -526,33 +512,35 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         }
         
         // Get the paper's show_results setting
-        const { data: paperData, error: paperError } = await supabase
-          .from('question_papers')
-          .select('show_results')
-          .eq('id', test.id)
-          .single();
+        const { data: paperData, error: paperError } = await dbService.getProvider().query(
+          'SELECT show_results FROM question_papers WHERE id = ? LIMIT 1',
+          [test.id]
+        );
         
         if (paperError) {
           console.error('Error fetching paper settings:', paperError);
         }
         
-        const { data: newAttempt, error: attemptError } = await supabase
-          .from('paper_attempts')
-          .insert({
-            paper_id: test.id,
-            user_id: authUser.id,
-            attempt_number: attemptNumber,
-            started_at: startTime.toISOString(),
-            current_question_index: 0,
-            progress_percentage: 0,
-            time_remaining: (test.time_limit_minutes || 60) * 60,
-            show_results: paperData?.show_results || false
-          })
-          .select()
-          .single();
+        const newAttemptId = crypto.randomUUID();
+        const { error: attemptError } = await dbService.getProvider().execute(
+          'INSERT INTO paper_attempts (id, paper_id, user_id, attempt_number, started_at, current_question_index, progress_percentage, time_remaining, show_results) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            newAttemptId,
+            test.id,
+            authUser.id,
+            attemptNumber,
+            startTime.toISOString(),
+            0,
+            0,
+            (test.time_limit_minutes || 60) * 60,
+            paperData?.[0]?.show_results || 0
+          ]
+        );
 
         if (attemptError) throw attemptError;
-        attemptData = newAttempt;
+        
+        const { data: newAttemptCheck } = await dbService.getProvider().query('SELECT * FROM paper_attempts WHERE id = ?', [newAttemptId]);
+        attemptData = newAttemptCheck?.[0];
         setTestAttemptId(attemptData.id);
 
         toast({
@@ -564,18 +552,15 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
 
       // Load question relationships
       const paperId = test.question_paper_id || test.id;
-      const { data: qpqData, error: qpqError } = await supabase
-        .from('question_paper_questions')
-        .select('*')
-        .eq('question_paper_id', paperId)
-        .order('question_order');
+      const { data: qpqData, error: qpqError } = await dbService.getProvider().query(
+        'SELECT * FROM question_paper_questions WHERE question_paper_id = ? ORDER BY question_order',
+        [paperId]
+      );
 
       if (qpqError) throw qpqError;
 
       // Load questions details from questions table
-      const { data: allQuestionsData, error: questionsError } = await supabase
-        .from('questions')
-        .select('*');
+      const { data: allQuestionsData, error: questionsError } = await dbService.getProvider().query('SELECT * FROM questions');
 
       if (questionsError) throw questionsError;
 
@@ -584,13 +569,21 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       const formattedQuestions: Question[] = (qpqData || [])
         .map((item: any) => {
           const fullQuestion = questionsMap.get(item.question_id) || item.questions || {};
+          let parsedOptions = [];
+          if (fullQuestion.options) {
+            try {
+              parsedOptions = typeof fullQuestion.options === 'string' ? JSON.parse(fullQuestion.options) : fullQuestion.options;
+            } catch (e) {
+              console.error('Failed to parse options for question', item.question_id, e);
+            }
+          }
           return {
             id: fullQuestion.id || item.question_id,
             question_text: fullQuestion.question_text || '',
-            option_a: fullQuestion.option_a || '',
-            option_b: fullQuestion.option_b || '',
-            option_c: fullQuestion.option_c || '',
-            option_d: fullQuestion.option_d || '',
+            option_a: fullQuestion.option_a || parsedOptions[0] || '',
+            option_b: fullQuestion.option_b || parsedOptions[1] || '',
+            option_c: fullQuestion.option_c || parsedOptions[2] || '',
+            option_d: fullQuestion.option_d || parsedOptions[3] || '',
             question_order: item.question_order
           };
         })
@@ -662,20 +655,34 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     }
 
     try {
-      // Use the complete-paper-attempt edge function for proper submission
-      const { data, error } = await supabase.functions.invoke('complete-paper-attempt', {
-        body: {
-          paperAttemptId: testAttemptId,
-          completionType: type,
-          completionReason: reason,
-          answers: answers,
-          flaggedQuestions: Array.from(flaggedQuestions),
-          currentQuestionIndex,
-          progressPercentage: Math.round((Object.keys(answers).length / questions.length) * 100),
-          timeRemaining: Math.max(0, timeLeft),
-          paperId: test.id
+      const completionTime = new Date().toISOString();
+      const { data: questionsData } = await dbService.getProvider().query('SELECT id, correct_answer FROM questions');
+      const questionsMap = new Map((questionsData || []).map((q: any) => [q.id, q.correct_answer]));
+      
+      let correctCount = 0;
+      let totalCount = questions.length || 1;
+      
+      for (const [qId, ans] of Object.entries(answers)) {
+        if (questionsMap.get(qId) === ans) {
+          correctCount++;
         }
-      });
+      }
+      const score = Math.round((correctCount / totalCount) * 100);
+
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE paper_attempts SET completed_at = ?, answers = ?, current_question_index = ?, progress_percentage = ?, time_remaining = ?, score = ? WHERE id = ?',
+        [
+          completionTime,
+          JSON.stringify(answers),
+          currentQuestionIndex,
+          Math.round((Object.keys(answers).length / totalCount) * 100),
+          Math.max(0, timeLeft),
+          score,
+          testAttemptId
+        ]
+      );
+      
+      const data = { success: !error, message: 'Test completed successfully' };
 
       if (error) {
         console.error('Submission error:', error);

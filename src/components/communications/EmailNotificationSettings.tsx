@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { Mail, Send, Clock, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -99,11 +99,9 @@ export const EmailNotificationSettings = () => {
     if (!isAdmin) return;
 
     try {
-      const { data, error } = await supabase
-        .from('email_queue')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT * FROM email_queue ORDER BY created_at DESC LIMIT 50'
+      );
 
       if (error) throw error;
       setEmailQueue(data as EmailQueue[] || []);
@@ -130,15 +128,10 @@ export const EmailNotificationSettings = () => {
     setIsLoading(true);
     try {
       // Add to email queue
-      const { error } = await supabase
-        .from('email_queue')
-        .insert({
-          recipient_email: testEmail.recipient,
-          recipient_id: user!.id,
-          subject: testEmail.subject,
-          template_name: 'test_email',
-          template_data: { content: testEmail.content },
-        });
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO email_queue (recipient_email, recipient_id, subject, template_name, template_data) VALUES (?, ?, ?, ?, ?)',
+        [testEmail.recipient, user!.id, testEmail.subject, 'test_email', JSON.stringify({ content: testEmail.content })]
+      );
 
       if (error) throw error;
 
@@ -165,13 +158,10 @@ export const EmailNotificationSettings = () => {
 
   const retryFailedEmail = async (emailId: string) => {
     try {
-      const { error } = await supabase
-        .from('email_queue')
-        .update({
-          status: 'pending',
-          scheduled_for: new Date().toISOString(),
-        })
-        .eq('id', emailId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE email_queue SET status = ?, scheduled_for = ? WHERE id = ?',
+        ['pending', new Date().toISOString(), emailId]
+      );
 
       if (error) throw error;
 

@@ -6,7 +6,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { Save, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useClassesParent } from '@/hooks/useClassesParent';
@@ -46,21 +47,21 @@ export const ChildAcademicProfile = ({
   const fetchCurrentData = async () => {
     try {
       // Fetch current class assignment by child_id
-      const { data: classData } = await supabase
-        .from('child_class_assignments')
-        .select('*')
-        .eq('child_id', childId)
-        .maybeSingle();
+      const { data: classDatas } = await dbService.getProvider().query(
+        'SELECT * FROM child_class_assignments WHERE child_id = ? LIMIT 1',
+        [childId]
+      );
+      const classData = classDatas?.[0];
 
       const classId = classData?.class_id || '';
       setCurrentClassId(classId);
       setSelectedClassId(classId);
 
       // Fetch current subject assignments by child_id
-      const { data: subjectsData } = await supabase
-        .from('child_subject_assignments')
-        .select('*')
-        .eq('child_id', childId);
+      const { data: subjectsData } = await dbService.getProvider().query(
+        'SELECT * FROM child_subject_assignments WHERE child_id = ?',
+        [childId]
+      );
 
       const subjectIds = (subjectsData || []).map((s: any) => s.subject_id);
       setCurrentSubjects(subjectIds);
@@ -97,55 +98,40 @@ export const ChildAcademicProfile = ({
     setIsSaving(true);
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Not authenticated');
 
       // Update class assignment
       const currentYear = new Date().getFullYear().toString();
       
-      // Delete existing assignment for current year
-      await supabase
-        .from('child_class_assignments')
-        .delete()
-        .eq('child_id', childId)
-        .eq('parent_id', user.user.id)
-        .eq('academic_year', currentYear);
+      await dbService.getProvider().execute(
+        'DELETE FROM child_class_assignments WHERE child_id = ? AND parent_id = ? AND academic_year = ?',
+        [childId, user.id, currentYear]
+      );
 
-      // Insert new assignment
-      const { error: classError } = await supabase
-        .from('child_class_assignments')
-        .insert({
-          child_id: childId,
-          parent_id: user.user.id,
-          class_id: selectedClassId,
-          is_current: true,
-          academic_year: currentYear,
-        });
+      const { error: classError } = await dbService.getProvider().execute(
+        'INSERT INTO child_class_assignments (id, child_id, parent_id, class_id, is_current, academic_year) VALUES (?, ?, ?, ?, ?, ?)',
+        [crypto.randomUUID(), childId, user.id, selectedClassId, true, currentYear]
+      );
 
       if (classError) throw classError;
 
       // Update subject assignments
       // Delete existing assignments for current year
-      await supabase
-        .from('child_subject_assignments')
-        .delete()
-        .eq('child_id', childId)
-        .eq('parent_id', user.user.id)
-        .eq('academic_year', currentYear);
+      await dbService.getProvider().execute(
+        'DELETE FROM child_subject_assignments WHERE child_id = ? AND parent_id = ? AND academic_year = ?',
+        [childId, user.id, currentYear]
+      );
 
       if (selectedSubjects.length > 0) {
-        const assignments = selectedSubjects.map(subjectParentId => ({
-          child_id: childId,
-          parent_id: user.user.id,
-          subject_id: subjectParentId,
-          is_current: true,
-          academic_year: currentYear,
-        }));
-
-        const { error: subjectsError } = await supabase
-          .from('child_subject_assignments')
-          .insert(assignments);
-
+        let subjectsError = null;
+        for (const subjectId of selectedSubjects) {
+          const { error } = await dbService.getProvider().execute(
+            'INSERT INTO child_subject_assignments (id, child_id, parent_id, subject_id, is_current, academic_year) VALUES (?, ?, ?, ?, ?, ?)',
+            [crypto.randomUUID(), childId, user.id, subjectId, true, currentYear]
+          );
+          if (error) subjectsError = error;
+        }
         if (subjectsError) throw subjectsError;
       }
 

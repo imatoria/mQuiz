@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CompactRoleSelector } from './CompactRoleSelector';
-import { supabase } from '@/integrations/supabase/client';
+import { authService } from '@/services/auth/authService';
 import { Shield, Users, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 interface AuthPageProps {
@@ -37,27 +37,17 @@ export const AuthPage = ({
   } = useToast();
   useEffect(() => {
     // Check if user is already authenticated
-    supabase.auth.getSession().then(({
-      data: {
-        session
-      }
-    }) => {
-      if (session) {
-        onAuthSuccess();
-      }
-    });
+    if (authService.getCurrentUser()) {
+      onAuthSuccess();
+    }
 
     // Listen for auth changes
-    const {
-      data: {
-        subscription
-      }
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    const unsubscribe = authService.subscribe((user) => {
+      if (user) {
         onAuthSuccess();
       }
     });
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [onAuthSuccess]);
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -104,31 +94,21 @@ export const AuthPage = ({
     try {
       if (authMode === 'signin') {
         const {
-          data,
+          user,
           error
-        } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password
-        });
+        } = await authService.login(formData.email);
         if (error) throw error;
         toast({
           title: "Sign in successful",
           description: "Welcome back!"
         });
       } else if (authMode === 'signup') {
-        const redirectUrl = `${window.location.origin}/`;
         const {
           error
-        } = await supabase.auth.signUp({
+        } = await authService.signUp({
           email: formData.email,
-          password: formData.password,
-          options: {
-            emailRedirectTo: redirectUrl,
-            data: {
-              full_name: formData.fullName,
-              role: selectedRole
-            }
-          }
+          fullName: formData.fullName,
+          role: selectedRole || 'child'
         });
         if (error) throw error;
         if (selectedRole === 'admin') {
@@ -137,13 +117,7 @@ export const AuthPage = ({
           setSuccess('Account created successfully! Please check your email to verify your account.');
         }
       } else if (authMode === 'reset') {
-        const {
-          error
-        } = await supabase.auth.resetPasswordForEmail(formData.email, {
-          redirectTo: `${window.location.origin}/auth/reset-password`
-        });
-        if (error) throw error;
-        setSuccess('Password reset email sent! Please check your inbox.');
+        throw new Error('Password reset is not supported in the current environment.');
       }
     } catch (error: any) {
       setError(error.message || 'An unexpected error occurred');
@@ -152,26 +126,11 @@ export const AuthPage = ({
     }
   };
   const handleOAuthSignIn = async (provider: 'google') => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const {
-        error
-      } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/`,
-          queryParams: {
-            role: selectedRole || 'child'
-          }
-        }
-      });
-      if (error) throw error;
-    } catch (error: any) {
-      setError(error.message || 'OAuth sign in failed');
-    } finally {
-      setIsLoading(false);
-    }
+    toast({
+      title: "OAuth not supported",
+      description: "OAuth sign in is not supported in the current environment.",
+      variant: "destructive"
+    });
   };
   const RoleSelector = () => <div className="space-y-2">
       

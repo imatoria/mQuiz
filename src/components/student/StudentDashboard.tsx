@@ -13,7 +13,8 @@ import { StatsCardsSkeleton, TestCardSkeleton } from '@/components/ui/skeleton-l
 import { useToast } from '@/hooks/use-toast';
 import { useAsyncOperation } from '@/hooks/useAsyncOperation';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { useAuth } from '@/hooks/useAuth';
 import { TestInterface } from './TestInterface';
 import { TestResults } from '@/components/results/TestResults';
@@ -127,27 +128,15 @@ const StudentDashboardContent = () => {
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel('paper_attempts_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'paper_attempts',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Paper attempt changed:', payload);
-          // Invalidate cache and refetch
-          setLastFetchTime(0);
-          fetchTests();
-        }
-      )
-      .subscribe();
+    // Simulate realtime updates via polling for local SQLite
+    const interval = setInterval(() => {
+      // Invalidate cache and refetch
+      setLastFetchTime(0);
+      fetchTests();
+    }, 15000); // 15 seconds
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [user]);
 
@@ -164,39 +153,37 @@ const StudentDashboardContent = () => {
       console.log('Fetching tests with new schema...');
       
       try {
-        const { data: authData } = await supabase.auth.getUser();
-        if (!authData.user) throw new Error('User not authenticated');
+        const authUser = authService.getCurrentUser();
+        if (!authUser) throw new Error('User not authenticated');
 
-        const userId = authData.user.id;
+        const userId = authUser.id;
         
         // Fetch scheduled papers with explicit query
-        const { data: papersData, error } = await supabase
-          .from('question_papers')
-          .select('*');
+        const { data: papersData, error } = await dbService.getProvider().query('SELECT * FROM question_papers');
         
         if (error) throw error;
 
-        const { data: subjectsData } = await supabase.from('subjects').select('*');
+        const { data: subjectsData } = await dbService.getProvider().query('SELECT * FROM subjects');
         const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
         // Load assignments for current student
-        const { data: assignmentsData } = await supabase
-          .from('paper_assignments')
-          .select('paper_id')
-          .eq('assigned_to_user_id', userId);
+        const { data: assignmentsData } = await dbService.getProvider().query(
+          'SELECT paper_id FROM paper_assignments WHERE assigned_to_user_id = ?',
+          [userId]
+        );
 
         const assignedIds = new Set((assignmentsData || []).map((a: any) => a.paper_id));
 
         const validPapers = (papersData || []).filter((p: any) => {
-          if (p.is_deleted === true) return false;
-          if (p.assign_to_all !== false) return true;
+          if (p.is_deleted) return false;
+          if (p.assign_to_all !== false && p.assign_to_all !== 0) return true;
           return assignedIds.has(p.id);
         });
         
         // Get attempts for current user
-        const { data: attemptsData, error: attemptsError } = await supabase
-          .from('paper_attempts')
-          .select('id, paper_id, attempt_number, score, completed_at, started_at, current_question_index, total_questions, time_remaining, answers, progress_percentage, show_results')
-          .eq('user_id', userId);
+        const { data: attemptsData, error: attemptsError } = await dbService.getProvider().query(
+          'SELECT id, paper_id, attempt_number, score, completed_at, started_at, current_question_index, total_questions, time_remaining, answers, progress_percentage, show_results FROM paper_attempts WHERE user_id = ?',
+          [userId]
+        );
         
         if (attemptsError) throw attemptsError;
         
@@ -742,7 +729,7 @@ const StudentDashboardContent = () => {
                           <div className="flex-shrink-0 w-full sm:w-auto">
                             <Button 
                               variant="outline"
-                              onClick={() => handleTabChange('results')}
+                              onClick={() => navigate('/student/results', { state: { openAttemptId: bestAttempt.id } })}
                               className="w-full sm:w-auto text-xs"
                               size="sm"
                             >

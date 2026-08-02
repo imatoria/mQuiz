@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 
 export interface Violation {
   id: string;
@@ -39,17 +39,19 @@ export const useViolations = (attemptId?: string) => {
       setLoading(true);
       setError(null);
 
-      let query = supabase.from('paper_violations').select('*');
+      let sql = 'SELECT * FROM paper_violations';
+      let params: any[] = [];
       if (attemptId) {
-        query = query.eq('paper_attempt_id', attemptId);
+        sql += ' WHERE paper_attempt_id = ?';
+        params.push(attemptId);
       }
 
-      const { data: violationsData, error: fetchError } = await query;
+      const { data: violationsData, error: fetchError } = await dbService.getProvider().query(sql, params);
       if (fetchError) throw fetchError;
 
-      const { data: attemptsData } = await supabase.from('paper_attempts').select('*');
-      const { data: profilesData } = await supabase.from('profiles').select('*');
-      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const { data: attemptsData } = await dbService.getProvider().query('SELECT * FROM paper_attempts');
+      const { data: profilesData } = await dbService.getProvider().query('SELECT * FROM profiles');
+      const { data: papersData } = await dbService.getProvider().query('SELECT * FROM question_papers');
 
       const attemptMap = new Map((attemptsData || []).map((a: any) => [a.id, a]));
       const profileMap = new Map((profilesData || []).map((p: any) => [p.user_id || p.id, p]));

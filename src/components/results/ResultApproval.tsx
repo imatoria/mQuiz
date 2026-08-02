@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -74,10 +74,10 @@ export const ResultApproval = () => {
       setLoading(true);
 
       // Get children of the current parent
-      const { data: children, error: childrenError } = await supabase
-        .from('parent_child_relationships')
-        .select('child_id')
-        .eq('parent_id', user?.id);
+      const { data: children, error: childrenError } = await dbService.getProvider().query(
+        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+        [user?.id]
+      );
 
       if (childrenError) throw childrenError;
 
@@ -90,25 +90,23 @@ export const ResultApproval = () => {
       }
 
       // Get all tests created by this parent
-      const { data: parentTests, error: testsError } = await supabase
-        .from('question_papers')
-        .select('id')
-        .eq('user_id', user?.id);
+      const { data: parentTests, error: testsError } = await dbService.getProvider().query(
+        'SELECT id FROM question_papers WHERE user_id = ?',
+        [user?.id]
+      );
 
       if (testsError) throw testsError;
 
       const testIds = parentTests?.map(t => t.id) || [];
 
       // Get test attempts for all children
-      const { data: attemptsData, error: attemptsError } = await supabase
-        .from('paper_attempts')
-        .select('*');
+      const { data: attemptsData, error: attemptsError } = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
       if (attemptsError) throw attemptsError;
 
-      const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: subjectsData } = await supabase.from('subjects').select('*');
-      const { data: profilesData } = await supabase.from('profiles').select('*');
+      const { data: papersData } = await dbService.getProvider().query('SELECT * FROM question_papers');
+      const { data: subjectsData } = await dbService.getProvider().query('SELECT * FROM subjects');
+      const { data: profilesData } = await dbService.getProvider().query('SELECT * FROM profiles');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
@@ -158,22 +156,20 @@ export const ResultApproval = () => {
     try {
       setProcessing(true);
 
-      const { data: attempt, error: attemptError } = await supabase
-        .from('paper_attempts')
-        .select('*')
-        .eq('id', resultId)
-        .maybeSingle();
+      const { data: attempt, error: attemptError } = await dbService.getProvider().query(
+        'SELECT * FROM paper_attempts WHERE id = ? LIMIT 1',
+        [resultId]
+      );
+      const attemptRow = attempt?.[0];
 
-      if (attemptError || !attempt) {
+      if (attemptError || !attemptRow) {
         throw new Error('Paper attempt not found');
       }
 
-      const { error } = await supabase
-        .from('paper_attempts')
-        .update({
-          show_results: showResults
-        })
-        .eq('id', resultId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE paper_attempts SET show_results = ? WHERE id = ?',
+        [showResults ? 1 : 0, resultId]
+      );
 
       if (error) throw error;
 
@@ -243,10 +239,10 @@ export const ResultApproval = () => {
       setLoadingQuestions(true);
 
       // Get all questions for this test
-      const { data: qpqData, error: qpqError } = await supabase
-        .from('question_paper_questions')
-        .select('*')
-        .eq('question_paper_id', result.test.question_paper_id);
+      const { data: qpqData, error: qpqError } = await dbService.getProvider().query(
+        'SELECT * FROM question_paper_questions WHERE question_paper_id = ?',
+        [result.test.question_paper_id]
+      );
 
       if (qpqError) throw qpqError;
 
@@ -261,10 +257,13 @@ export const ResultApproval = () => {
         return;
       }
 
-      const { data: allQuestions } = await supabase
-        .from('questions')
-        .select('*')
-        .in('id', questionIds);
+      let allQuestions = [];
+      const placeholders = questionIds.map(() => '?').join(',');
+      const { data: questionsData } = await dbService.getProvider().query(
+        `SELECT * FROM questions WHERE id IN (${placeholders})`,
+        questionIds
+      );
+      allQuestions = questionsData || [];
 
       const qMap = new Map((allQuestions || []).map((q: any) => [q.id, q]));
 

@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Award, TrendingUp, BarChart3 } from 'lucide-react';
@@ -81,19 +81,24 @@ export const GradeDistribution = () => {
       setLoading(true);
 
       // Get children of the current parent
-      const { data: children, error: childrenError } = await supabase
-        .from('parent_child_relationships')
-        .select(`
-          child_id,
-          profiles!child_id (
-            user_id,
-            full_name,
-            email
-          )
-        `)
-        .eq('parent_id', user?.id);
+      const childrenRelations = await dbService.getProvider().query(
+        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+        [user?.id]
+      );
 
-      if (childrenError) throw childrenError;
+      const children = [];
+      for (const rel of childrenRelations) {
+        const profData = await dbService.getProvider().query(
+          'SELECT user_id, full_name, email FROM profiles WHERE user_id = ? LIMIT 1',
+          [rel.child_id]
+        );
+        if (profData[0]) {
+          children.push({
+            child_id: rel.child_id,
+            profiles: profData[0]
+          });
+        }
+      }
 
       const childIds = children?.map(c => c.child_id) || [];
 
@@ -106,13 +111,9 @@ export const GradeDistribution = () => {
       }
 
       // Get test attempts for all children
-      const { data: attemptsData, error: attemptsError } = await supabase
-        .from('paper_attempts')
-        .select('*');
+      const attemptsData = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
-      if (attemptsError) throw attemptsError;
-
-      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const papersData = await dbService.getProvider().query('SELECT * FROM question_papers');
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
 
       const attempts = (attemptsData || []).map((attempt: any) => {
@@ -203,13 +204,12 @@ export const GradeDistribution = () => {
       const testStatsData: TestStats[] = [];
       
       for (const test of tests || []) {
-        const { data: testAttempts, error } = await supabase
-          .from('paper_attempts')
-          .select('score, user_id')
-          .eq('paper_id', test.id)
-          .not('completed_at', 'is', null);
+        const testAttempts = await dbService.getProvider().query(
+          'SELECT score, user_id FROM paper_attempts WHERE paper_id = ? AND completed_at IS NOT NULL',
+          [test.id]
+        );
 
-        if (!error && testAttempts) {
+        if (testAttempts) {
           const scores = testAttempts.map(a => a.score);
           const uniqueStudents = new Set(testAttempts.map(a => a.user_id)).size;
           

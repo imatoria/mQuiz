@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { 
   Shield, 
   User,
@@ -52,24 +53,24 @@ export const ChildPermissionManager = () => {
 
   const fetchChildren = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const user = authService.getCurrentUser();
+      if (!user) return;
 
-      const { data: relationships, error: relError } = await supabase
-        .from('parent_child_relationships')
-        .select('child_id')
-        .eq('parent_id', user.user.id);
+      const { data: relationships, error: relError } = await dbService.getProvider().query(
+        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+        [user.id]
+      );
 
       if (relError) throw relError;
 
       if (relationships && relationships.length > 0) {
         const childIds = relationships.map(rel => rel.child_id);
         
-        const { data: childrenData, error: childrenError } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('user_id', childIds)
-          .eq('is_approved', true);
+        const placeholders = childIds.map(() => '?').join(',');
+        const { data: childrenData, error: childrenError } = await dbService.getProvider().query(
+          `SELECT * FROM profiles WHERE user_id IN (${placeholders}) AND is_approved = ?`,
+          [...childIds, true]
+        );
 
         if (childrenError) throw childrenError;
         

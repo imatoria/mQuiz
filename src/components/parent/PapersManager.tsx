@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { UnifiedPaperCreator } from './UnifiedPaperCreator';
 import { useToast } from '@/hooks/use-toast';
 import { Edit, Trash2, Users, Clock, Calendar, FileText, FilePlus, ArrowLeft, Undo2, Printer } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 
 import { useAuth } from '@/hooks/useAuth';
 
@@ -47,13 +47,12 @@ export const PapersManager: React.FC = () => {
   const fetchPapers = async () => {
     if (!user) return;
 
-    const { data: papersData } = await supabase
-      .from('question_papers')
-      .select('*')
-      .eq('is_deleted', false);
+    const { data: papersData } = await dbService.getProvider().query(
+      'SELECT * FROM question_papers WHERE is_deleted = 0 OR is_deleted IS NULL'
+    );
 
-    const { data: allClasses } = await supabase.from('classes').select('*');
-    const { data: allSubjects } = await supabase.from('subjects').select('*');
+    const { data: allClasses } = await dbService.getProvider().query('SELECT * FROM classes');
+    const { data: allSubjects } = await dbService.getProvider().query('SELECT * FROM subjects');
 
     const classMap = new Map((allClasses || []).map((c: any) => [c.id, c.class_name]));
     const subjMap = new Map((allSubjects || []).map((s: any) => [s.id, s.subject_name]));
@@ -75,10 +74,9 @@ export const PapersManager: React.FC = () => {
     setScheduledPapers(scheduled);
 
     // Also fetch recently deleted papers for undo functionality
-    const { data: deletedData } = await supabase
-      .from('question_papers')
-      .select('*')
-      .eq('is_deleted', true);
+    const { data: deletedData } = await dbService.getProvider().query(
+      'SELECT * FROM question_papers WHERE is_deleted = 1'
+    );
 
     const formattedDeleted = (deletedData || []).map((paper: any) => {
       const className = paper.class_id ? classMap.get(paper.class_id) || 'Class 10' : 'Class 10';
@@ -114,13 +112,10 @@ export const PapersManager: React.FC = () => {
 
   const handleDelete = async (paperId: string, paperTitle: string) => {
     try {
-      const { error } = await supabase
-        .from('question_papers')
-        .update({ 
-          is_deleted: true,
-          deleted_at: new Date().toISOString()
-        })
-        .eq('id', paperId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE question_papers SET is_deleted = 1, deleted_at = ? WHERE id = ?',
+        [new Date().toISOString(), paperId]
+      );
 
       if (error) throw error;
 
@@ -141,13 +136,10 @@ export const PapersManager: React.FC = () => {
 
   const handleUndoDelete = async (paperId: string, paperTitle: string) => {
     try {
-      const { error } = await supabase
-        .from('question_papers')
-        .update({ 
-          is_deleted: false,
-          deleted_at: null
-        })
-        .eq('id', paperId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE question_papers SET is_deleted = 0, deleted_at = NULL WHERE id = ?',
+        [paperId]
+      );
 
       if (error) throw error;
 
@@ -169,23 +161,27 @@ export const PapersManager: React.FC = () => {
   const handlePrint = async (paper: any) => {
     try {
       // Fetch questions for this paper
-      const { data: paperQuestions, error } = await supabase
-        .from('question_paper_questions')
-        .select(`
-          question_order,
-          questions (
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            correct_answer,
-            difficulty,
-            topic
-          )
-        `)
-        .eq('question_paper_id', paper.id)
-        .order('question_order');
+      const { data: paperQuestionsData, error } = await dbService.getProvider().query(`
+        SELECT 
+          qpq.question_order,
+          q.question_text,
+          q.option_a,
+          q.option_b,
+          q.option_c,
+          q.option_d,
+          q.correct_answer,
+          q.difficulty,
+          q.topic
+        FROM question_paper_questions qpq
+        JOIN questions q ON qpq.question_id = q.id
+        WHERE qpq.question_paper_id = ?
+        ORDER BY qpq.question_order
+      `, [paper.id]);
+
+      const paperQuestions = (paperQuestionsData || []).map((q: any) => ({
+        question_order: q.question_order,
+        questions: q
+      }));
 
       if (error) throw error;
 

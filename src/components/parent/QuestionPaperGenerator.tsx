@@ -8,7 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { FileQuestion, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import PageMultiSelect from '@/components/ui/page-multi-select';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { useChildSubjects } from '@/hooks/useChildSubjects';
 import { useChildClasses } from '@/hooks/useChildClasses';
 
@@ -46,20 +47,18 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   }, [subject, classLevel]);
 
   const fetchAvailablePages = async () => {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user || !subject || !classLevel) {
+    const user = authService.getCurrentUser();
+    if (!user || !subject || !classLevel) {
       setAvailablePages([]);
       setSelectedPages([]);
       return;
     }
     
     // Fetch all pages for documents in this subject/class
-    const { data: documents } = await supabase
-      .from('documents')
-      .select('id, total_pages')
-      .eq('user_id', user.user.id)
-      .eq('subject_id', subject)
-      .eq('class_id', classLevel);
+    const { data: documents } = await dbService.getProvider().query(
+      'SELECT id, total_pages FROM documents WHERE user_id = ? AND subject_id = ? AND class_id = ?',
+      [user.id, subject, classLevel]
+    );
     
     // Get all page numbers from all documents
     const allPages: number[] = [];
@@ -75,24 +74,24 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   };
 
   const checkAvailableQuestions = async () => {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return;
+    const user = authService.getCurrentUser();
+    if (!user) return;
 
-    let query = supabase
-      .from('questions')
-      .select('*', { count: 'exact', head: true })
-      .in('difficulty', difficulties)
-      .eq('subject_id', subject)
-      .eq('class_id', classLevel)
-      .eq('is_deleted', false);
+    let query = 'SELECT COUNT(*) as count FROM questions WHERE is_deleted = 0 AND subject_id = ? AND class_id = ?';
+    let params: any[] = [subject, classLevel];
 
-    if (selectedPages.length > 0) {
-      query = query.in('page_number', selectedPages);
+    if (difficulties.length > 0) {
+      query += ` AND difficulty IN (${difficulties.map(() => '?').join(',')})`;
+      params.push(...difficulties);
     }
 
-    const { count } = await query;
+    if (selectedPages.length > 0) {
+      query += ` AND page_number IN (${selectedPages.map(() => '?').join(',')})`;
+      params.push(...selectedPages);
+    }
 
-    setAvailableQuestions(count || 0);
+    const { data } = await dbService.getProvider().query(query, params);
+    setAvailableQuestions(data?.[0]?.count || 0);
   };
 
   const handleDifficultyChange = (difficulty: string, checked: boolean) => {
@@ -139,57 +138,54 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
     setIsGenerating(true);
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Not authenticated');
 
+      const paperId = crypto.randomUUID();
       // Create question paper
-      const { data: paperData, error: paperError } = await supabase
-      .from('question_papers')
-        .insert({
-          user_id: user.user.id,
-          title,
-          subject_id: subject,
-          class_id: classLevel,
-          total_questions: questionsNeeded,
-          time_limit_minutes: 0,
-          difficulty_filter: difficulties
-        })
-        .select()
-        .single();
+      const { error: paperError } = await dbService.getProvider().execute(
+        `INSERT INTO question_papers (id, user_id, title, subject_id, class_id, total_questions, time_limit_minutes, difficulty_filter) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [paperId, user.id, title, subject, classLevel, questionsNeeded, 0, JSON.stringify(difficulties)]
+      );
 
       if (paperError) throw paperError;
 
       // Get questions directly
-      let query2: any = supabase
-        .from('questions')
-        .select('*')
-        .eq('user_id', user.user.id)
-        .eq('subject_id', subject)
-        .eq('class_id', classLevel)
-        .eq('is_deleted', false)
-        .in('difficulty', difficulties);
+      let queryStr = 'SELECT * FROM questions WHERE user_id = ? AND subject_id = ? AND class_id = ? AND is_deleted = 0';
+      let params: any[] = [user.id, subject, classLevel];
 
-      if (selectedPages.length > 0) {
-        query2 = query2.in('page_number', selectedPages);
+      if (difficulties.length > 0) {
+        queryStr += ` AND difficulty IN (${difficulties.map(() => '?').join(',')})`;
+        params.push(...difficulties);
       }
 
-      const { data: questions, error: questionsError } = await query2
-        .limit(questionsNeeded);
+      if (selectedPages.length > 0) {
+        queryStr += ` AND page_number IN (${selectedPages.map(() => '?').join(',')})`;
+        params.push(...selectedPages);
+      }
+      
+      queryStr += ` LIMIT ${questionsNeeded}`;
+
+      const { data: questions, error: questionsError } = await dbService.getProvider().query(queryStr, params);
 
       if (questionsError) throw questionsError;
 
       // Add questions to question paper
-      const paperQuestions = questions.map((q, index) => ({
-        question_paper_id: paperData.id,
+      const paperQuestions = (questions || []).map((q: any, index: number) => ({
+        id: crypto.randomUUID(),
+        question_paper_id: paperId,
         question_id: q.id,
         question_order: index + 1
       }));
 
-      const { error: linkError } = await supabase
-        .from('question_paper_questions')
-        .insert(paperQuestions);
-
-      if (linkError) throw linkError;
+      for (const pq of paperQuestions) {
+        const { error: linkError } = await dbService.getProvider().execute(
+          'INSERT INTO question_paper_questions (id, question_paper_id, question_id, question_order) VALUES (?, ?, ?, ?)',
+          [pq.id, pq.question_paper_id, pq.question_id, pq.question_order]
+        );
+        if (linkError) throw linkError;
+      }
 
       toast({
         title: "Question paper generated",

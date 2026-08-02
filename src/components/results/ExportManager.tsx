@@ -8,7 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -56,30 +56,41 @@ export const ExportManager = () => {
     try {
       // Fetch students
       if (profile?.role === 'parent') {
-        const { data: children } = await supabase
-          .from('parent_child_relationships')
-          .select(`
-            child_id,
-            profiles!parent_child_relationships_child_id_fkey(
-              full_name,
-              user_id
-            )
-          `)
-          .eq('parent_id', profile.user_id);
+        const childrenRelations = await dbService.getProvider().query(
+          'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+          [profile.user_id]
+        );
+        
+        const children = [];
+        for (const rel of childrenRelations) {
+          const profData = await dbService.getProvider().query(
+            'SELECT full_name, user_id FROM profiles WHERE user_id = ? LIMIT 1',
+            [rel.child_id]
+          );
+          if (profData[0]) {
+            children.push({
+              child_id: rel.child_id,
+              profiles: profData[0]
+            });
+          }
+        }
         
         setStudentList(children || []);
       }
 
       // Fetch tests
-      let testQuery = supabase
-        .from('question_papers')
-        .select('id, title, user_id');
-
+      let tests = [];
       if (profile?.role === 'parent') {
-        testQuery = testQuery.eq('user_id', profile.user_id);
+        tests = await dbService.getProvider().query(
+          'SELECT id, title, user_id FROM question_papers WHERE user_id = ?',
+          [profile.user_id]
+        );
+      } else {
+        tests = await dbService.getProvider().query(
+          'SELECT id, title, user_id FROM question_papers'
+        );
       }
 
-      const { data: tests } = await testQuery;
       setTestList(tests || []);
 
     } catch (error: any) {
@@ -95,16 +106,12 @@ export const ExportManager = () => {
     try {
       setLoading(true);
 
-      const { data: attemptsData, error } = await supabase
-        .from('paper_attempts')
-        .select('*');
+      const attemptsData = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
-      if (error) throw error;
-
-      const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: profilesData } = await supabase.from('profiles').select('*');
-      const { data: classesData } = await supabase.from('classes').select('*');
-      const { data: subjectsData } = await supabase.from('subjects').select('*');
+      const papersData = await dbService.getProvider().query('SELECT * FROM question_papers');
+      const profilesData = await dbService.getProvider().query('SELECT * FROM profiles');
+      const classesData = await dbService.getProvider().query('SELECT * FROM classes');
+      const subjectsData = await dbService.getProvider().query('SELECT * FROM subjects');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const profileMap = new Map((profilesData || []).map((pr: any) => [pr.user_id || pr.id, pr]));

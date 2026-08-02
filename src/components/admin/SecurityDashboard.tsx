@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { 
   Shield, 
   AlertTriangle, 
@@ -57,28 +57,34 @@ export const SecurityDashboard = () => {
   const fetchSecurityData = async () => {
     try {
       // Fetch recent security events
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('security_events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data: eventsData, error: eventsError } = await dbService.getProvider().query(
+        'SELECT * FROM security_events ORDER BY created_at DESC LIMIT 50'
+      );
 
       if (eventsError) throw eventsError;
 
       // Fetch recent audit logs
-      const { data: logsData, error: logsError } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data: logsData, error: logsError } = await dbService.getProvider().query(
+        'SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50'
+      );
 
       if (logsError) throw logsError;
 
-      setSecurityEvents(eventsData || []);
-      setAuditLogs(logsData || []);
+      const parsedEvents = (eventsData || []).map((e: any) => ({
+        ...e,
+        event_data: typeof e.event_data === 'string' ? JSON.parse(e.event_data) : e.event_data
+      }));
+
+      const parsedLogs = (logsData || []).map((l: any) => ({
+        ...l,
+        details: typeof l.details === 'string' ? JSON.parse(l.details) : l.details
+      }));
+
+      setSecurityEvents(parsedEvents);
+      setAuditLogs(parsedLogs);
 
       // Calculate stats
-      const events = eventsData || [];
+      const events = parsedEvents;
       setStats({
         totalEvents: events.length,
         roleChanges: events.filter(e => e.event_type === 'ROLE_CHANGE').length,

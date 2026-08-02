@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { GraduationCap, Save, X } from 'lucide-react';
 import { useClassesParent } from '@/hooks/useClassesParent';
 
@@ -28,16 +29,14 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
 
   const fetchCurrentClass = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const user = authService.getCurrentUser();
+      if (!user) return;
 
-      const { data, error } = await supabase
-        .from('child_class_assignments')
-        .select('class_id')
-        .eq('child_id', childId)
-        .eq('parent_id', user.user.id)
-        .eq('is_current', true)
-        .maybeSingle();
+      const { data: results, error } = await dbService.getProvider().query(
+        'SELECT class_id FROM child_class_assignments WHERE child_id = ? AND parent_id = ? AND is_current = ? LIMIT 1',
+        [childId, user.id, true]
+      );
+      const data = results?.[0];
 
       if (error) throw error;
 
@@ -63,25 +62,20 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
     setIsSaving(true);
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Not authenticated');
 
       // First, mark existing assignments as not current
-      await supabase
-        .from('child_class_assignments')
-        .update({ is_current: false })
-        .eq('child_id', childId)
-        .eq('parent_id', user.user.id);
+      await dbService.getProvider().execute(
+        'UPDATE child_class_assignments SET is_current = ? WHERE child_id = ? AND parent_id = ?',
+        [false, childId, user.id]
+      );
 
       // Then insert new current assignment
-      const { error } = await supabase
-        .from('child_class_assignments')
-        .insert({
-          child_id: childId,
-          parent_id: user.user.id,
-          class_id: selectedClassId,
-          is_current: true,
-        });
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO child_class_assignments (id, child_id, parent_id, class_id, is_current) VALUES (?, ?, ?, ?, ?)',
+        [crypto.randomUUID(), childId, user.id, selectedClassId, true]
+      );
 
       if (error) throw error;
 

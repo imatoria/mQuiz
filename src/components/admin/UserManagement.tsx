@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TableSkeleton } from '@/components/ui/skeleton-loaders';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination } from '@/hooks/usePagination';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { 
   Users, 
   Search, 
@@ -52,10 +52,9 @@ export const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT * FROM profiles ORDER BY created_at DESC'
+      );
 
       if (error) throw error;
       setUsers(data || []);
@@ -72,10 +71,10 @@ export const UserManagement = () => {
 
   const updateUserStatus = async (userId: string, isApproved: boolean) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_approved: isApproved })
-        .eq('id', userId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE profiles SET is_approved = ? WHERE id = ?',
+        [isApproved, userId]
+      );
 
       if (error) throw error;
 
@@ -99,13 +98,11 @@ export const UserManagement = () => {
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
       // Use secure server-side function for role management
-      const { data, error } = await supabase.functions.invoke('manage-user-role', {
-        body: {
-          targetUserId: userId,
-          newRole: newRole,
-          reason: `Role change via admin panel`
-        }
-      });
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE profiles SET role = ? WHERE id = ?',
+        [newRole, userId]
+      );
+      const data = { success: !error, error: error?.message };
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error);

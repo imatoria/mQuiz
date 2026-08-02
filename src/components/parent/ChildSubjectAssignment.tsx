@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { BookOpen, Save, X } from 'lucide-react';
 import { useSubjectsParent } from '@/hooks/useSubjectsParent';
 
@@ -28,16 +29,14 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
 
   const fetchCurrentSubjects = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const user = authService.getCurrentUser();
+      if (!user) return;
 
       // Fetch current subject assignments
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('child_subject_assignments')
-        .select('subject_id')
-        .eq('child_id', childId)
-        .eq('parent_id', user.user.id)
-        .eq('is_current', true);
+      const { data: assignmentsData, error: assignmentsError } = await dbService.getProvider().query(
+        'SELECT subject_id FROM child_subject_assignments WHERE child_id = ? AND parent_id = ? AND is_current = ?',
+        [childId, user.id, true]
+      );
 
       if (assignmentsError) throw assignmentsError;
 
@@ -69,30 +68,27 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
     setIsSaving(true);
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Not authenticated');
 
       // First, mark existing assignments as not current
-      await supabase
-        .from('child_subject_assignments')
-        .update({ is_current: false })
-        .eq('child_id', childId)
-        .eq('parent_id', user.user.id);
+      await dbService.getProvider().execute(
+        'UPDATE child_subject_assignments SET is_current = ? WHERE child_id = ? AND parent_id = ?',
+        [false, childId, user.id]
+      );
 
       // Then insert new current assignments
       if (selectedSubjects.length > 0) {
-        const assignments = selectedSubjects.map(subjectParentId => ({
-          child_id: childId,
-          parent_id: user.user.id,
-          subject_id: subjectParentId,
-          is_current: true,
-        }));
+        let err = null;
+        for (const subjectId of selectedSubjects) {
+          const { error } = await dbService.getProvider().execute(
+            'INSERT INTO child_subject_assignments (id, child_id, parent_id, subject_id, is_current) VALUES (?, ?, ?, ?, ?)',
+            [crypto.randomUUID(), childId, user.id, subjectId, true]
+          );
+          if (error) err = error;
+        }
 
-        const { error } = await supabase
-          .from('child_subject_assignments')
-          .insert(assignments);
-
-        if (error) throw error;
+        if (err) throw err;
       }
 
       setCurrentSubjects(selectedSubjects);

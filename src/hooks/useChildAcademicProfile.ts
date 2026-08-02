@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 
 interface ChildAcademicData {
   child_id: string;
@@ -27,36 +27,35 @@ export const useChildAcademicProfile = (childId?: string) => {
       setError(null);
 
       // Fetch class assignment by child_id
-      const { data: classData } = await supabase
-        .from('child_class_assignments')
-        .select('*')
-        .eq('child_id', childId)
-        .maybeSingle();
+      const { data: classData } = await dbService.getProvider().queryOne(
+        'SELECT * FROM child_class_assignments WHERE child_id = ?',
+        [childId]
+      );
 
       let className: string | undefined = undefined;
       if (classData?.class_id) {
-        const { data: classInfo } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('id', classData.class_id)
-          .maybeSingle();
+        const { data: classInfo } = await dbService.getProvider().queryOne(
+          'SELECT * FROM classes WHERE id = ?',
+          [classData.class_id]
+        );
         className = classInfo?.class_name;
       }
 
       // Fetch subject assignments by child_id
-      const { data: subjectsData } = await supabase
-        .from('child_subject_assignments')
-        .select('*')
-        .eq('child_id', childId);
+      const { data: subjectsData } = await dbService.getProvider().query(
+        'SELECT * FROM child_subject_assignments WHERE child_id = ?',
+        [childId]
+      );
 
       const subjectIds = (subjectsData || []).map((s: any) => s.subject_id);
 
       let subjectNames: string[] = [];
       if (subjectIds.length > 0) {
-        const { data: subjectsInfo } = await supabase
-          .from('subjects')
-          .select('*')
-          .in('id', subjectIds);
+        const placeholders = subjectIds.map(() => '?').join(', ');
+        const { data: subjectsInfo } = await dbService.getProvider().query(
+          `SELECT * FROM subjects WHERE id IN (${placeholders})`,
+          subjectIds
+        );
         subjectNames = (subjectsInfo || []).map((s: any) => s.subject_name).filter(Boolean);
       }
 

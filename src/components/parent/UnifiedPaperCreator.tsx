@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { usePagination } from '@/hooks/usePagination';
 import { useChildSubjects } from '@/hooks/useChildSubjects';
@@ -262,10 +262,10 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     try {
       console.log('Loading children for user:', user.id);
       // Get child IDs first
-      const { data: relationships, error: relError } = await supabase
-        .from('parent_child_relationships')
-        .select('child_id')
-        .eq('parent_id', user.id);
+      const { data: relationships, error: relError } = await dbService.getProvider().query(
+        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+        [user.id]
+      );
       
       if (relError) throw relError;
       
@@ -275,11 +275,12 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       }
       
       // Get children profiles
-      const childIds = relationships.map(r => r.child_id);
-      const { data: childProfiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, user_id, full_name, email')
-        .in('user_id', childIds);
+      const childIds = relationships.map((r: any) => r.child_id);
+      
+      const { data: childProfiles, error: profileError } = await dbService.getProvider().query(
+        `SELECT id, user_id, full_name, email FROM profiles WHERE user_id IN (${childIds.map(() => '?').join(',')})`,
+        childIds
+      );
       
       if (profileError) throw profileError;
       
@@ -293,8 +294,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     setIsLoadingQuestions(true);
     try {
       // Get all subjects and classes from database to resolve matching names across duplicate IDs
-      const { data: allSubjectsData } = await supabase.from('subjects').select('*');
-      const { data: allClassesData } = await supabase.from('classes').select('*');
+      const { data: allSubjectsData } = await dbService.getProvider().query('SELECT * FROM subjects');
+      const { data: allClassesData } = await dbService.getProvider().query('SELECT * FROM classes');
 
       const selectedSubjectObj = (allSubjectsData || []).find((s: any) => s.id === formData.subject_id);
       const matchingSubjectIds = selectedSubjectObj
@@ -306,11 +307,9 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
         ? (allClassesData || []).filter((c: any) => c.class_name?.toLowerCase() === selectedClassObj.class_name?.toLowerCase()).map((c: any) => c.id)
         : (formData.class_id ? [formData.class_id] : []);
 
-      const { data: rawQuestions, error } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
+      const { data: rawQuestions, error } = await dbService.getProvider().query(
+        'SELECT * FROM questions WHERE is_deleted = 0 ORDER BY created_at DESC'
+      );
 
       if (error) throw error;
 
@@ -339,20 +338,20 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
   const loadSelectedQuestions = async (paperId: string) => {
     try {
-      const { data: qpqData, error: qpqError } = await supabase
-        .from('question_paper_questions')
-        .select('*')
-        .eq('question_paper_id', paperId);
+      const { data: qpqData, error: qpqError } = await dbService.getProvider().query(
+        'SELECT * FROM question_paper_questions WHERE question_paper_id = ?',
+        [paperId]
+      );
       
       if (qpqError) throw qpqError;
 
       const questionIds = (qpqData || []).map((item: any) => item.question_id || item.questions?.id).filter(Boolean);
 
       if (questionIds.length > 0) {
-        const { data: allQuestions } = await supabase
-          .from('questions')
-          .select('*')
-          .in('id', questionIds);
+        const { data: allQuestions } = await dbService.getProvider().query(
+          `SELECT * FROM questions WHERE id IN (${questionIds.map(() => '?').join(',')})`,
+          questionIds
+        );
 
         const qMap = new Map((allQuestions || []).map((q: any) => [q.id, q]));
         
@@ -377,14 +376,10 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     
     try {
       // Get unique page numbers for the selected subject and class level
-      const { data, error } = await supabase
-        .from('questions')
-        .select('page_number')
-        .eq('subject_id', formData.subject_id)
-        .eq('class_id', formData.class_id)
-        .eq('is_deleted', false)
-        .not('page_number', 'is', null)
-        .order('page_number');
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT page_number FROM questions WHERE subject_id = ? AND class_id = ? AND is_deleted = 0 AND page_number IS NOT NULL ORDER BY page_number',
+        [formData.subject_id, formData.class_id]
+      );
       
       if (error) throw error;
       
@@ -474,69 +469,73 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       
       if (editingPaper) {
         // Update existing paper
-        const { error } = await supabase
-          .from('question_papers')
-          .update(paperData)
-          .eq('id', editingPaper.id);
+        const { error } = await dbService.getProvider().execute(
+          'UPDATE question_papers SET title = ?, subject_id = ?, class_id = ?, total_questions = ?, time_limit_minutes = ?, start_time = ?, end_time = ?, max_attempts = ?, assign_to_all = ?, show_results = ?, difficulty_filter = ? WHERE id = ?',
+          [
+            paperData.title, paperData.subject_id, paperData.class_id, paperData.total_questions, 
+            paperData.time_limit_minutes, paperData.start_time, paperData.end_time, paperData.max_attempts, 
+            paperData.assign_to_all ? 1 : 0, paperData.show_results ? 1 : 0, JSON.stringify(paperData.difficulty_filter), 
+            editingPaper.id
+          ]
+        );
         
         if (error) throw error;
         paperId = editingPaper.id;
         
         // Delete existing assignments for this paper
-        await supabase
-          .from('paper_assignments')
-          .delete()
-          .eq('paper_id', paperId);
+        await dbService.getProvider().execute(
+          'DELETE FROM paper_assignments WHERE paper_id = ?',
+          [paperId]
+        );
       } else {
         // Create new paper
-        const { data: insertedPaper, error } = await supabase
-          .from('question_papers')
-          .insert(paperData)
-          .select()
-          .single();
+        paperId = crypto.randomUUID();
+        const { error } = await dbService.getProvider().execute(
+          'INSERT INTO question_papers (id, user_id, title, subject_id, class_id, total_questions, time_limit_minutes, start_time, end_time, max_attempts, assign_to_all, show_results, difficulty_filter) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            paperId, paperData.user_id, paperData.title, paperData.subject_id, paperData.class_id, paperData.total_questions, 
+            paperData.time_limit_minutes, paperData.start_time, paperData.end_time, paperData.max_attempts, 
+            paperData.assign_to_all ? 1 : 0, paperData.show_results ? 1 : 0, JSON.stringify(paperData.difficulty_filter)
+          ]
+        );
         
         if (error) throw error;
-        paperId = insertedPaper.id;
       }
 
       // Handle selected questions - delete existing and insert new ones
       if (formData.selected_questions && formData.selected_questions.length > 0) {
         // Delete existing question-paper relationships if editing
         if (editingPaper) {
-          const { error: deleteError } = await supabase
-            .from('question_paper_questions')
-            .delete()
-            .eq('question_paper_id', paperId);
+          const { error: deleteError } = await dbService.getProvider().execute(
+            'DELETE FROM question_paper_questions WHERE question_paper_id = ?',
+            [paperId]
+          );
 
           if (deleteError) throw deleteError;
         }
 
         // Insert new question-paper relationships
-        const questionPaperQuestions = formData.selected_questions.map((questionId, index) => ({
-          question_paper_id: paperId,
-          question_id: questionId,
-          question_order: index + 1
-        }));
+        for (let i = 0; i < formData.selected_questions.length; i++) {
+          const questionId = formData.selected_questions[i];
+          const { error: questionsError } = await dbService.getProvider().execute(
+            'INSERT INTO question_paper_questions (id, question_paper_id, question_id, question_order) VALUES (?, ?, ?, ?)',
+            [crypto.randomUUID(), paperId, questionId, i + 1]
+          );
 
-        const { error: questionsError } = await supabase
-          .from('question_paper_questions')
-          .insert(questionPaperQuestions);
-
-        if (questionsError) throw questionsError;
+          if (questionsError) throw questionsError;
+        }
       }
 
       // If not assigning to all children, create individual assignments
       if (!formData.assign_to_all && formData.selected_children && formData.selected_children.length > 0) {
-        const assignments = formData.selected_children.map(childId => ({
-          paper_id: paperId,
-          assigned_to_user_id: childId
-        }));
+        for (const childId of formData.selected_children) {
+          const { error: assignmentError } = await dbService.getProvider().execute(
+            'INSERT INTO paper_assignments (id, paper_id, assigned_to_user_id) VALUES (?, ?, ?)',
+            [crypto.randomUUID(), paperId, childId]
+          );
 
-        const { error: assignmentError } = await supabase
-          .from('paper_assignments')
-          .insert(assignments);
-
-        if (assignmentError) throw assignmentError;
+          if (assignmentError) throw assignmentError;
+        }
       }
       
       toast({

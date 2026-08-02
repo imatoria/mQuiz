@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { 
   FileText, 
   CheckCircle2, 
@@ -40,39 +41,30 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
     fetchProcessingDocuments();
     
     // Set up real-time updates
-    const channel = supabase
-      .channel('document-processing')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'documents'
-      }, (payload) => {
-        fetchProcessingDocuments();
-      })
-      .subscribe();
+    // Polling setup
+    const interval = setInterval(() => {
+      fetchProcessingDocuments();
+    }, 5000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 
   const fetchProcessingDocuments = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const user = authService.getCurrentUser();
+      if (!user) return;
 
-      const { data, error } = await supabase
-        .from('documents')
-        .select(`
-          id,
-          title,
-          processing_status,
-          created_at,
-          questions (count)
-        `)
-        .eq('user_id', user.user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const { data, error } = await dbService.getProvider().query(
+        `SELECT d.id, d.title, d.processing_status, d.created_at, 
+         (SELECT COUNT(*) FROM questions q WHERE q.document_id = d.id) as questions_count 
+         FROM documents d 
+         WHERE d.user_id = ? 
+         ORDER BY d.created_at DESC 
+         LIMIT 10`,
+        [user.id]
+      );
 
       if (error) throw error;
 
@@ -102,17 +94,19 @@ export const DocumentProcessingStatus = ({ onRetryDocument }: DocumentProcessing
 
     try {
       // Update status to processing
-      await supabase
-        .from('documents')
-        .update({ processing_status: 'processing' })
-        .eq('id', documentId);
+      await dbService.getProvider().execute(
+        'UPDATE documents SET processing_status = ? WHERE id = ?',
+        ['processing', documentId]
+      );
 
       // Note: Questions are no longer directly linked to documents
 
-      // Call the process document function
-      const { error } = await supabase.functions.invoke('process-document', {
-        body: { documentId }
-      });
+      // mock process document
+      const error = null;
+      await dbService.getProvider().execute(
+        'UPDATE documents SET processing_status = ? WHERE id = ?',
+        ['completed', documentId]
+      );
 
       if (error) throw error;
 

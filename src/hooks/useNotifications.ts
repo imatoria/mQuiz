@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from './useAuth';
 
 export const useNotifications = () => {
@@ -9,7 +9,10 @@ export const useNotifications = () => {
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
-      subscribeToNotifications();
+      const unsubscribe = subscribeToNotifications();
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
     }
   }, [user]);
 
@@ -17,14 +20,13 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT id FROM notifications WHERE user_id = ? AND is_read = 0',
+        [user.id]
+      );
 
       if (error) throw error;
-      setUnreadCount(count || 0);
+      setUnreadCount(data?.length || 0);
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }
@@ -33,24 +35,13 @@ export const useNotifications = () => {
   const subscribeToNotifications = () => {
     if (!user) return;
 
-    const channel = supabase
-      .channel('notification_count')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchUnreadCount();
-        }
-      )
-      .subscribe();
+    // Simulate realtime updates via polling for local SQLite
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 10000); // 10 seconds
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   };
 
@@ -62,15 +53,18 @@ export const useNotifications = () => {
     relatedId?: string
   ) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .insert({
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO notifications',
+        [{
+          id: crypto.randomUUID(),
           user_id: userId,
           title,
           message,
           type,
           related_id: relatedId,
-        });
+          is_read: 0
+        }]
+      );
 
       if (error) throw error;
       return { success: true };
@@ -88,17 +82,7 @@ export const useNotifications = () => {
     templateData: Record<string, any> = {}
   ) => {
     try {
-      const response = await supabase.functions.invoke('send-email-notifications', {
-        body: {
-          recipient_email: recipientEmail,
-          recipient_id: recipientId,
-          subject,
-          template_name: templateName,
-          template_data: templateData,
-        },
-      });
-
-      if (response.error) throw response.error;
+      console.log(`[Mock Email] Sending email to ${recipientEmail} with subject: ${subject}`);
       return { success: true };
     } catch (error) {
       console.error('Error sending email notification:', error);

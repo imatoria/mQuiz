@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,35 +38,15 @@ export const ApprovalWorkflow = () => {
   useEffect(() => {
     fetchPendingUsers();
     
-    // Subscribe to real-time updates for new user registrations
-    const channel = supabase
-      .channel('pending_users')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'profiles',
-          filter: 'is_approved=eq.false',
-        },
-        () => {
-          fetchPendingUsers();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchPendingUsers, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchPendingUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('is_approved', false)
-        .order('created_at', { ascending: true });
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT * FROM profiles WHERE is_approved = false ORDER BY created_at ASC'
+      );
 
       if (error) throw error;
       setPendingUsers(data || []);
@@ -86,13 +66,10 @@ export const ApprovalWorkflow = () => {
     
     try {
       // Update user approval status
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          is_approved: approved,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      const { error: updateError } = await dbService.getProvider().execute(
+        'UPDATE profiles SET is_approved = ?, updated_at = ? WHERE id = ?',
+        [approved, new Date().toISOString(), user.id]
+      );
 
       if (updateError) throw updateError;
 

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useToast } from '@/hooks/use-toast';
 import { 
   BarChart3, 
@@ -53,42 +53,42 @@ export const SystemAnalytics = () => {
   const fetchAnalytics = async () => {
     try {
       // Fetch counts
-      const [usersResult, documentsResult, questionsResult, testsResult, activeTestsResult] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('documents').select('*', { count: 'exact', head: true }),
-        supabase.from('questions').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
-        supabase.from('question_papers').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
-        supabase.from('question_papers').select('*', { count: 'exact', head: true }).not('start_time', 'is', null).not('end_time', 'is', null)
+      const fetchCount = async (query: string, params: any[] = []) => {
+        const { data } = await dbService.getProvider().query(query, params);
+        return data?.[0]?.count || 0;
+      };
+
+      const [usersCount, documentsCount, questionsCount, testsCount, activeTestsCount] = await Promise.all([
+        fetchCount('SELECT count(*) as count FROM profiles'),
+        fetchCount('SELECT count(*) as count FROM documents'),
+        fetchCount('SELECT count(*) as count FROM questions WHERE is_deleted = false'),
+        fetchCount('SELECT count(*) as count FROM question_papers WHERE is_deleted = false'),
+        fetchCount('SELECT count(*) as count FROM question_papers WHERE start_time IS NOT NULL AND end_time IS NOT NULL')
       ]);
+
+      const usersResult = { count: usersCount };
+      const documentsResult = { count: documentsCount };
+      const questionsResult = { count: questionsCount };
+      const testsResult = { count: testsCount };
+      const activeTestsResult = { count: activeTestsCount };
 
       // Calculate weekly user growth percentage
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const { count: newUsersThisWeek } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', weekAgo.toISOString());
+      const newUsersThisWeek = await fetchCount('SELECT count(*) as count FROM profiles WHERE created_at >= ?', [weekAgo.toISOString()]);
 
       const twoWeeksAgo = new Date();
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
       
-      const { count: newUsersLastWeek } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', twoWeeksAgo.toISOString())
-        .lt('created_at', weekAgo.toISOString());
+      const newUsersLastWeek = await fetchCount('SELECT count(*) as count FROM profiles WHERE created_at >= ? AND created_at < ?', [twoWeeksAgo.toISOString(), weekAgo.toISOString()]);
 
       const weeklyUserGrowth = newUsersLastWeek && newUsersLastWeek > 0
         ? Math.round(((newUsersThisWeek || 0) - newUsersLastWeek) / newUsersLastWeek * 100)
         : newUsersThisWeek || 0;
 
       // Calculate average test score from completed attempts
-      const { data: completedAttempts } = await supabase
-        .from('paper_attempts')
-        .select('score')
-        .not('score', 'is', null)
-        .not('completed_at', 'is', null);
+      const { data: completedAttempts } = await dbService.getProvider().query('SELECT score FROM paper_attempts WHERE score IS NOT NULL AND completed_at IS NOT NULL');
 
       const avgTestScore = completedAttempts && completedAttempts.length > 0 
         ? Math.round(completedAttempts.reduce((sum, attempt) => sum + (attempt.score || 0), 0) / completedAttempts.length)
@@ -98,19 +98,13 @@ export const SystemAnalytics = () => {
       const monthAgo = new Date();
       monthAgo.setMonth(monthAgo.getMonth() - 1);
       
-      const { count: monthlyTestsCreated } = await supabase
-        .from('question_papers')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', monthAgo.toISOString())
-        .eq('is_deleted', false);
+      const monthlyTestsCreated = await fetchCount('SELECT count(*) as count FROM question_papers WHERE created_at >= ? AND is_deleted = false', [monthAgo.toISOString()]);
 
       // Calculate system health metrics from real data
-      const { data: recentAttempts } = await supabase
-        .from('paper_attempts')
-        .select('started_at, completed_at')
-        .not('completed_at', 'is', null)
-        .gte('started_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .limit(100);
+      const { data: recentAttempts } = await dbService.getProvider().query(
+        'SELECT started_at, completed_at FROM paper_attempts WHERE completed_at IS NOT NULL AND started_at >= ? LIMIT 100',
+        [new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()]
+      );
 
       // Calculate average response time based on paper attempt durations
       let avgResponseTime = 150; // default fallback
@@ -130,27 +124,19 @@ export const SystemAnalytics = () => {
       }
 
       // Calculate system uptime based on successful operations
-      const { count: totalOperations } = await supabase
-        .from('paper_attempts')
-        .select('*', { count: 'exact', head: true })
-        .gte('started_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      const totalOperations = await fetchCount('SELECT count(*) as count FROM paper_attempts WHERE started_at >= ?', [new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()]);
 
-      const { count: completedOperations } = await supabase
-        .from('paper_attempts')
-        .select('*', { count: 'exact', head: true })
-        .not('completed_at', 'is', null)
-        .gte('started_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      const completedOperations = await fetchCount('SELECT count(*) as count FROM paper_attempts WHERE completed_at IS NOT NULL AND started_at >= ?', [new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()]);
 
       const systemUptime = totalOperations && totalOperations > 0 
         ? Math.round((completedOperations || 0) / totalOperations * 100)
         : 99;
 
       // Calculate average processing time for AI questions
-      const { data: recentQuestions } = await supabase
-        .from('questions')
-        .select('created_at')
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .limit(50);
+      const { data: recentQuestions } = await dbService.getProvider().query(
+        'SELECT created_at FROM questions WHERE created_at >= ? LIMIT 50',
+        [new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()]
+      );
 
       // Simulate processing time based on question creation frequency
       let avgProcessingTime = 2.5; // default fallback
@@ -181,11 +167,7 @@ export const SystemAnalytics = () => {
         const endOfDay = new Date(date.setHours(23, 59, 59, 999));
         
         userGrowthPromises.push(
-          supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', startOfDay.toISOString())
-            .lte('created_at', endOfDay.toISOString())
+          fetchCount('SELECT count(*) as count FROM profiles WHERE created_at >= ? AND created_at <= ?', [startOfDay.toISOString(), endOfDay.toISOString()]).then(c => ({ count: c }))
         );
       }
 
@@ -213,12 +195,7 @@ export const SystemAnalytics = () => {
         const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
         
         testActivityPromises.push(
-          supabase
-            .from('paper_attempts')
-            .select('*', { count: 'exact', head: true })
-            .not('completed_at', 'is', null)
-            .gte('completed_at', startOfMonth.toISOString())
-            .lte('completed_at', endOfMonth.toISOString())
+          fetchCount('SELECT count(*) as count FROM paper_attempts WHERE completed_at IS NOT NULL AND completed_at >= ? AND completed_at <= ?', [startOfMonth.toISOString(), endOfMonth.toISOString()]).then(c => ({ count: c }))
         );
       }
 

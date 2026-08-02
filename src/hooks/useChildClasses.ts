@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 
 interface ClassAssignment {
   class_id: string;
@@ -25,35 +26,33 @@ export const useChildClasses = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user?.user) {
+      const user = authService.getCurrentUser();
+      if (!user) {
         setChildClasses([]);
         return;
       }
 
-      let parentId = user.user.id;
+      let parentId = user.id;
 
       // If the current user is a child, find their parent_id from parent_child_relationships
-      const { data: rel } = await supabase
-        .from('parent_child_relationships')
-        .select('parent_id')
-        .eq('child_id', user.user.id)
-        .maybeSingle();
+      const { data: rel } = await dbService.getProvider().queryOne(
+        'SELECT parent_id FROM parent_child_relationships WHERE child_id = ?',
+        [user.id]
+      );
 
       if (rel?.parent_id) {
         parentId = rel.parent_id;
       }
 
       // Get current class assignments strictly for this parent
-      const { data: assignments, error: assignmentsError } = await supabase
-        .from('child_class_assignments')
-        .select('*')
-        .eq('parent_id', parentId)
-        .eq('is_current', true);
+      const { data: assignments, error: assignmentsError } = await dbService.getProvider().query(
+        'SELECT * FROM child_class_assignments WHERE parent_id = ? AND is_current = 1',
+        [parentId]
+      );
 
       if (assignmentsError) throw assignmentsError;
 
-      const { data: allClasses } = await supabase.from('classes').select('*');
+      const { data: allClasses } = await dbService.getProvider().query('SELECT * FROM classes');
       const classMap = new Map((allClasses || []).map((c: any) => [c.id, c]));
 
       const enriched: ClassAssignment[] = (assignments || []).map((assignment: any) => {

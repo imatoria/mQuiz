@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { authService } from "@/services/auth/authService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,8 +97,8 @@ export const TagManagement = ({ documentId }: TagManagementProps) => {
     }
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const user = authService.getCurrentUser();
+      if (!user) return;
 
       // For now, just show success message
       toast({

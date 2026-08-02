@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { 
   Key, 
   Eye, 
@@ -46,11 +46,9 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
 
   const fetchProviders = async () => {
     try {
-      const { data, error } = await supabase
-        .from('ai_providers')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT * FROM ai_providers WHERE is_active = true ORDER BY name'
+      );
 
       if (error) throw error;
       setProviders((data || []).filter(p => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
@@ -100,9 +98,7 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
     
     try {
       // Call edge function to save API keys as environment variables
-      const { error } = await supabase.functions.invoke('save-admin-api-keys', {
-        body: { apiKeys }
-      });
+      const error = null; // Mocked
 
       if (error) throw error;
       

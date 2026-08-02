@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { dbService } from "@/services/db";
+import { authService } from "@/services/auth/authService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,15 +42,14 @@ export const VersionHistory = ({ documentId }: VersionHistoryProps) => {
 
   const fetchData = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const user = authService.getCurrentUser();
+      if (!user) return;
 
       // Fetch user's documents
-      const { data: documentsData, error: docsError } = await supabase
-        .from('documents')
-        .select('id, title')
-        .eq('user_id', user.user.id)
-        .order('title');
+      const { data: documentsData, error: docsError } = await dbService.getProvider().query(
+        'SELECT id, title FROM documents WHERE user_id = ? ORDER BY title',
+        [user.id]
+      );
 
       if (docsError) throw docsError;
 
@@ -74,11 +74,7 @@ export const VersionHistory = ({ documentId }: VersionHistoryProps) => {
     try {
       // Since we can't directly query the versions table yet, we'll simulate the data
       // In a real implementation, this would be:
-      // const { data, error } = await supabase
-      //   .from('document_versions')
-      //   .select('*')
-      //   .eq('document_id', docId)
-      //   .order('version_number', { ascending: false });
+      // const { data, error } = await dbService.getProvider().query('SELECT * FROM document_versions WHERE document_id = ? ORDER BY version_number DESC', [docId]);
 
       // For now, create mock version data
       const document = documents.find(d => d.id === docId);

@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ZoomIn, ZoomOut, X, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 // @ts-ignore - Vite worker import provides a Worker constructor
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?worker';
@@ -16,7 +15,7 @@ import * as pdfjs from 'pdfjs-dist';
 interface PdfViewerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  filePath?: string; // Supabase storage path (documents bucket)
+  filePath?: string;
   title?: string;
   documentId?: string;
 }
@@ -53,13 +52,9 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ open, onOpenChan
       if (!filePath) return;
       setLoading(true);
       try {
-        const { data, error } = await supabase.storage
-          .from('documents')
-          .createSignedUrl(filePath, 60 * 10); // 10 minutes
-        if (error || !data?.signedUrl) throw error || new Error('Failed to get file URL');
-        setSignedUrl(data.signedUrl);
+        setSignedUrl(filePath);
 
-        const pdf = await (pdfjs as any).getDocument({ url: data.signedUrl }).promise;
+        const pdf = await (pdfjs as any).getDocument({ url: filePath }).promise;
         docRef.current = pdf;
         setNumPages(pdf.numPages);
       } catch (e: any) {

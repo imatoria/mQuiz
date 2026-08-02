@@ -1,4 +1,6 @@
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -43,42 +45,112 @@ const getViolationTypeLabel = (type: string) => {
   return labels[type] || type;
 };
 
-const ViolationCard = ({ violation }: { violation: Violation }) => (
-  <Card className="mb-3">
-    <CardHeader className="pb-3">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          {getSeverityIcon(violation.severity)}
-          <CardTitle className="text-base">
-            {getViolationTypeLabel(violation.violation_type)}
-          </CardTitle>
+const getBrowserName = (userAgent: string) => {
+  if (!userAgent) return 'Unknown';
+  if (userAgent.includes('Edg/')) return 'Edge';
+  if (userAgent.includes('Chrome/')) return 'Chrome';
+  if (userAgent.includes('Firefox/')) return 'Firefox';
+  if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) return 'Safari';
+  if (userAgent.includes('Mobile Safari/')) return 'Mobile Safari';
+  return userAgent.length > 40 ? userAgent.substring(0, 40) + '...' : userAgent;
+};
+
+const ViolationCard = ({ violation }: { violation: Violation }) => {
+  const [showRawJson, setShowRawJson] = useState(false);
+
+  const renderHumanReadableDetails = (details: any, currentViolation: Violation) => {
+    if (!details || typeof details !== 'object') return String(details);
+    
+    return (
+      <ul className="list-disc pl-4 space-y-1 text-sm text-muted-foreground mt-1">
+        {Object.entries(details).map(([key, value]) => {
+          const lowerKey = key.toLowerCase();
+          
+          // Skip rendering timestamp since it's already displayed in the card header
+          if (lowerKey === 'timestamp' || lowerKey === 'time') {
+            return null;
+          }
+
+          const formattedKey = key
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/_/g, ' ')
+            .replace(/^./, str => str.toUpperCase());
+            
+          let formattedValue = String(value);
+          
+          if (lowerKey === 'userid' || lowerKey === 'user_id') {
+            formattedValue = currentViolation.paper_attempts?.profiles?.full_name || formattedValue;
+          } else if (lowerKey === 'paperid' || lowerKey === 'paper_id') {
+            formattedValue = currentViolation.paper_attempts?.question_papers?.title || formattedValue;
+          } else if (lowerKey === 'useragent' || lowerKey === 'user_agent') {
+            formattedValue = getBrowserName(String(value));
+          } else if (typeof value === 'object' && value !== null) {
+            formattedValue = JSON.stringify(value);
+          } else if (typeof value === 'boolean') {
+            formattedValue = value ? 'Yes' : 'No';
+          }
+          
+          return (
+            <li key={key}>
+              <span className="font-medium text-foreground">{formattedKey}:</span> {formattedValue}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
+  return (
+    <Card className="mb-3">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            {getSeverityIcon(violation.severity)}
+            <CardTitle className="text-base">
+              {getViolationTypeLabel(violation.violation_type)}
+            </CardTitle>
+          </div>
+          <Badge variant={getSeverityColor(violation.severity)}>
+            {violation.severity.toUpperCase()}
+          </Badge>
         </div>
-        <Badge variant={getSeverityColor(violation.severity)}>
-          {violation.severity.toUpperCase()}
-        </Badge>
-      </div>
-      <CardDescription className="text-sm">
-        {format(new Date(violation.occurred_at), 'PPpp')}
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      {violation.paper_attempts && (
-        <div className="mb-3 space-y-1 text-sm">
-          <p><span className="font-medium">Student:</span> {violation.paper_attempts.profiles?.full_name}</p>
-          <p><span className="font-medium">Test:</span> {violation.paper_attempts.question_papers?.title}</p>
-        </div>
-      )}
-      {violation.details && Object.keys(violation.details).length > 0 && (
-        <div className="rounded-md bg-muted p-3">
-          <p className="text-sm font-medium mb-2">Details:</p>
-          <pre className="text-xs overflow-auto">
-            {JSON.stringify(violation.details, null, 2)}
-          </pre>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
+        <CardDescription className="text-sm">
+          {format(new Date(violation.occurred_at), 'PPpp')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {violation.paper_attempts && (
+          <div className="mb-3 space-y-1 text-sm">
+            <p><span className="font-medium">Student:</span> {violation.paper_attempts.profiles?.full_name}</p>
+            <p><span className="font-medium">Test:</span> {violation.paper_attempts.question_papers?.title}</p>
+          </div>
+        )}
+        {violation.details && Object.keys(violation.details).length > 0 && (
+          <div className="rounded-md bg-muted p-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium">Details:</p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 text-xs px-2"
+                onClick={() => setShowRawJson(!showRawJson)}
+              >
+                {showRawJson ? 'Show Formatted' : 'Show Raw JSON'}
+              </Button>
+            </div>
+            {showRawJson ? (
+              <pre className="text-xs overflow-auto bg-background p-2 rounded border mt-2">
+                {JSON.stringify(violation.details, null, 2)}
+              </pre>
+            ) : (
+              renderHumanReadableDetails(violation.details, violation)
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export const ViolationReporting = ({ attemptId }: ViolationReportingProps) => {
   const { violations, loading, error, stats } = useViolations(attemptId);

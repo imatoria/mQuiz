@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { ChildAcademicProfile } from './ChildAcademicProfile';
 import { 
   Plus, 
@@ -58,19 +59,19 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
 
   const fetchChildren = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
+      const user = authService.getCurrentUser();
+      if (!user) {
         console.log('ChildrenManagement: No authenticated user');
         return;
       }
 
-      console.log('ChildrenManagement: Fetching children for parent:', user.user.id);
+      console.log('ChildrenManagement: Fetching children for parent:', user.id);
 
       // Get children associated with this parent
-      const { data: relationships, error: relError } = await supabase
-        .from('parent_child_relationships')
-        .select('*')
-        .eq('parent_id', user.user.id);
+      const { data: relationships, error: relError } = await dbService.getProvider().query(
+        'SELECT * FROM parent_child_relationships WHERE parent_id = ?',
+        [user.id]
+      );
 
       if (relError) throw relError;
 
@@ -78,22 +79,23 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
 
       // Fallback: If logged in as admin or demo parent without explicit relationship rows, show assigned children
       if (childIds.length === 0) {
-        const { data: allRels } = await supabase.from('parent_child_relationships').select('*');
+        const { data: allRels } = await dbService.getProvider().query('SELECT * FROM parent_child_relationships');
         if (allRels && allRels.length > 0) {
           childIds = allRels.map((r: any) => r.child_id);
         }
       }
 
       if (childIds.length > 0) {
-        const { data: childrenData, error: childrenError } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('user_id', childIds);
+        const placeholders = childIds.map(() => '?').join(',');
+        const { data: childrenData, error: childrenError } = await dbService.getProvider().query(
+          `SELECT * FROM profiles WHERE user_id IN (${placeholders})`,
+          childIds
+        );
 
         if (childrenError) throw childrenError;
 
-        const { data: allClasses } = await supabase.from('classes').select('*');
-        const { data: allSubjects } = await supabase.from('subjects').select('*');
+        const { data: allClasses } = await dbService.getProvider().query('SELECT * FROM classes');
+        const { data: allSubjects } = await dbService.getProvider().query('SELECT * FROM subjects');
         const classMap = new Map((allClasses || []).map((c: any) => [c.id, c.class_name]));
         const subjMap = new Map((allSubjects || []).map((s: any) => [s.id, s.subject_name]));
 
@@ -101,17 +103,17 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
         const childrenWithAcademicInfo = await Promise.all(
           (childrenData || []).map(async (child: any) => {
             // Fetch class assignment by child_id
-            const { data: classData } = await supabase
-              .from('child_class_assignments')
-              .select('*')
-              .eq('child_id', child.user_id)
-              .maybeSingle();
+            const { data: classDataRes } = await dbService.getProvider().query(
+              'SELECT * FROM child_class_assignments WHERE child_id = ? LIMIT 1',
+              [child.user_id]
+            );
+            const classData = classDataRes?.[0];
 
             // Fetch subject assignments by child_id
-            const { data: subjectsData } = await supabase
-              .from('child_subject_assignments')
-              .select('*')
-              .eq('child_id', child.user_id);
+            const { data: subjectsData } = await dbService.getProvider().query(
+              'SELECT * FROM child_subject_assignments WHERE child_id = ?',
+              [child.user_id]
+            );
 
             const className = classData?.class_id ? classMap.get(classData.class_id) : undefined;
             const subjectNames = (subjectsData || []).map((s: any) => subjMap.get(s.subject_id)).filter(Boolean) as string[];
@@ -153,15 +155,21 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
     setIsAddingChild(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase.functions.invoke('create-child-account', {
-        body: {
-          email: newChildEmail,
-          fullName: newChildName
-        }
-      });
+      const data = { error: null };
+      const error = null;
+      // create mock child account in local db
+      const newChildId = crypto.randomUUID();
+      await dbService.getProvider().execute(
+        'INSERT INTO profiles (user_id, email, full_name, role, is_approved) VALUES (?, ?, ?, ?, ?)',
+        [newChildId, newChildEmail, newChildName, 'child', true]
+      );
+      await dbService.getProvider().execute(
+        'INSERT INTO parent_child_relationships (id, parent_id, child_id) VALUES (?, ?, ?)',
+        [crypto.randomUUID(), user.id, newChildId]
+      );
 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -195,14 +203,13 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
     }
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
-        .from('parent_child_relationships')
-        .delete()
-        .eq('parent_id', user.user.id)
-        .eq('child_id', childId);
+      const { error } = await dbService.getProvider().execute(
+        'DELETE FROM parent_child_relationships WHERE parent_id = ? AND child_id = ?',
+        [user.id, childId]
+      );
 
       if (error) throw error;
 
@@ -227,10 +234,10 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
   const handleToggleActive = async (childId: string, currentStatus: boolean) => {
     setTogglingChildId(childId);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_approved: !currentStatus })
-        .eq('user_id', childId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE profiles SET is_approved = ? WHERE user_id = ?',
+        [!currentStatus, childId]
+      );
 
       if (error) throw error;
 

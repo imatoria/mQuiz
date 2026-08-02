@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { TrendingUp, Target, BookOpen, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -38,7 +38,7 @@ export const PerformanceAnalytics = () => {
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
   const [subjectData, setSubjectData] = useState<SubjectPerformance[]>([]);
   const [timeData, setTimeData] = useState<TimeData[]>([]);
-  const [timeRange, setTimeRange] = useState('3months');
+  const [timeRange, setTimeRange] = useState('all');
   const [loading, setLoading] = useState(true);
   const [totalTests, setTotalTests] = useState(0);
   const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
@@ -74,7 +74,7 @@ export const PerformanceAnalytics = () => {
     try {
       setLoading(true);
       
-      const dateThreshold = new Date();
+      let dateThreshold: Date | null = new Date();
       switch (timeRange) {
         case '1month':
           dateThreshold.setMonth(dateThreshold.getMonth() - 1);
@@ -88,39 +88,46 @@ export const PerformanceAnalytics = () => {
         case '1year':
           dateThreshold.setFullYear(dateThreshold.getFullYear() - 1);
           break;
+        case 'all':
+          dateThreshold = null;
+          break;
       }
 
-      // Load test performance data - ONLY approved results (show_results = true)
-      const { data: rawAttemptsData, error } = await supabase
-        .from('paper_attempts')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('show_results', true);
+      // Get all attempts for the user
+      const { data: allAttempts } = await dbService.getProvider().query(
+        'SELECT * FROM paper_attempts WHERE user_id = ?',
+        [user?.id]
+      );
 
-      if (error) throw error;
-
-      // Filter attempts by dateThreshold based on selected timeRange (1month, 3months, 6months, 1year)
-      const attemptsData = (rawAttemptsData || []).filter((a: any) => {
-        const completedDate = new Date(a.completed_at || a.started_at || a.created_at || Date.now());
-        return completedDate >= dateThreshold;
+      // 1. Filter all attempts by the selected date threshold first
+      const dateFilteredAttempts = (allAttempts || []).filter((a: any) => {
+        if (dateThreshold) {
+          const completedDate = new Date(a.completed_at || a.started_at || a.created_at || Date.now());
+          return completedDate >= dateThreshold;
+        }
+        return true;
       });
 
-      const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: subjectsData } = await supabase.from('subjects').select('*');
+      // 2. Filter for approved results to show in charts
+      const attemptsData = dateFilteredAttempts.filter((a: any) => {
+        // Handle SQLite boolean representations (1, 0, true, false) and defaults
+        const rawShow = a.show_results ?? true;
+        const isApproved = rawShow === 1 || rawShow === true || rawShow === 'true';
+        return isApproved;
+      });
+
+      const { data: papersData } = await dbService.getProvider().query('SELECT * FROM question_papers');
+      const { data: subjectsData } = await dbService.getProvider().query('SELECT * FROM subjects');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
 
-      // Get total test count (including unapproved)
-      const { data: allAttempts, error: allError } = await supabase
-        .from('paper_attempts')
-        .select('*')
-        .eq('user_id', user?.id);
-
-      if (allError) throw allError;
-
-      const totalCount = allAttempts?.length || 0;
-      const pendingCount = allAttempts?.filter((a: any) => !a.show_results).length || 0;
+      // 3. Calculate total and pending counts based on the date-filtered attempts
+      const totalCount = dateFilteredAttempts.length;
+      const pendingCount = dateFilteredAttempts.filter((a: any) => {
+        const rawShow = a.show_results ?? true;
+        return !(rawShow === 1 || rawShow === true || rawShow === 'true');
+      }).length;
       
       setTotalTests(totalCount);
       setPendingApprovalCount(pendingCount);
@@ -229,36 +236,7 @@ export const PerformanceAnalytics = () => {
     );
   }
 
-  // Show message if student has tests but no approved results
-  const hasNoApprovedResults = totalTests > 0 && performanceData.length === 0;
-  
-  if (hasNoApprovedResults) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Results Pending Approval
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center py-8">
-            <div className="text-center space-y-4">
-              <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto">
-                <Calendar className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="font-medium text-lg">You've completed {totalTests} test{totalTests > 1 ? 's' : ''}!</p>
-                <p className="text-muted-foreground mt-2">
-                  Results will appear here once your parent reviews and approves them.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-6">
@@ -276,6 +254,7 @@ export const PerformanceAnalytics = () => {
             <SelectItem value="3months">Last 3 Months</SelectItem>
             <SelectItem value="6months">Last 6 Months</SelectItem>
             <SelectItem value="1year">Last Year</SelectItem>
+            <SelectItem value="all">All Time</SelectItem>
           </SelectContent>
         </Select>
       </div>

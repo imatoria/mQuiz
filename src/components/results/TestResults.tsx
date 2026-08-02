@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ViolationReporting } from './ViolationReporting';
@@ -58,12 +59,28 @@ export const TestResults = () => {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
 
   useEffect(() => {
     if (user?.id) {
       loadTestResults();
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    const state = location.state as { openAttemptId?: string };
+    if (state?.openAttemptId && attempts.length > 0 && !showBreakdown) {
+      const attemptToOpen = attempts.find(a => a.id === state.openAttemptId);
+      if (attemptToOpen && attemptToOpen.show_results) {
+        setSelectedAttempt(attemptToOpen);
+        setShowBreakdown(true);
+        loadQuestionBreakdown(attemptToOpen.id, attemptToOpen.answers);
+        
+        // Clear the state so it doesn't reopen if the user navigates back
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [attempts, location.state]);
 
   const loadTestResults = async () => {
     if (!user?.id) {
@@ -72,15 +89,15 @@ export const TestResults = () => {
     }
 
     try {
-      const { data: attemptsData, error } = await supabase
-        .from('paper_attempts')
-        .select('*')
-        .eq('user_id', user.id);
+      const { data: attemptsData, error } = await dbService.getProvider().query(
+        'SELECT * FROM paper_attempts WHERE user_id = ?',
+        [user.id]
+      );
 
       if (error) throw error;
 
-      const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: subjectsData } = await supabase.from('subjects').select('*');
+      const { data: papersData } = await dbService.getProvider().query('SELECT * FROM question_papers');
+      const { data: subjectsData } = await dbService.getProvider().query('SELECT * FROM subjects');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
@@ -151,12 +168,12 @@ export const TestResults = () => {
         return;
       }
 
-      const { data: qpqData } = await supabase
-        .from('question_paper_questions')
-        .select('*')
-        .eq('question_paper_id', questionPaperId);
+      const { data: qpqData } = await dbService.getProvider().query(
+        'SELECT * FROM question_paper_questions WHERE question_paper_id = ?',
+        [questionPaperId]
+      );
 
-      const { data: allQuestions } = await supabase.from('questions').select('*');
+      const { data: allQuestions } = await dbService.getProvider().query('SELECT * FROM questions');
       const questionMap = new Map((allQuestions || []).map((q: any) => [q.id, q]));
 
       let parsedAnswers = answers;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { Send, MessageSquare, Reply, Trash2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,11 +72,10 @@ export const MessageCenter = () => {
     setIsLoading(true);
     try {
       // First fetch messages
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('messages')
-        .select('*')
-        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+      const { data: messagesData, error: messagesError } = await dbService.getProvider().query(
+        'SELECT * FROM messages WHERE sender_id = ? OR recipient_id = ? ORDER BY created_at DESC',
+        [user.id, user.id]
+      );
 
       if (messagesError) throw messagesError;
 
@@ -88,10 +87,11 @@ export const MessageCenter = () => {
       });
 
       // Fetch profiles for all users involved in messages
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email, avatar_url')
-        .in('user_id', Array.from(userIds));
+      const ids = Array.from(userIds);
+      const { data: profilesData, error: profilesError } = ids.length ? await dbService.getProvider().query(
+        `SELECT user_id, full_name, email, avatar_url FROM profiles WHERE user_id IN (${ids.map(()=>'?').join(',')})`,
+        ids
+      ) : { data: [], error: null };
 
       if (profilesError) throw profilesError;
 
@@ -124,32 +124,29 @@ export const MessageCenter = () => {
     if (!user || !profile) return;
 
     try {
-      let query = supabase.from('profiles').select('*');
-      
-      // Parents can message children, children can message parents
+      let data: any = [];
+      let error: any = null;
       if (profile.role === 'parent') {
-        const { data: children } = await supabase
-          .from('parent_child_relationships')
-          .select('child_id')
-          .eq('parent_id', user.id);
-        
-        const childIds = children?.map(rel => rel.child_id) || [];
+        const res = await dbService.getProvider().query('SELECT child_id FROM parent_child_relationships WHERE parent_id = ?', [user.id]);
+        const childIds = res.data?.map((rel: any) => rel.child_id) || [];
         if (childIds.length > 0) {
-          query = query.in('user_id', childIds);
+          const profilesRes = await dbService.getProvider().query(`SELECT * FROM profiles WHERE user_id IN (${childIds.map(()=>'?').join(',')})`, childIds);
+          data = profilesRes.data;
+          error = profilesRes.error;
         }
       } else if (profile.role === 'child') {
-        const { data: parents } = await supabase
-          .from('parent_child_relationships')
-          .select('parent_id')
-          .eq('child_id', user.id);
-        
-        const parentIds = parents?.map(rel => rel.parent_id) || [];
+        const res = await dbService.getProvider().query('SELECT parent_id FROM parent_child_relationships WHERE child_id = ?', [user.id]);
+        const parentIds = res.data?.map((rel: any) => rel.parent_id) || [];
         if (parentIds.length > 0) {
-          query = query.in('user_id', parentIds);
+          const profilesRes = await dbService.getProvider().query(`SELECT * FROM profiles WHERE user_id IN (${parentIds.map(()=>'?').join(',')})`, parentIds);
+          data = profilesRes.data;
+          error = profilesRes.error;
         }
+      } else {
+        const res = await dbService.getProvider().query('SELECT * FROM profiles');
+        data = res.data;
+        error = res.error;
       }
-
-      const { data, error } = await query;
       if (error) throw error;
       setUsers(data as UserProfile[] || []);
     } catch (error) {
@@ -159,26 +156,8 @@ export const MessageCenter = () => {
 
   const subscribeToMessages = () => {
     if (!user) return;
-
-    const channel = supabase
-      .channel('messages')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `recipient_id=eq.${user.id}`,
-        },
-        () => {
-          fetchMessages();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchMessages, 10000);
+    return () => clearInterval(interval);
   };
 
   const sendMessage = async () => {
@@ -192,14 +171,10 @@ export const MessageCenter = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: user.id,
-          recipient_id: newMessage.recipient_id,
-          subject: newMessage.subject,
-          content: newMessage.content,
-        });
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO messages (sender_id, recipient_id, subject, content) VALUES (?, ?, ?, ?)',
+        [user.id, newMessage.recipient_id, newMessage.subject, newMessage.content]
+      );
 
       if (error) throw error;
 
@@ -233,15 +208,10 @@ export const MessageCenter = () => {
     if (!user || !selectedMessage || !replyContent) return;
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: user.id,
-          recipient_id: selectedMessage.sender_id,
-          subject: `Re: ${selectedMessage.subject}`,
-          content: replyContent,
-          parent_message_id: selectedMessage.id,
-        });
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO messages (sender_id, recipient_id, subject, content, parent_message_id) VALUES (?, ?, ?, ?, ?)',
+        [user.id, selectedMessage.sender_id, `Re: ${selectedMessage.subject}`, replyContent, selectedMessage.id]
+      );
 
       if (error) throw error;
 
@@ -274,11 +244,10 @@ export const MessageCenter = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .update({ is_read: true })
-        .eq('id', messageId)
-        .eq('recipient_id', user.id);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE messages SET is_read = ? WHERE id = ? AND recipient_id = ?',
+        [true, messageId, user.id]
+      );
 
       if (error) throw error;
 
@@ -294,10 +263,10 @@ export const MessageCenter = () => {
 
   const deleteMessage = async (messageId: string) => {
     try {
-      const { error } = await supabase
-        .from('messages')
-        .delete()
-        .eq('id', messageId);
+      const { error } = await dbService.getProvider().execute(
+        'DELETE FROM messages WHERE id = ?',
+        [messageId]
+      );
 
       if (error) throw error;
 

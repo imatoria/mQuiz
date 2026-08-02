@@ -16,7 +16,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   TrendingUp, 
@@ -72,11 +72,7 @@ export const ProgressReport = () => {
     try {
       setLoading(true);
       
-      const { data: rawAttemptsData, error } = await supabase
-        .from('paper_attempts')
-        .select('*');
-
-      if (error) throw error;
+      const rawAttemptsData = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
       const days = parseInt(timeframe, 10) || 30;
       const dateThreshold = new Date();
@@ -87,7 +83,7 @@ export const ProgressReport = () => {
         return completedDate >= dateThreshold;
       });
 
-      const { data: papersData } = await supabase.from('question_papers').select('*');
+      const papersData = await dbService.getProvider().query('SELECT * FROM question_papers');
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
 
       const attempts = (attemptsData || []).map((attempt: any) => {
@@ -104,12 +100,13 @@ export const ProgressReport = () => {
 
       // Get user profiles separately
       const userIds = [...new Set(attempts?.map(attempt => attempt.user_id) || [])];
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', userIds);
-
-      if (profilesError) throw profilesError;
+      let profiles: any[] = [];
+      if (userIds.length > 0) {
+        profiles = await dbService.getProvider().query(
+          `SELECT user_id, full_name FROM profiles WHERE user_id IN (${userIds.map(() => '?').join(',')})`,
+          userIds
+        );
+      }
 
       const profileMap = profiles?.reduce((acc, profile) => {
         acc[profile.user_id] = profile;
@@ -184,20 +181,22 @@ export const ProgressReport = () => {
     if (profile?.role !== 'parent') return [];
     
     // Get children relationships
-    const { data: relationships, error: relError } = await supabase
-      .from('parent_child_relationships')
-      .select('child_id')
-      .eq('parent_id', profile.user_id);
+    const relationships = await dbService.getProvider().query(
+      'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+      [profile.user_id]
+    );
 
-    if (relError || !relationships) return [];
+    if (!relationships) return [];
 
-    const childIds = relationships.map(rel => rel.child_id);
+    const childIds = relationships.map((rel: any) => rel.child_id);
     
-    // Get profiles for children
-    const { data: children, error: childrenError } = await supabase
-      .from('profiles')
-      .select('user_id, full_name')
-      .in('user_id', childIds);
+    let children: any[] = [];
+    if (childIds.length > 0) {
+      children = await dbService.getProvider().query(
+        `SELECT user_id, full_name FROM profiles WHERE user_id IN (${childIds.map(() => '?').join(',')})`,
+        childIds
+      );
+    }
 
     return children?.map(child => ({
       child_id: child.user_id,

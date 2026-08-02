@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,52 +62,48 @@ export const ProfileManagement = () => {
     if (!user) return;
     try {
       // Load current class assignment
-      const { data: classAssign } = await supabase
-        .from('child_class_assignments')
-        .select('*')
-        .eq('child_id', user.id)
-        .eq('is_current', true)
-        .maybeSingle();
+      const classAssignData = await dbService.getProvider().query(
+        'SELECT * FROM child_class_assignments WHERE child_id = ? AND is_current = true LIMIT 1',
+        [user.id]
+      );
+      const classAssign = classAssignData[0];
 
       if (classAssign?.class_id) {
-        const { data: classObj } = await supabase
-          .from('classes')
-          .select('class_name')
-          .eq('id', classAssign.class_id)
-          .maybeSingle();
-        if (classObj) setStudentClass(classObj.class_name);
+        const classObjData = await dbService.getProvider().query(
+          'SELECT class_name FROM classes WHERE id = ? LIMIT 1',
+          [classAssign.class_id]
+        );
+        if (classObjData[0]) setStudentClass(classObjData[0].class_name);
       }
 
       // Load subject assignments
-      const { data: subjAssigns } = await supabase
-        .from('child_subject_assignments')
-        .select('*')
-        .eq('child_id', user.id)
-        .eq('is_current', true);
+      const subjAssigns = await dbService.getProvider().query(
+        'SELECT * FROM child_subject_assignments WHERE child_id = ? AND is_current = true',
+        [user.id]
+      );
 
       if (subjAssigns && subjAssigns.length > 0) {
         const sIds = subjAssigns.map((s: any) => s.subject_id);
-        const { data: subjs } = await supabase
-          .from('subjects')
-          .select('subject_name')
-          .in('id', sIds);
+        const subjs = await dbService.getProvider().query(
+          `SELECT subject_name FROM subjects WHERE id IN (${sIds.map(() => '?').join(',')})`,
+          sIds
+        );
         setStudentSubjects((subjs || []).map((s: any) => s.subject_name));
       }
 
       // Load parent guardian relationship
-      const { data: rel } = await supabase
-        .from('parent_child_relationships')
-        .select('parent_id')
-        .eq('child_id', user.id)
-        .maybeSingle();
+      const relData = await dbService.getProvider().query(
+        'SELECT parent_id FROM parent_child_relationships WHERE child_id = ? LIMIT 1',
+        [user.id]
+      );
+      const rel = relData[0];
 
       if (rel?.parent_id) {
-        const { data: parentProf } = await supabase
-          .from('profiles')
-          .select('full_name, email')
-          .eq('user_id', rel.parent_id)
-          .maybeSingle();
-        if (parentProf) setParentGuardian({ full_name: parentProf.full_name, email: parentProf.email });
+        const parentProfData = await dbService.getProvider().query(
+          'SELECT full_name, email FROM profiles WHERE user_id = ? LIMIT 1',
+          [rel.parent_id]
+        );
+        if (parentProfData[0]) setParentGuardian({ full_name: parentProfData[0].full_name, email: parentProfData[0].email });
       }
     } catch (err) {
       console.error('Error loading student academic info:', err);
@@ -119,23 +115,19 @@ export const ProfileManagement = () => {
 
     try {
       // First get the child relationships
-      const { data: relationships, error: relError } = await supabase
-        .from('parent_child_relationships')
-        .select('child_id')
-        .eq('parent_id', user.id);
-
-      if (relError) throw relError;
+      const relationships = await dbService.getProvider().query(
+        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+        [user.id]
+      );
 
       if (relationships && relationships.length > 0) {
-        const childIds = relationships.map(rel => rel.child_id);
+        const childIds = relationships.map((rel: any) => rel.child_id);
         
         // Then get the profiles for those child IDs
-        const { data: childProfiles, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, user_id, full_name, email, created_at')
-          .in('user_id', childIds);
-
-        if (profileError) throw profileError;
+        const childProfiles = await dbService.getProvider().query(
+          `SELECT id, user_id, full_name, email, created_at FROM profiles WHERE user_id IN (${childIds.map(() => '?').join(',')})`,
+          childIds
+        );
 
         setChildren(childProfiles || []);
       }

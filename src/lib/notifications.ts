@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 
 interface NotificationData {
   userId: string;
@@ -10,15 +10,18 @@ interface NotificationData {
 
 export const createNotification = async (data: NotificationData) => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
+    const { error } = await dbService.getProvider().execute(
+      'INSERT INTO notifications',
+      [{
+        id: crypto.randomUUID(),
         user_id: data.userId,
         title: data.title,
         message: data.message,
         type: data.type,
         related_id: data.relatedId,
-      });
+        is_read: 0
+      }]
+    );
 
     if (error) throw error;
     return { success: true };
@@ -30,17 +33,20 @@ export const createNotification = async (data: NotificationData) => {
 
 export const createBulkNotifications = async (notifications: NotificationData[]) => {
   try {
-    const notificationData = notifications.map(notif => ({
-      user_id: notif.userId,
-      title: notif.title,
-      message: notif.message,
-      type: notif.type,
-      related_id: notif.relatedId,
+    const operations = notifications.map(notif => ({
+      sql: 'INSERT INTO notifications',
+      params: [{
+        id: crypto.randomUUID(),
+        user_id: notif.userId,
+        title: notif.title,
+        message: notif.message,
+        type: notif.type,
+        related_id: notif.relatedId,
+        is_read: 0
+      }]
     }));
 
-    const { error } = await supabase
-      .from('notifications')
-      .insert(notificationData);
+    const { error } = await dbService.getProvider().batch(operations);
 
     if (error) throw error;
     return { success: true };

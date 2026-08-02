@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { dbService } from "@/services/db";
+import { authService } from "@/services/auth/authService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,26 +62,22 @@ export const ContentSharing = () => {
 
   const fetchData = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const user = authService.getCurrentUser();
+      if (!user) return;
 
       // Fetch user's documents
-      const { data: documentsData, error: docsError } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', user.user.id)
-        .eq('processing_status', 'completed')
-        .order('title');
+      const { data: documentsData, error: docsError } = await dbService.getProvider().query(
+        'SELECT * FROM documents WHERE user_id = ? AND processing_status = ? ORDER BY title',
+        [user.id, 'completed']
+      );
 
       if (docsError) throw docsError;
 
       // Fetch subjects
-      const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subjects')
-        .select('*')
-        .eq('parent_id', user.user.id)
-        .eq('is_active', true)
-        .order('subject_name');
+      const { data: subjectsData, error: subjectsError } = await dbService.getProvider().query(
+        'SELECT * FROM subjects WHERE parent_id = ? AND is_active = ? ORDER BY subject_name',
+        [user.id, true]
+      );
 
       if (subjectsError) throw subjectsError;
 

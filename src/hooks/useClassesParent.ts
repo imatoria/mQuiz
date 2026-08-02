@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 
 interface ClassParent {
   id: string;
@@ -20,35 +21,34 @@ export const useClassesParent = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user?.user) {
+      const user = authService.getCurrentUser();
+      if (!user) {
         setClasses([]);
         return;
       }
 
-      let parentId = user.user.id;
+      let parentId = user.id;
 
       // If the current user is a child, find their parent_id from parent_child_relationships
-      const { data: rel } = await supabase
-        .from('parent_child_relationships')
-        .select('parent_id')
-        .eq('child_id', user.user.id)
-        .maybeSingle();
+      const { data: rel } = await dbService.getProvider().queryOne(
+        'SELECT parent_id FROM parent_child_relationships WHERE child_id = ?',
+        [user.id]
+      );
 
       if (rel?.parent_id) {
         parentId = rel.parent_id;
       }
 
       // Fetch classes attached strictly to this parent
-      const { data, error } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('parent_id', parentId)
-        .eq('is_active', true)
-        .order('display_order');
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT * FROM classes WHERE parent_id = ? AND is_active = 1',
+        [parentId]
+      );
 
       if (error) throw error;
-      setClasses(data || []);
+
+      const sortedData = (data || []).sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0));
+      setClasses(sortedData);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -61,39 +61,42 @@ export const useClassesParent = () => {
   }, []);
 
   const addClass = async (className: string, classKey: string) => {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('Not authenticated');
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
 
     const maxOrder = Math.max(...classes.map(c => c.display_order), 0);
 
-    const { error } = await supabase
-      .from('classes')
-      .insert({
-        parent_id: user.user.id,
+    const { error } = await dbService.getProvider().execute(
+      'INSERT INTO classes',
+      [{
+        id: crypto.randomUUID(),
+        parent_id: user.id,
         class_name: className,
         class_key: classKey,
         display_order: maxOrder + 1,
-      });
+        is_active: 1
+      }]
+    );
 
     if (error) throw error;
     await fetchClasses();
   };
 
   const updateClass = async (id: string, updates: Partial<ClassParent>) => {
-    const { error } = await supabase
-      .from('classes')
-      .update(updates)
-      .eq('id', id);
+    const { error } = await dbService.getProvider().execute(
+      'UPDATE classes SET ? WHERE id = ?',
+      [updates, id]
+    );
 
     if (error) throw error;
     await fetchClasses();
   };
 
   const deleteClass = async (id: string) => {
-    const { error } = await supabase
-      .from('classes')
-      .update({ is_active: false })
-      .eq('id', id);
+    const { error } = await dbService.getProvider().execute(
+      'UPDATE classes SET ? WHERE id = ?',
+      [{ is_active: 0 }, id]
+    );
 
     if (error) throw error;
     await fetchClasses();

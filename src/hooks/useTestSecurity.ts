@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SecurityViolation {
@@ -38,20 +38,21 @@ export const useTestSecurity = ({
   const historyPushedRef = useRef(false);
   const touchStartXRef = useRef<number | null>(null);
 
-  // Log violation to database
   const logViolation = useCallback(async (violation: SecurityViolation) => {
     if (!testAttemptId) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('log-paper-violation', {
-        body: {
-          paperAttemptId: testAttemptId,
-          violationType: violation.type,
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO paper_violations',
+        [{
+          id: crypto.randomUUID(),
+          paper_attempt_id: testAttemptId,
+          violation_type: violation.type,
           severity: violation.severity,
-          details: violation.details,
-          timestamp: violation.timestamp.toISOString()
-        }
-      });
+          details: typeof violation.details === 'string' ? violation.details : JSON.stringify(violation.details),
+          occurred_at: violation.timestamp.toISOString()
+        }]
+      );
 
       if (error) {
         console.error('Failed to log violation:', error);
@@ -66,13 +67,14 @@ export const useTestSecurity = ({
     if (!testAttemptId) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('detect-multiple-sessions', {
-        body: { testAttemptId }
-      });
+      const { data, error } = await dbService.getProvider().query(
+        'SELECT id FROM paper_sessions WHERE paper_attempt_id = ? AND is_active = 1',
+        [testAttemptId]
+      );
 
       if (error) throw error;
 
-      if (data?.hasMultiple) {
+      if (data && data.length > 1) {
         toast({
           title: "⚠️ Multiple Sessions Detected",
           description: "This test is being accessed from another location. Test will be terminated.",
@@ -312,12 +314,10 @@ export const useTestSecurity = ({
     
     try {
       // First check if an active session already exists for this test attempt
-      const { data: existingSessions, error: checkError } = await supabase
-        .from('paper_sessions')
-        .select('id')
-        .eq('paper_attempt_id', testAttemptId)
-        .eq('is_active', true)
-        .limit(1);
+      const { data: existingSessions, error: checkError } = await dbService.getProvider().query(
+        'SELECT id FROM paper_sessions WHERE paper_attempt_id = ? AND is_active = 1 LIMIT 1',
+        [testAttemptId]
+      );
 
       if (checkError) throw checkError;
 
@@ -329,20 +329,21 @@ export const useTestSecurity = ({
       }
 
       // Create new session only if none exists
-      const { data, error } = await supabase
-        .from('paper_sessions')
-        .insert({
+      const newSessionId = crypto.randomUUID();
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO paper_sessions',
+        [{
+          id: newSessionId,
           paper_attempt_id: testAttemptId,
-          ip_address: '0.0.0.0', // Will be set by server
+          ip_address: '127.0.0.1',
           user_agent: navigator.userAgent,
-          is_active: true
-        })
-        .select()
-        .single();
+          is_active: 1
+        }]
+      );
 
       if (error) throw error;
-      setSessionId(data.id);
-      console.log('Created new session:', data.id);
+      setSessionId(newSessionId);
+      console.log('Created new session:', newSessionId);
     } catch (error) {
       console.error('Failed to create session:', error);
     } finally {
@@ -355,10 +356,10 @@ export const useTestSecurity = ({
     if (!sessionId || !isSecurityActive) return;
 
     try {
-      await supabase
-        .from('paper_sessions')
-        .update({ last_ping: new Date().toISOString() })
-        .eq('id', sessionId);
+      await dbService.getProvider().execute(
+        'UPDATE paper_sessions SET ? WHERE id = ?',
+        [{ last_ping: new Date().toISOString() }, sessionId]
+      );
     } catch (error) {
       console.error('Failed to update session:', error);
     }
@@ -448,10 +449,10 @@ export const useTestSecurity = ({
 
     // Close session
     if (sessionId) {
-      supabase
-        .from('paper_sessions')
-        .update({ is_active: false })
-        .eq('id', sessionId);
+      dbService.getProvider().execute(
+        'UPDATE paper_sessions SET ? WHERE id = ?',
+        [{ is_active: 0 }, sessionId]
+      );
     }
 
     // Exit fullscreen
@@ -479,10 +480,10 @@ export const useTestSecurity = ({
       document.removeEventListener('touchend', handleTouchEnd);
 
       if (sessionId) {
-        supabase
-          .from('paper_sessions')
-          .update({ is_active: false })
-          .eq('id', sessionId);
+        dbService.getProvider().execute(
+          'UPDATE paper_sessions SET ? WHERE id = ?',
+          [{ is_active: 0 }, sessionId]
+        );
       }
     };
     

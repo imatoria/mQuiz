@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { 
   Settings, 
   Plus, 
@@ -54,10 +54,7 @@ export const AdminAIProviderConfig = () => {
 
   const fetchProviders = async () => {
     try {
-      const { data, error } = await supabase
-        .from('ai_providers')
-        .select('*')
-        .order('name');
+      const { data, error } = await dbService.getProvider().query('SELECT * FROM ai_providers ORDER BY name');
 
       if (error) throw error;
       setProviders((data || []).filter(p => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
@@ -103,14 +100,10 @@ export const AdminAIProviderConfig = () => {
     try {
       if (editingProvider) {
         // Update existing provider
-        const { error } = await supabase
-          .from('ai_providers')
-          .update({
-            name: newProvider.name,
-            provider_key: newProvider.provider_key,
-            description: newProvider.description || null
-          })
-          .eq('id', editingProvider.id);
+        const { error } = await dbService.getProvider().execute(
+          'UPDATE ai_providers SET name = ?, provider_key = ?, description = ? WHERE id = ?',
+          [newProvider.name, newProvider.provider_key, newProvider.description || null, editingProvider.id]
+        );
 
         if (error) throw error;
 
@@ -120,14 +113,10 @@ export const AdminAIProviderConfig = () => {
         });
       } else {
         // Create new provider
-        const { error } = await supabase
-          .from('ai_providers')
-          .insert({
-            name: newProvider.name,
-            provider_key: newProvider.provider_key,
-            description: newProvider.description || null,
-            is_active: true
-          });
+        const { error } = await dbService.getProvider().execute(
+          'INSERT INTO ai_providers (name, provider_key, description, is_active) VALUES (?, ?, ?, ?)',
+          [newProvider.name, newProvider.provider_key, newProvider.description || null, true]
+        );
 
         if (error) throw error;
 
@@ -155,10 +144,10 @@ export const AdminAIProviderConfig = () => {
 
   const handleToggleProvider = async (providerId: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('ai_providers')
-        .update({ is_active: isActive })
-        .eq('id', providerId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE ai_providers SET is_active = ? WHERE id = ?',
+        [isActive, providerId]
+      );
 
       if (error) throw error;
 
@@ -185,10 +174,10 @@ export const AdminAIProviderConfig = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('ai_providers')
-        .delete()
-        .eq('id', providerId);
+      const { error } = await dbService.getProvider().execute(
+        'DELETE FROM ai_providers WHERE id = ?',
+        [providerId]
+      );
 
       if (error) throw error;
 

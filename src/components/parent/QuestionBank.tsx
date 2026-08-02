@@ -16,7 +16,7 @@ import { TableSkeleton } from "@/components/ui/skeleton-loaders";
 import { Search, Edit, Trash2, Plus, Filter, BookOpen, BarChart3, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { dbService } from "@/services/db";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationInfo, PaginationFirst, PaginationLast } from "@/components/ui/pagination";
@@ -88,10 +88,9 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
       setIsLoading(true);
       
       // Fetch questions directly (no longer using document relationships)
-      const { data: questionsData } = await supabase
-        .from('questions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: questionsData } = await dbService.getProvider().query(
+        'SELECT * FROM questions ORDER BY created_at DESC'
+      );
 
       if (questionsData) {
         setQuestions(questionsData);
@@ -185,18 +184,20 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     if (!editingQuestion) return;
 
     try {
-      const { error } = await supabase
-        .from('questions')
-        .update({
-          question_text: editingQuestion.question_text,
-          option_a: editingQuestion.option_a,
-          option_b: editingQuestion.option_b,
-          option_c: editingQuestion.option_c,
-          option_d: editingQuestion.option_d,
-          correct_answer: editingQuestion.correct_answer,
-          difficulty: editingQuestion.difficulty,
-        })
-        .eq('id', editingQuestion.id);
+      const { error } = await dbService.getProvider().execute(`
+        UPDATE questions 
+        SET question_text = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, correct_answer = ?, difficulty = ?
+        WHERE id = ?
+      `, [
+        editingQuestion.question_text,
+        editingQuestion.option_a,
+        editingQuestion.option_b,
+        editingQuestion.option_c,
+        editingQuestion.option_d,
+        editingQuestion.correct_answer,
+        editingQuestion.difficulty,
+        editingQuestion.id
+      ]);
 
       if (error) throw error;
 
@@ -223,10 +224,10 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     if (!confirm('Are you sure you want to delete this question?')) return;
 
     try {
-      const { error } = await supabase
-        .from('questions')
-        .delete()
-        .eq('id', questionId);
+      const { error } = await dbService.getProvider().execute(
+        'DELETE FROM questions WHERE id = ?',
+        [questionId]
+      );
 
       if (error) throw error;
 

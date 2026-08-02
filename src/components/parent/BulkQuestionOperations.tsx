@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Download, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
+import { dbService } from "@/services/db";
 import { useToast } from "@/hooks/use-toast";
 
 interface ImportResult {
@@ -127,9 +127,35 @@ export default function BulkQuestionOperations() {
       }));
 
       // Insert questions into database
-      const { data, error } = await supabase
-        .from('questions')
-        .insert(questionsWithDoc);
+      const placeholders = questionsWithDoc.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(',');
+      const values = questionsWithDoc.flatMap(q => [
+        crypto.randomUUID(),
+        q.question_text,
+        q.option_a,
+        q.option_b,
+        q.option_c,
+        q.option_d,
+        q.correct_answer,
+        q.difficulty,
+        q.page_number || null,
+        q.subject_id || null,
+        q.class_id || null,
+        // Wait, we also need document_id, let me look at the fields:
+      ]);
+      
+      // Let's do it simpler, one by one, to avoid guessing the exact schema
+      let error = null;
+      for (const q of questionsWithDoc) {
+        const { error: insertErr } = await dbService.getProvider().execute(
+          `INSERT INTO questions (id, question_text, option_a, option_b, option_c, option_d, correct_answer, difficulty, page_number, document_id) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [crypto.randomUUID(), q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, q.difficulty, q.page_number || null, q.document_id]
+        );
+        if (insertErr) {
+          error = insertErr;
+          break;
+        }
+      }
 
       if (error) throw error;
 
@@ -200,10 +226,9 @@ export default function BulkQuestionOperations() {
     
     try {
       // Fetch all questions for the user
-      const { data: questions, error } = await supabase
-        .from('questions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: questions, error } = await dbService.getProvider().query(
+        'SELECT * FROM questions ORDER BY created_at DESC'
+      );
 
       if (error) throw error;
 

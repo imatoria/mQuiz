@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Upload, FileText, Loader2, Edit2, Plus, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { PaginatedPageMultiSelect } from '@/components/ui/paginated-page-multi-select';
 import { useChildSubjects } from '@/hooks/useChildSubjects';
 import { useChildClasses } from '@/hooks/useChildClasses';
@@ -57,19 +58,17 @@ export const DocumentUpload = ({
 
       try {
         setFetchingUsedPages(true);
-        const { data: user } = await supabase.auth.getUser();
-        if (!user.user) {
+        const user = authService.getCurrentUser();
+        if (!user) {
           setFetchingUsedPages(false);
           return;
         }
 
         // Get all documents for this user, subject, and class
-        const { data: documents, error: docsError } = await supabase
-          .from('documents')
-          .select('id')
-          .eq('user_id', user.user.id)
-          .eq('subject_id', subject)
-          .eq('class_id', classLevel);
+        const { data: documents, error: docsError } = await dbService.getProvider().query(
+          'SELECT id FROM documents WHERE user_id = ? AND subject_id = ? AND class_id = ?',
+          [user.id, subject, classLevel]
+        );
 
         if (docsError) throw docsError;
         if (!documents || documents.length === 0) {
@@ -78,17 +77,18 @@ export const DocumentUpload = ({
           return;
         }
 
-        const docIds = documents.map(d => d.id);
+        const docIds = documents.map((d: any) => d.id);
 
+        const placeholders = docIds.map(() => '?').join(',');
         // Get all page numbers for these documents
-        const { data: pages, error: pagesError } = await supabase
-          .from('document_pages')
-          .select('page_number')
-          .in('document_id', docIds);
+        const { data: pages, error: pagesError } = await dbService.getProvider().query(
+          `SELECT page_number FROM document_pages WHERE document_id IN (${placeholders})`,
+          docIds
+        );
 
         if (pagesError) throw pagesError;
 
-        const used = pages?.map(p => p.page_number) || [];
+        const used = pages?.map((p: any) => p.page_number) || [];
         setUsedPages(used);
 
         // If any currently selected pages are now "used", remove them
@@ -223,10 +223,8 @@ export const DocumentUpload = ({
 
     setIsUploading(true);
     try {
-      const {
-        data: user
-      } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Not authenticated');
 
       // Extract text directly from PDF without storing original file
       const buf = await file.arrayBuffer();
@@ -234,19 +232,13 @@ export const DocumentUpload = ({
         data: new Uint8Array(buf)
       }).promise;
 
-      // Save document metadata (no file storage, no markdown_content)
-      const {
-        data: documentData,
-        error: dbError
-      } = await supabase.from('documents').insert({
-        user_id: user.user.id,
-        title,
-        subject_id: subject,
-        class_id: classLevel,
-        processing_status: 'completed',
-        total_pages: selectedPages.length > 0 ? selectedPages.length : doc.numPages
-      }).select().single();
+      const newDocId = crypto.randomUUID();
+      const { error: dbError } = await dbService.getProvider().execute(
+        'INSERT INTO documents (id, user_id, title, subject_id, class_id, processing_status, total_pages) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [newDocId, user.id, title, subject, classLevel, 'completed', selectedPages.length > 0 ? selectedPages.length : doc.numPages]
+      );
       if (dbError) throw dbError;
+      const documentData = { id: newDocId };
 
       // Use selected pages or default to all pages of the uploaded document (1..doc.numPages)
       const pagesToProcess = selectedPages.length > 0 
@@ -343,13 +335,10 @@ export const DocumentUpload = ({
           }
         }
         
-        const { error: pageError } = await supabase
-          .from('document_pages')
-          .insert({
-            document_id: documentData.id,
-            page_number: selectedPageNumber, // Use the selected page number from user
-            content: pageText || ''
-          });
+        const { error: pageError } = await dbService.getProvider().execute(
+          'INSERT INTO document_pages (id, document_id, page_number, content) VALUES (?, ?, ?, ?)',
+          [crypto.randomUUID(), documentData.id, selectedPageNumber, pageText || '']
+        );
         
         if (pageError) {
           console.error(`Error inserting page ${selectedPageNumber}:`, pageError);

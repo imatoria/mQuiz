@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User, Session, UserProfile } from '@/types/auth';
-import { supabase } from '@/integrations/supabase/client';
-import { authService } from '@/services/auth/authService';
+import { authService, UserSession } from '@/services/auth/authService';
 import { dbService } from '@/services/db';
 
 export const useAuth = () => {
@@ -11,21 +10,19 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   const loadUserProfile = useCallback(async (userId: string) => {
-    // Prevent loading if already loading or if we already have the profile for this user
-    if (loading && profile?.user_id === userId) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const { data, error } = await dbService.getProvider().query('SELECT * FROM profiles WHERE user_id = ? LIMIT 1', [userId]);
 
       if (error) {
         console.error('Error loading profile:', error);
         setProfile(null);
-      } else if (data) {
-        setProfile(data as UserProfile);
+      } else if (data && data.length > 0) {
+        // SQLite stores boolean as 0/1 usually, so ensure boolean cast
+        const p = { ...data[0] };
+        if (typeof p.is_approved === 'number') {
+           p.is_approved = p.is_approved === 1;
+        }
+        setProfile(p as UserProfile);
       } else {
         const sessionUser = authService.getCurrentUser();
         if (sessionUser && (sessionUser.id === userId || sessionUser.email)) {
@@ -52,70 +49,44 @@ export const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  }, [loading, profile?.user_id]);
+  }, []);
 
   useEffect(() => {
     let isSubscribed = true;
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handleAuthChange = (currentUser: UserSession | null) => {
       if (!isSubscribed) return;
       
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        loadUserProfile(session.user.id);
+      if (currentUser) {
+        // Mock Session/User objects based on UserSession
+        const sessionMock = { access_token: 'mock-token', token_type: 'bearer', user: { id: currentUser.id, email: currentUser.email } } as any;
+        const userMock = { id: currentUser.id, email: currentUser.email } as any;
+        
+        setSession(sessionMock);
+        setUser(userMock);
+        loadUserProfile(currentUser.id);
       } else {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
         setLoading(false);
       }
-    });
+    };
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isSubscribed) return;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Only load profile if we don't already have it or user changed
-          if (!profile || profile.user_id !== session.user.id) {
-            setTimeout(() => {
-              if (isSubscribed) {
-                loadUserProfile(session.user.id);
-              }
-            }, 0);
-          } else {
-            setLoading(false);
-          }
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
+    const unsubscribe = authService.subscribe(handleAuthChange);
+    
+    // Initial load
+    handleAuthChange(authService.getCurrentUser());
 
     return () => {
       isSubscribed = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, [loadUserProfile]);
 
   const signOut = async () => {
     try {
-      // Clean up any stored auth state
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-          localStorage.removeItem(key);
-        }
-      });
-      
-      // Sign out from Supabase
-      await supabase.auth.signOut({ scope: 'global' });
-      
-      // Force page reload for clean state
+      await authService.logout();
       window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
@@ -126,10 +97,16 @@ export const useAuth = () => {
     if (!user || !profile) return { error: 'No user or profile found' };
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('user_id', user.id);
+      const entries = Object.entries(updates);
+      if (entries.length === 0) return { data: profile, error: null };
+      
+      const setClause = entries.map(([key]) => `${key} = ?`).join(', ');
+      const values = entries.map(([, val]) => val);
+      
+      const { error } = await dbService.getProvider().execute(
+        `UPDATE profiles SET ${setClause} WHERE user_id = ?`,
+        [...values, user.id]
+      );
 
       if (error) throw error;
 

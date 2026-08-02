@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { Megaphone, Plus, Calendar, Users, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,12 +77,9 @@ export const AnnouncementSystem = () => {
     setIsLoading(true);
     try {
       // Fetch announcements
-      const { data: announcementsData, error: announcementsError } = await supabase
-        .from('announcements')
-        .select('*')
-        .eq('is_active', true)
-        .or('expires_at.is.null,expires_at.gt.now()')
-        .order('created_at', { ascending: false });
+      const { data: announcementsData, error: announcementsError } = await dbService.getProvider().query(
+        "SELECT * FROM announcements WHERE is_active = true AND (expires_at IS NULL OR expires_at > datetime('now')) ORDER BY created_at DESC"
+      );
 
       if (announcementsError) throw announcementsError;
 
@@ -93,10 +90,11 @@ export const AnnouncementSystem = () => {
       });
 
       // Fetch profiles for all creators
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email')
-        .in('user_id', Array.from(creatorIds));
+      const ids = Array.from(creatorIds);
+      const { data: profilesData, error: profilesError } = ids.length ? await dbService.getProvider().query(
+        `SELECT user_id, full_name, email FROM profiles WHERE user_id IN (${ids.map(()=>'?').join(',')})`,
+        ids
+      ) : { data: [], error: null };
 
       if (profilesError) throw profilesError;
 
@@ -106,10 +104,10 @@ export const AnnouncementSystem = () => {
       );
 
       // Fetch read status for current user
-      const { data: readStatusData, error: readStatusError } = await supabase
-        .from('announcement_recipients')
-        .select('announcement_id, is_read, read_at')
-        .eq('user_id', user.id);
+      const { data: readStatusData, error: readStatusError } = await dbService.getProvider().query(
+        'SELECT announcement_id, is_read, read_at FROM announcement_recipients WHERE user_id = ?',
+        [user.id]
+      );
 
       if (readStatusError) throw readStatusError;
 
@@ -140,25 +138,8 @@ export const AnnouncementSystem = () => {
 
   const subscribeToAnnouncements = () => {
     if (!user) return;
-
-    const channel = supabase
-      .channel('announcements')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'announcements',
-        },
-        () => {
-          fetchAnnouncements();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchAnnouncements, 10000);
+    return () => clearInterval(interval);
   };
 
   const createAnnouncement = async () => {
@@ -174,18 +155,13 @@ export const AnnouncementSystem = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('announcements')
-        .insert({
-          creator_id: user.id,
-          title: newAnnouncement.title,
-          content: newAnnouncement.content,
-          target_audience: newAnnouncement.target_audience,
-          priority: newAnnouncement.priority,
-          expires_at: newAnnouncement.expires_at || null,
-        })
-        .select()
-        .single();
+      // Generate ID manually or fetch last insert row id
+      const id = crypto.randomUUID();
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO announcements (id, creator_id, title, content, target_audience, priority, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [id, user.id, newAnnouncement.title, newAnnouncement.content, newAnnouncement.target_audience, newAnnouncement.priority, newAnnouncement.expires_at || null]
+      );
+      const data = { id };
 
       if (error) throw error;
 
@@ -221,30 +197,21 @@ export const AnnouncementSystem = () => {
       let targetUsers: string[] = [];
 
       if (targetAudience === 'all') {
-        const { data } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .neq('user_id', user!.id);
-        targetUsers = data?.map(p => p.user_id) || [];
+        const { data } = await dbService.getProvider().query('SELECT user_id FROM profiles WHERE user_id != ?', [user!.id]);
+        targetUsers = data?.map((p: any) => p.user_id) || [];
       } else if (targetAudience === 'parents' || targetAudience === 'children') {
-        const { data } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('role', targetAudience === 'parents' ? 'parent' : 'child')
-          .neq('user_id', user!.id);
-        targetUsers = data?.map(p => p.user_id) || [];
+        const role = targetAudience === 'parents' ? 'parent' : 'child';
+        const { data } = await dbService.getProvider().query('SELECT user_id FROM profiles WHERE role = ? AND user_id != ?', [role, user!.id]);
+        targetUsers = data?.map((p: any) => p.user_id) || [];
       }
 
       if (targetUsers.length > 0) {
-        const notifications = targetUsers.map(userId => ({
-          user_id: userId,
-          title: 'New Announcement',
-          message: newAnnouncement.title,
-          type: 'announcement' as const,
-          related_id: announcementId,
-        }));
-
-        await supabase.from('notifications').insert(notifications);
+        for (const userId of targetUsers) {
+          await dbService.getProvider().execute(
+            'INSERT INTO notifications (user_id, title, message, type, related_id) VALUES (?, ?, ?, ?, ?)',
+            [userId, 'New Announcement', newAnnouncement.title, 'announcement', announcementId]
+          );
+        }
       }
     } catch (error) {
       console.error('Error creating notifications:', error);
@@ -255,14 +222,10 @@ export const AnnouncementSystem = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('announcement_recipients')
-        .upsert({
-          announcement_id: announcementId,
-          user_id: user.id,
-          is_read: true,
-          read_at: new Date().toISOString(),
-        });
+      const { error } = await dbService.getProvider().execute(
+        'INSERT INTO announcement_recipients (announcement_id, user_id, is_read, read_at) VALUES (?, ?, ?, ?) ON CONFLICT(announcement_id, user_id) DO UPDATE SET is_read = excluded.is_read, read_at = excluded.read_at',
+        [announcementId, user.id, true, new Date().toISOString()]
+      );
 
       if (error) throw error;
 
@@ -280,10 +243,10 @@ export const AnnouncementSystem = () => {
 
   const toggleAnnouncementStatus = async (announcementId: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('announcements')
-        .update({ is_active: !isActive })
-        .eq('id', announcementId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE announcements SET is_active = ? WHERE id = ?',
+        [!isActive, announcementId]
+      );
 
       if (error) throw error;
 

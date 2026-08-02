@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
 import { 
   Shield, 
   Search, 
@@ -106,30 +106,48 @@ export const ContentModeration = () => {
   const fetchContent = async () => {
     try {
       // Fetch documents with user profiles and class/subject info
-      const { data: documentsData, error: documentsError } = await supabase
-        .from('documents')
-        .select(`
-          *,
-          profiles(full_name, email),
-          classes(class_name),
-          subjects(subject_name)
-        `)
-        .order('created_at', { ascending: false });
+      const { data: rawDocumentsData, error: documentsError } = await dbService.getProvider().query(`
+        SELECT d.*, 
+          json_object('full_name', p.full_name, 'email', p.email) as profiles,
+          json_object('class_name', c.class_name) as classes,
+          json_object('subject_name', s.subject_name) as subjects
+        FROM documents d
+        LEFT JOIN profiles p ON d.user_id = p.id
+        LEFT JOIN classes c ON d.class_id = c.id
+        LEFT JOIN subjects s ON d.subject_id = s.id
+        ORDER BY d.created_at DESC
+      `);
 
       if (documentsError) throw documentsError;
 
       // Fetch question papers with user profiles and class/subject info
-      const { data: questionPapersData, error: questionPapersError } = await supabase
-        .from('question_papers')
-        .select(`
-          *,
-          profiles(full_name, email),
-          classes(class_name),
-          subjects(subject_name)
-        `)
-        .order('created_at', { ascending: false });
+      const { data: rawQuestionPapersData, error: questionPapersError } = await dbService.getProvider().query(`
+        SELECT qp.*, 
+          json_object('full_name', p.full_name, 'email', p.email) as profiles,
+          json_object('class_name', c.class_name) as classes,
+          json_object('subject_name', s.subject_name) as subjects
+        FROM question_papers qp
+        LEFT JOIN profiles p ON qp.user_id = p.id
+        LEFT JOIN classes c ON qp.class_id = c.id
+        LEFT JOIN subjects s ON qp.subject_id = s.id
+        ORDER BY qp.created_at DESC
+      `);
 
       if (questionPapersError) throw questionPapersError;
+
+      const documentsData = rawDocumentsData?.map((item: any) => ({
+        ...item,
+        profiles: typeof item.profiles === 'string' ? JSON.parse(item.profiles) : item.profiles,
+        classes: typeof item.classes === 'string' ? JSON.parse(item.classes) : item.classes,
+        subjects: typeof item.subjects === 'string' ? JSON.parse(item.subjects) : item.subjects,
+      }));
+
+      const questionPapersData = rawQuestionPapersData?.map((item: any) => ({
+        ...item,
+        profiles: typeof item.profiles === 'string' ? JSON.parse(item.profiles) : item.profiles,
+        classes: typeof item.classes === 'string' ? JSON.parse(item.classes) : item.classes,
+        subjects: typeof item.subjects === 'string' ? JSON.parse(item.subjects) : item.subjects,
+      }));
 
       setDocuments((documentsData as any) || []);
       setQuestionPapers((questionPapersData as any) || []);
@@ -146,10 +164,10 @@ export const ContentModeration = () => {
 
   const updateDocumentStatus = async (documentId: string, status: string) => {
     try {
-      const { error } = await supabase
-        .from('documents')
-        .update({ processing_status: status })
-        .eq('id', documentId);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE documents SET processing_status = ? WHERE id = ?',
+        [status, documentId]
+      );
 
       if (error) throw error;
 

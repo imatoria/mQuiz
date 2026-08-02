@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { useToast } from '@/components/ui/use-toast';
 
 interface CustomSubjectInputProps {
@@ -39,15 +40,15 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
 
     setIsCreating(true);
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('Not authenticated');
 
       // Check user permissions (admin or parent only can create subjects)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, is_approved')
-        .eq('user_id', user.user.id)
-        .single();
+      const profileData = await dbService.getProvider().query(
+        'SELECT role, is_approved FROM profiles WHERE user_id = ? LIMIT 1',
+        [user.id]
+      );
+      const profile = profileData[0];
 
       if (!profile || !['admin', 'parent'].includes(profile.role) || !profile.is_approved) {
         toast({
@@ -59,11 +60,10 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       }
 
       // Check if subject already exists for this parent
-      const { data: existingSubjects } = await supabase
-        .from('subjects')
-        .select('*')
-        .eq('parent_id', user.user.id)
-        .eq('subject_name', newSubjectName.trim());
+      const existingSubjects = await dbService.getProvider().query(
+        'SELECT * FROM subjects WHERE parent_id = ? AND subject_name = ?',
+        [user.id, newSubjectName.trim()]
+      );
 
       if (existingSubjects && existingSubjects.length > 0) {
         toast({
@@ -74,16 +74,16 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
         return;
       }
 
-      const { data: newSubject, error } = await supabase
-        .from('subjects')
-        .insert({
-          parent_id: user.user.id,
-          subject_name: newSubjectName.trim(),
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      await dbService.getProvider().execute(
+        'INSERT INTO subjects (parent_id, subject_name) VALUES (?, ?)',
+        [user.id, newSubjectName.trim()]
+      );
+      
+      const newSubjectData = await dbService.getProvider().query(
+        'SELECT * FROM subjects WHERE parent_id = ? AND subject_name = ? LIMIT 1',
+        [user.id, newSubjectName.trim()]
+      );
+      const newSubject = newSubjectData[0];
 
       toast({
         title: 'Subject created',

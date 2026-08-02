@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
 import { useClassesParent } from '@/hooks/useClassesParent';
 import { useSubjectsParent } from '@/hooks/useSubjectsParent';
 import { Card } from '@/components/ui/card';
@@ -69,24 +70,24 @@ export function BookManager() {
     try {
       setIsLoadingPages(true);
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const user = authService.getCurrentUser();
+      if (!user) return;
 
       // Fetch all documents with their pages
-      const { data: documents, error: docsError } = await supabase
-        .from('documents')
-        .select('id, class_id, subject_id')
-        .eq('user_id', user.user.id);
+      const { data: documents, error: docsError } = await dbService.getProvider().query(
+        'SELECT id, class_id, subject_id FROM documents WHERE user_id = ?',
+        [user.id]
+      );
 
       if (docsError) throw docsError;
 
       // Fetch all pages for these documents
-      const documentIds = documents?.map(d => d.id) || [];
-      const { data: pages, error: pagesError } = await supabase
-        .from('document_pages')
-        .select('*')
-        .in('document_id', documentIds)
-        .order('page_number');
+      const documentIds = documents?.map((d: any) => d.id) || [];
+      const placeholders = documentIds.map(() => '?').join(',');
+      const pagesQuery = documentIds.length > 0 
+        ? await dbService.getProvider().query(`SELECT * FROM document_pages WHERE document_id IN (${placeholders}) ORDER BY page_number`, documentIds)
+        : { data: [], error: null };
+      const { data: pages, error: pagesError } = pagesQuery;
 
       if (pagesError) throw pagesError;
 
@@ -146,13 +147,10 @@ export function BookManager() {
     try {
       setIsSaving(true);
 
-      const { error } = await supabase
-        .from('document_pages')
-        .update({ 
-          content: editedContent,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', editingPage.id);
+      const { error } = await dbService.getProvider().execute(
+        'UPDATE document_pages SET content = ?, updated_at = ? WHERE id = ?',
+        [editedContent, new Date().toISOString(), editingPage.id]
+      );
 
       if (error) throw error;
 
@@ -181,10 +179,10 @@ export function BookManager() {
     try {
       setIsDeleting(true);
 
-      const { error } = await supabase
-        .from('document_pages')
-        .delete()
-        .eq('id', deletingPageId);
+      const { error } = await dbService.getProvider().execute(
+        'DELETE FROM document_pages WHERE id = ?',
+        [deletingPageId]
+      );
 
       if (error) throw error;
 
@@ -214,10 +212,11 @@ export function BookManager() {
     try {
       setIsDeletingMultiple(true);
 
-      const { error } = await supabase
-        .from('document_pages')
-        .delete()
-        .in('id', selectedPageIds);
+      const placeholders = selectedPageIds.map(() => '?').join(',');
+      const { error } = await dbService.getProvider().execute(
+        `DELETE FROM document_pages WHERE id IN (${placeholders})`,
+        selectedPageIds
+      );
 
       if (error) throw error;
 
