@@ -12,6 +12,14 @@ import { PaginatedPageMultiSelect } from '@/components/ui/paginated-page-multi-s
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChildSubjects } from '@/hooks/useChildSubjects';
 import { useChildClasses } from '@/hooks/useChildClasses';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 import { dbService } from '@/services/db';
 import { authService } from '@/services/auth/authService';
@@ -24,7 +32,11 @@ import {
   FileText,
   Target,
   Brain,
-  Sparkles
+  Sparkles,
+  Bookmark,
+  History,
+  Save,
+  Trash2
 } from 'lucide-react';
 
 interface Subject {
@@ -53,6 +65,28 @@ interface GenerationConfig {
   selected_pages?: number[];
 }
 
+interface InstructionPreset {
+  id: string;
+  name: string;
+  content: string;
+  isBuiltIn?: boolean;
+}
+
+const DEFAULT_PRESETS: InstructionPreset[] = [
+  {
+    id: 'default-real-world',
+    name: 'Real-World Applications',
+    content: 'Focus questions on practical real-world scenarios and everyday applications.',
+    isBuiltIn: true,
+  },
+  {
+    id: 'default-explanations',
+    name: 'Step-by-Step Rationale',
+    content: 'Ensure answers include detailed step-by-step explanations and reasoning.',
+    isBuiltIn: true,
+  },
+];
+
 export const AIQuestionGenerator = () => {
   const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
   const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
@@ -75,6 +109,11 @@ export const AIQuestionGenerator = () => {
   const [minQuestionsPerPage, setMinQuestionsPerPage] = useState(3);
   const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState(10);
 
+  const [presets, setPresets] = useState<InstructionPreset[]>(DEFAULT_PRESETS);
+  const [recentHistory, setRecentHistory] = useState<string[]>([]);
+  const [isSavePresetModalOpen, setIsSavePresetModalOpen] = useState(false);
+  const [presetNameInput, setPresetNameInput] = useState('');
+
   
 
   const difficulties = [
@@ -93,7 +132,76 @@ export const AIQuestionGenerator = () => {
 
   useEffect(() => {
     fetchDocuments();
+    loadPresetsAndHistory();
   }, []);
+
+  const loadPresetsAndHistory = () => {
+    const user = authService.getCurrentUser();
+    if (!user) return;
+
+    const savedPresetsRaw = localStorage.getItem(`mquiz_instruction_presets_${user.id}`);
+    if (savedPresetsRaw) {
+      try {
+        const parsed = JSON.parse(savedPresetsRaw);
+        if (Array.isArray(parsed)) {
+          setPresets([...DEFAULT_PRESETS, ...parsed]);
+        }
+      } catch (e) {
+        console.error('Error parsing presets:', e);
+      }
+    }
+
+    const savedHistoryRaw = localStorage.getItem(`mquiz_instruction_history_${user.id}`);
+    if (savedHistoryRaw) {
+      try {
+        const parsed = JSON.parse(savedHistoryRaw);
+        if (Array.isArray(parsed)) {
+          setRecentHistory(parsed);
+        }
+      } catch (e) {
+        console.error('Error parsing history:', e);
+      }
+    }
+  };
+
+  const handleSavePreset = () => {
+    if (!presetNameInput.trim() || !config.custom_instructions.trim()) return;
+    const user = authService.getCurrentUser();
+    if (!user) return;
+
+    const newPreset: InstructionPreset = {
+      id: crypto.randomUUID(),
+      name: presetNameInput.trim(),
+      content: config.custom_instructions.trim(),
+    };
+
+    const userPresets = presets.filter(p => !p.isBuiltIn);
+    const updatedUserPresets = [...userPresets, newPreset];
+    setPresets([...DEFAULT_PRESETS, ...updatedUserPresets]);
+
+    localStorage.setItem(`mquiz_instruction_presets_${user.id}`, JSON.stringify(updatedUserPresets));
+    setIsSavePresetModalOpen(false);
+    setPresetNameInput('');
+    toast({
+      title: 'Preset Saved!',
+      description: `Saved "${newPreset.name}" for future reuse.`,
+    });
+  };
+
+  const handleDeletePreset = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const user = authService.getCurrentUser();
+    if (!user) return;
+
+    const updatedUserPresets = presets.filter(p => !p.isBuiltIn && p.id !== id);
+    setPresets([...DEFAULT_PRESETS, ...updatedUserPresets]);
+    localStorage.setItem(`mquiz_instruction_presets_${user.id}`, JSON.stringify(updatedUserPresets));
+
+    toast({
+      title: 'Preset Deleted',
+      description: 'The preset has been removed.',
+    });
+  };
 
   const fetchDocuments = async () => {
     try {
@@ -214,6 +322,16 @@ export const AIQuestionGenerator = () => {
       if (error) throw error;
 
       if (data.success) {
+        if (config.custom_instructions.trim()) {
+          const text = config.custom_instructions.trim();
+          const updatedHistory = [text, ...recentHistory.filter(h => h !== text)].slice(0, 5);
+          setRecentHistory(updatedHistory);
+          const user = authService.getCurrentUser();
+          if (user) {
+            localStorage.setItem(`mquiz_instruction_history_${user.id}`, JSON.stringify(updatedHistory));
+          }
+        }
+
         toast({
           title: 'Questions Generated!',
           description: `Successfully generated ${data.questionsGenerated} questions.`,
@@ -443,7 +561,94 @@ export const AIQuestionGenerator = () => {
 
 
         <div className="space-y-2">
-          <Label htmlFor="instructions">Custom Instructions (Optional)</Label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label htmlFor="instructions">Custom Instructions (Optional)</Label>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Presets Select */}
+              <Select
+                value=""
+                onValueChange={(presetId) => {
+                  const preset = presets.find((p) => p.id === presetId);
+                  if (preset) {
+                    setConfig((prev) => ({ ...prev, custom_instructions: preset.content }));
+                    toast({
+                      title: 'Preset Applied',
+                      description: `Loaded "${preset.name}"`,
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs w-[140px] sm:w-[160px]">
+                  <Bookmark className="w-3.5 h-3.5 mr-1" />
+                  <SelectValue placeholder="Saved Presets" />
+                </SelectTrigger>
+                <SelectContent>
+                  {presets.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      <div className="flex items-center justify-between w-full gap-2">
+                        <span className="truncate max-w-[120px]">{p.name}</span>
+                        {!p.isBuiltIn && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 text-muted-foreground hover:text-destructive p-0 ml-1"
+                            onClick={(e) => handleDeletePreset(p.id, e)}
+                            title="Delete Preset"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Recent History Select */}
+              {recentHistory.length > 0 && (
+                <Select
+                  value=""
+                  onValueChange={(historyItem) => {
+                    setConfig((prev) => ({ ...prev, custom_instructions: historyItem }));
+                    toast({
+                      title: 'History Applied',
+                      description: 'Loaded recent instruction',
+                    });
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs w-[140px] sm:w-[160px]">
+                    <History className="w-3.5 h-3.5 mr-1" />
+                    <SelectValue placeholder="Recent History" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recentHistory.map((text, idx) => (
+                      <SelectItem key={idx} value={text}>
+                        <span className="truncate max-w-[180px] block" title={text}>
+                          {text}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Save Preset Button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-1"
+                disabled={!config.custom_instructions.trim()}
+                onClick={() => setIsSavePresetModalOpen(true)}
+              >
+                <Save className="w-3.5 h-3.5" />
+                Save Preset
+              </Button>
+            </div>
+          </div>
+
           <Textarea
             id="instructions"
             placeholder="Any specific requirements for the questions? e.g., focus on practical applications, include diagrams, etc."
@@ -483,6 +688,43 @@ export const AIQuestionGenerator = () => {
           </Button>
         </div>
       </CardContent>
+
+      {/* Save Preset Modal */}
+      <Dialog open={isSavePresetModalOpen} onOpenChange={setIsSavePresetModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Save Instruction Preset</DialogTitle>
+            <DialogDescription>
+              Give your prompt template a memorable title so you can easily reuse it later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="preset-name">Preset Name</Label>
+              <Input
+                id="preset-name"
+                placeholder="e.g., Physics Real-World Scenarios"
+                value={presetNameInput}
+                onChange={(e) => setPresetNameInput(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Instruction Preview</Label>
+              <div className="p-2 text-xs bg-muted rounded border line-clamp-3">
+                {config.custom_instructions}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSavePresetModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePreset} disabled={!presetNameInput.trim()}>
+              Save Preset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
