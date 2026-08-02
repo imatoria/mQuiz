@@ -52,7 +52,7 @@ export const ProfileManagement = () => {
 
       if (profile.role === 'parent') {
         loadChildren(profile.user_id);
-      } else if (profile.role === 'student' || profile.role === 'child') {
+      } else if (profile.role === 'student') {
         loadStudentAcademicInfo();
       }
     }
@@ -175,7 +175,6 @@ export const ProfileManagement = () => {
     switch (role) {
       case 'admin': return <Crown className="h-5 w-5" />;
       case 'parent': return <Users className="h-5 w-5" />;
-      case 'child':
       case 'student': return <Baby className="h-5 w-5" />;
       default: return <User className="h-5 w-5" />;
     }
@@ -185,7 +184,6 @@ export const ProfileManagement = () => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'parent': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'child':
       case 'student': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -375,7 +373,7 @@ export const ProfileManagement = () => {
         </Card>
       )}
       {/* Academic & Guardian Information for Students */}
-      {(profile.role === 'student' || profile.role === 'child') && (
+      {profile.role === 'student' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

@@ -15,23 +15,24 @@ export const useRBAC = () => {
     // Check role permission
     if (!allowedRoles.includes(profile.role)) return false;
     
-    // Check approval if required (children don't need approval by default)
-    if (requireApproval && profile.role !== 'child' && !profile.is_approved) return false;
+    // Check approval if required (students don't need approval by default)
+    if (requireApproval && profile.role !== 'student' && !profile.is_approved) return false;
     
     return true;
   };
 
   const isAdmin = () => hasRole(['admin']) && profile?.is_approved;
   const isParent = () => hasRole(['parent']) && profile?.is_approved;
-  const isChild = () => hasRole(['child']); // Children don't need approval
-  const isApproved = () => profile?.is_approved || profile?.role === 'child';
+  const isStudent = () => hasRole(['student']);
+  const isApproved = () => profile?.is_approved || profile?.role === 'student';
 
   return {
     hasRole,
     hasPermission,
     isAdmin,
     isParent,
-    isChild,
+    isStudent,
+    isChild: isStudent,
     isApproved,
     profile,
     isAuthenticated,

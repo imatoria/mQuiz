@@ -51,7 +51,7 @@ export const SystemSettings = () => {
     appDescription: 'AI-powered educational testing platform',
     allowRegistration: true,
     requireEmailVerification: false,
-    defaultUserRole: 'child',
+    defaultUserRole: 'student',
     maxFileSize: 50,
     maxDocumentPages: 100,
     sessionTimeout: 24,
@@ -164,7 +164,7 @@ export const SystemSettings = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="child">Child</SelectItem>
+                      <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="parent">Parent</SelectItem>
                     </SelectContent>
                   </Select>

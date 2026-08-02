@@ -135,7 +135,7 @@ export const UserManagement = () => {
     switch (role) {
       case 'admin': return <Crown className="w-4 h-4" />;
       case 'parent': return <User className="w-4 h-4" />;
-      case 'child': return <Baby className="w-4 h-4" />;
+      case 'student': return <Baby className="w-4 h-4" />;
       default: return <User className="w-4 h-4" />;
     }
   };
@@ -144,7 +144,7 @@ export const UserManagement = () => {
     switch (role) {
       case 'admin': return 'destructive';
       case 'parent': return 'default';
-      case 'child': return 'secondary';
+      case 'student': return 'secondary';
       default: return 'outline';
     }
   };
@@ -214,7 +214,7 @@ export const UserManagement = () => {
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="parent">Parent</SelectItem>
-              <SelectItem value="child">Child</SelectItem>
+              <SelectItem value="student">Student</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>

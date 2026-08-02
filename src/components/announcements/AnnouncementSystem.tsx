@@ -200,7 +200,7 @@ export const AnnouncementSystem = () => {
         const { data } = await dbService.getProvider().query('SELECT user_id FROM profiles WHERE user_id != ?', [user!.id]);
         targetUsers = data?.map((p: any) => p.user_id) || [];
       } else if (targetAudience === 'parents' || targetAudience === 'children') {
-        const role = targetAudience === 'parents' ? 'parent' : 'child';
+        const role = targetAudience === 'parents' ? 'parent' : 'student';
         const { data } = await dbService.getProvider().query('SELECT user_id FROM profiles WHERE role = ? AND user_id != ?', [role, user!.id]);
         targetUsers = data?.map((p: any) => p.user_id) || [];
       }

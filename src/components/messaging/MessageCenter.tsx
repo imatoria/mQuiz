@@ -134,7 +134,7 @@ export const MessageCenter = () => {
           data = profilesRes.data;
           error = profilesRes.error;
         }
-      } else if (profile.role === 'child') {
+      } else if (profile.role === 'student') {
         const res = await dbService.getProvider().query('SELECT parent_id FROM parent_child_relationships WHERE child_id = ?', [user.id]);
         const parentIds = res.data?.map((rel: any) => rel.parent_id) || [];
         if (parentIds.length > 0) {

@@ -48,7 +48,7 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
     return 'U';
   };
 
-  const roleKey = (currentRole === 'child' ? 'student' : currentRole) as string | null;
+
 
   const roleConfig: Record<string, { icon: any; label: string; color: string; features: string[] }> = {
     admin: {
@@ -113,9 +113,9 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
                     <p className="text-sm font-medium leading-none">
                       {profile.full_name || profile.email}
                     </p>
-                    {roleKey && roleConfig[roleKey] && (
+                    {currentRole && roleConfig[currentRole] && (
                       <Badge variant="secondary" className="text-xs w-fit">
-                        {roleConfig[roleKey].label}
+                        {roleConfig[currentRole].label}
                       </Badge>
                     )}
                   </div>

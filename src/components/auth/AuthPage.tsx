@@ -15,14 +15,14 @@ import { useToast } from '@/hooks/use-toast';
 interface AuthPageProps {
   onAuthSuccess: () => void;
 }
-type UserRole = 'admin' | 'parent' | 'child';
+type UserRole = 'admin' | 'parent' | 'student';
 
 export const AuthPage = ({
   onAuthSuccess
 }: AuthPageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>('child');
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>('student');
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset'>('signin');
   const [formData, setFormData] = useState({
     email: '',
@@ -108,7 +108,7 @@ export const AuthPage = ({
         } = await authService.signUp({
           email: formData.email,
           fullName: formData.fullName,
-          role: selectedRole || 'child'
+          role: selectedRole || 'student'
         });
         if (error) throw error;
         if (selectedRole === 'admin') {

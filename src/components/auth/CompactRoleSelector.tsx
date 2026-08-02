@@ -4,8 +4,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Badge } from '@/components/ui/badge';
 import { Shield, Users, User, Info } from 'lucide-react';
 interface CompactRoleSelectorProps {
-  selectedRole: 'admin' | 'parent' | 'child' | null;
-  onRoleSelect: (role: 'admin' | 'parent' | 'child') => void;
+  selectedRole: 'admin' | 'parent' | 'student' | null;
+  onRoleSelect: (role: 'admin' | 'parent' | 'student') => void;
 }
 const roleInfo = {
   admin: {
@@ -28,7 +28,7 @@ const roleInfo = {
     note: 'Start creating content immediately',
     features: ['Upload pages', 'Generate MCQ papers', 'Set test schedules & time limits', 'Review child results']
   },
-  child: {
+  student: {
     title: 'Student',
     description: 'Take tests and view results',
     icon: User,

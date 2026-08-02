@@ -96,8 +96,8 @@ export const ParentOnly = ({ children, ...props }: Omit<RoleBasedAccessProps, 'a
   </RoleBasedAccess>
 );
 
-export const ChildOnly = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
-  <RoleBasedAccess allowedRoles={['child']} requireApproval={false} {...props}>
+export const StudentOnly = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
+  <RoleBasedAccess allowedRoles={['student']} requireApproval={false} {...props}>
     {children}
   </RoleBasedAccess>
 );
@@ -109,7 +109,7 @@ export const ParentOrAdmin = ({ children, ...props }: Omit<RoleBasedAccessProps,
 );
 
 export const ApprovedUsers = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
-  <RoleBasedAccess allowedRoles={['admin', 'parent', 'child']} {...props}>
+  <RoleBasedAccess allowedRoles={['admin', 'parent', 'student']} {...props}>
     {children}
   </RoleBasedAccess>
 );

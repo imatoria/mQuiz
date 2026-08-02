@@ -164,7 +164,7 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
       const newChildId = crypto.randomUUID();
       await dbService.getProvider().execute(
         'INSERT INTO profiles (user_id, email, full_name, role, is_approved) VALUES (?, ?, ?, ?, ?)',
-        [newChildId, newChildEmail, newChildName, 'child', true]
+        [newChildId, newChildEmail, newChildName, 'student', true]
       );
       await dbService.getProvider().execute(
         'INSERT INTO parent_child_relationships (id, parent_id, child_id) VALUES (?, ?, ?)',

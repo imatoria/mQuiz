@@ -31,7 +31,6 @@ export const Dashboard = () => {
       return <AdminDashboard />;
     case 'parent':
       return <ParentDashboard />;
-    case 'child':
     case 'student':
       return <StudentDashboard />;
     default:

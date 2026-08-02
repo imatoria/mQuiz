@@ -98,7 +98,7 @@ class AuthService {
       this.currentSession = {
         id: match?.user_id || match?.id || '94297385-ba2f-42f2-a69c-73a8212889dd',
         email: email,
-        role: 'child',
+        role: 'student',
         fullName: match?.full_name || 'Praveen Student 1'
       };
       this.saveSession();

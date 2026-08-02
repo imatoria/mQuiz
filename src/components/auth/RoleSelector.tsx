@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 interface RoleSelectorProps {
-  onRoleSelect: (role: 'admin' | 'parent' | 'child') => void;
+  onRoleSelect: (role: 'admin' | 'parent' | 'student') => void;
 }
 
 export const RoleSelector = ({ onRoleSelect }: RoleSelectorProps) => {
@@ -44,7 +44,7 @@ export const RoleSelector = ({ onRoleSelect }: RoleSelectorProps) => {
       gradient: 'bg-gradient-success'
     },
     {
-      id: 'child' as const,
+      id: 'student' as const,
       title: 'Student',
       description: 'Take tests and view results',
       icon: User,
