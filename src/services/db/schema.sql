@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 CREATE TABLE IF NOT EXISTS classes (
   id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
   class_name TEXT NOT NULL,
   class_key TEXT NOT NULL,
   display_order INTEGER NOT NULL DEFAULT 0,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS classes (
 
 CREATE TABLE IF NOT EXISTS subjects (
   id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
   subject_name TEXT NOT NULL,
   subject_code TEXT NOT NULL,
   icon_name TEXT,
@@ -36,10 +36,10 @@ CREATE TABLE IF NOT EXISTS subjects (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS child_class_assignments (
+CREATE TABLE IF NOT EXISTS student_class_assignments (
   id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL,
-  child_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
   class_id TEXT,
   academic_year TEXT NOT NULL DEFAULT '2025-2026',
   is_current INTEGER DEFAULT 1,
@@ -48,10 +48,10 @@ CREATE TABLE IF NOT EXISTS child_class_assignments (
   FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS child_subject_assignments (
+CREATE TABLE IF NOT EXISTS student_subject_assignments (
   id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL,
-  child_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
   subject_id TEXT,
   academic_year TEXT NOT NULL DEFAULT '2025-2026',
   is_current INTEGER DEFAULT 1,
@@ -273,10 +273,10 @@ CREATE TABLE IF NOT EXISTS email_queue (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS parent_child_relationships (
+CREATE TABLE IF NOT EXISTS teacher_student_relationships (
   id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL,
-  child_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

@@ -83,11 +83,11 @@ class AuthService {
       return { user: this.currentSession, error: null };
     }
 
-    if (emailLower === 'praveen.matoria+parent@gmail.com') {
+    if (emailLower === 'praveen.matoria+parent@gmail.com' || emailLower === 'praveen.matoria+teacher@gmail.com') {
       this.currentSession = {
         id: match?.user_id || match?.id || '32383bef-bf66-4b8e-81e8-69d1bea635bd',
         email: email,
-        role: 'parent',
+        role: 'teacher',
         fullName: match?.full_name || 'Praveen Matoria'
       };
       this.saveSession();

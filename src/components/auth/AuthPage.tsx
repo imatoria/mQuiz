@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 interface AuthPageProps {
   onAuthSuccess: () => void;
 }
-type UserRole = 'admin' | 'parent' | 'student';
+type UserRole = 'admin' | 'teacher' | 'student';
 
 export const AuthPage = ({
   onAuthSuccess

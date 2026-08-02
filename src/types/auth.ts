@@ -18,7 +18,7 @@ export interface UserProfile {
   user_id: string;
   email: string | null;
   full_name: string | null;
-  role: 'admin' | 'parent' | 'student';
+  role: 'admin' | 'teacher' | 'student';
   is_approved: boolean;
   avatar_url: string | null;
   created_at: string;

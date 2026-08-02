@@ -9608,7 +9608,7 @@
       "resource_id": "ae9a4cd1-55fd-45d7-b3e4-d06a49198077",
       "details": {
         "id": "ae9a4cd1-55fd-45d7-b3e4-d06a49198077",
-        "role": "parent",
+        "role": "teacher",
         "email": "praveen.matoria+parent@gmail.com",
         "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
         "full_name": "Praveen Matoria",
@@ -27893,7 +27893,7 @@
       "resource_id": "2017f664-0123-4e35-808e-ed46aacec801",
       "details": {
         "id": "2017f664-0123-4e35-808e-ed46aacec801",
-        "role": "parent",
+        "role": "teacher",
         "email": "sushilapander04@gmail.com",
         "user_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
         "full_name": "Sushila Pander",
@@ -33441,7 +33441,7 @@
   "classes": [
     {
       "id": "bb50700f-6671-4171-9fbf-d12a2f7a52b7",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 1",
       "class_key": "grade_1",
       "display_order": 1,
@@ -33451,7 +33451,7 @@
     },
     {
       "id": "ed85638e-7f9b-4059-8d95-6a4b35e8983d",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 2",
       "class_key": "grade_2",
       "display_order": 2,
@@ -33461,7 +33461,7 @@
     },
     {
       "id": "5e5ea467-d1cf-4297-ad6f-096952d1086c",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 3",
       "class_key": "grade_3",
       "display_order": 3,
@@ -33471,7 +33471,7 @@
     },
     {
       "id": "d22b4a8f-44a5-422b-9286-4259c8fc79e1",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 4",
       "class_key": "grade_4",
       "display_order": 4,
@@ -33481,7 +33481,7 @@
     },
     {
       "id": "0a275e78-4ef0-47f9-834e-9f66c4232188",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 5",
       "class_key": "grade_5",
       "display_order": 5,
@@ -33491,7 +33491,7 @@
     },
     {
       "id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 6",
       "class_key": "grade_6",
       "display_order": 6,
@@ -33501,7 +33501,7 @@
     },
     {
       "id": "0dc1bfd0-d269-47ac-8ad5-5254f891c948",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 7",
       "class_key": "grade_7",
       "display_order": 7,
@@ -33511,7 +33511,7 @@
     },
     {
       "id": "876633f4-182d-4df9-bf93-90c8bd1d2446",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 8",
       "class_key": "grade_8",
       "display_order": 8,
@@ -33521,7 +33521,7 @@
     },
     {
       "id": "f22b34e6-ead9-4687-ac6d-1488e2b8c18c",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 9",
       "class_key": "grade_9",
       "display_order": 9,
@@ -33531,7 +33531,7 @@
     },
     {
       "id": "d5b295a3-0c3e-4c26-b1fb-2ab699ee5971",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 10",
       "class_key": "grade_10",
       "display_order": 10,
@@ -33541,7 +33541,7 @@
     },
     {
       "id": "cf1f9cb2-4d72-4920-8286-363b7b34aa6e",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 11",
       "class_key": "grade_11",
       "display_order": 11,
@@ -33551,7 +33551,7 @@
     },
     {
       "id": "cf123f4f-817d-4d3f-a3ba-ff4a064cf279",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "class_name": "Grade 12",
       "class_key": "grade_12",
       "display_order": 12,
@@ -33561,7 +33561,7 @@
     },
     {
       "id": "49de5f83-1b4a-4b9c-a847-727bcb6ee954",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 1",
       "class_key": "grade_1",
       "display_order": 1,
@@ -33571,7 +33571,7 @@
     },
     {
       "id": "e92a9cad-472d-4183-8ba3-9dbf48244864",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 2",
       "class_key": "grade_2",
       "display_order": 2,
@@ -33581,7 +33581,7 @@
     },
     {
       "id": "b32814a6-4c3b-4bb6-9118-a97128132fcb",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 3",
       "class_key": "grade_3",
       "display_order": 3,
@@ -33591,7 +33591,7 @@
     },
     {
       "id": "f40f809d-9892-402b-b8f5-a116d3cd169b",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 4",
       "class_key": "grade_4",
       "display_order": 4,
@@ -33601,7 +33601,7 @@
     },
     {
       "id": "b8c08805-4ff5-43dd-ae30-dcaa61c691c9",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 5",
       "class_key": "grade_5",
       "display_order": 5,
@@ -33611,7 +33611,7 @@
     },
     {
       "id": "db001a48-3fb1-4ef9-a160-dc0c5dc249f1",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 6",
       "class_key": "grade_6",
       "display_order": 6,
@@ -33621,7 +33621,7 @@
     },
     {
       "id": "560bc322-f591-4016-a32e-46348a7d409d",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 7",
       "class_key": "grade_7",
       "display_order": 7,
@@ -33631,7 +33631,7 @@
     },
     {
       "id": "8e0b568c-5200-475e-97df-a2b98b5c2c14",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 8",
       "class_key": "grade_8",
       "display_order": 8,
@@ -33641,7 +33641,7 @@
     },
     {
       "id": "a1982a1a-9339-4915-b15c-40999d60eac2",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 9",
       "class_key": "grade_9",
       "display_order": 9,
@@ -33651,7 +33651,7 @@
     },
     {
       "id": "f36885a1-e036-4d93-8211-09f7a83a508d",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 10",
       "class_key": "grade_10",
       "display_order": 10,
@@ -33661,7 +33661,7 @@
     },
     {
       "id": "7b0bff76-7760-4252-b7a1-1bc36089713b",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 11",
       "class_key": "grade_11",
       "display_order": 11,
@@ -33671,7 +33671,7 @@
     },
     {
       "id": "73fc02da-811c-4c93-b5b2-81ef78ca0cc9",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "class_name": "Grade 12",
       "class_key": "grade_12",
       "display_order": 12,
@@ -33683,7 +33683,7 @@
   "subjects": [
     {
       "id": "275a5e79-72d2-474e-96f7-4ce4cd042a22",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Mathematics",
       "subject_key": "mathematics",
       "description": null,
@@ -33693,7 +33693,7 @@
     },
     {
       "id": "cafacd5d-4a80-43e4-ae73-d4adb2fea450",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Science",
       "subject_key": "science",
       "description": null,
@@ -33703,7 +33703,7 @@
     },
     {
       "id": "d7a6a745-7584-4ddb-8e4b-6cb754067609",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "English",
       "subject_key": "english",
       "description": null,
@@ -33713,7 +33713,7 @@
     },
     {
       "id": "0221eea6-64ee-41e0-b7ad-f045579673c1",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "History",
       "subject_key": "history",
       "description": null,
@@ -33723,7 +33723,7 @@
     },
     {
       "id": "2cb15629-6ba2-4567-8dfb-a72a177981fd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Geography",
       "subject_key": "geography",
       "description": null,
@@ -33733,7 +33733,7 @@
     },
     {
       "id": "58a9ab51-9585-41e8-9b50-774096dd3313",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Physics",
       "subject_key": "physics",
       "description": null,
@@ -33743,7 +33743,7 @@
     },
     {
       "id": "ff37abd6-9291-4754-a0c2-379c91e4847a",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Chemistry",
       "subject_key": "chemistry",
       "description": null,
@@ -33753,7 +33753,7 @@
     },
     {
       "id": "7dd77245-6d94-4f28-93a6-a55f291ae220",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Biology",
       "subject_key": "biology",
       "description": null,
@@ -33763,7 +33763,7 @@
     },
     {
       "id": "44e2ba50-26ed-475f-8da8-99f24889b424",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Computer Science",
       "subject_key": "computer_science",
       "description": null,
@@ -33773,7 +33773,7 @@
     },
     {
       "id": "b6f30d95-54e6-4d6b-9341-5f2521e0749f",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Hindi",
       "subject_key": "hindi",
       "description": null,
@@ -33783,7 +33783,7 @@
     },
     {
       "id": "4df5e531-d911-472d-a466-608225a27a81",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Physical Education",
       "subject_key": "physical_education",
       "description": null,
@@ -33793,7 +33793,7 @@
     },
     {
       "id": "34c0206b-8ba9-4f84-816a-d60afe1f00c4",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Art",
       "subject_key": "art",
       "description": null,
@@ -33803,7 +33803,7 @@
     },
     {
       "id": "09c78335-7df0-4ecc-b960-ff0abc32b41f",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "subject_name": "Music",
       "subject_key": "music",
       "description": null,
@@ -33813,7 +33813,7 @@
     },
     {
       "id": "491efe68-f3e4-4589-b049-776eef80621f",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Mathematics",
       "subject_key": "mathematics",
       "description": null,
@@ -33823,7 +33823,7 @@
     },
     {
       "id": "5bd7f060-6c87-4861-a852-c47c83064ffb",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "English",
       "subject_key": "english",
       "description": null,
@@ -33833,7 +33833,7 @@
     },
     {
       "id": "916f6d9f-4124-4b6a-a01d-e68b3b622e2b",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Science",
       "subject_key": "science",
       "description": null,
@@ -33843,7 +33843,7 @@
     },
     {
       "id": "03923686-cc85-454b-98ac-8e13a4b99b5a",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "History",
       "subject_key": "history",
       "description": null,
@@ -33853,7 +33853,7 @@
     },
     {
       "id": "4f6d71c2-1bcc-401d-b478-50e47570c235",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Geography",
       "subject_key": "geography",
       "description": null,
@@ -33863,7 +33863,7 @@
     },
     {
       "id": "37f70d8d-4551-4ff7-8f41-f389e23e436c",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Physics",
       "subject_key": "physics",
       "description": null,
@@ -33873,7 +33873,7 @@
     },
     {
       "id": "8888d8f2-a6e6-4338-b051-5e1c65081e7a",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Chemistry",
       "subject_key": "chemistry",
       "description": null,
@@ -33883,7 +33883,7 @@
     },
     {
       "id": "c7b83fa1-e790-4520-a2b5-b0db62039b50",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Biology",
       "subject_key": "biology",
       "description": null,
@@ -33893,7 +33893,7 @@
     },
     {
       "id": "525dc6a4-4f48-407b-a9d6-bd878438d95d",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Computer Science",
       "subject_key": "computer_science",
       "description": null,
@@ -33903,7 +33903,7 @@
     },
     {
       "id": "957b6d4c-87bb-4461-8959-1c8579f5d0e9",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Physical Education",
       "subject_key": "physical_education",
       "description": null,
@@ -33913,7 +33913,7 @@
     },
     {
       "id": "cf0ac971-34b6-4ef8-82f7-774959d42b40",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Art",
       "subject_key": "art",
       "description": null,
@@ -33923,7 +33923,7 @@
     },
     {
       "id": "df3d60a5-a23c-4f7b-ab0f-b020a249898a",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "subject_name": "Music",
       "subject_key": "music",
       "description": null,
@@ -33932,11 +33932,11 @@
       "updated_at": "2025-11-29T05:48:48.452532+00:00"
     }
   ],
-  "child_class_assignments": [
+  "student_class_assignments": [
     {
       "id": "fc79c6da-22ed-4c46-bfbc-a074b3be69ae",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:19:15.984784+00:00",
@@ -33945,8 +33945,8 @@
     },
     {
       "id": "f3fa2239-6b2b-43f3-90f0-8a0df383003c",
-      "child_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:55:50.088224+00:00",
@@ -33955,8 +33955,8 @@
     },
     {
       "id": "cd0b860d-3f8c-42f1-9ed0-6a8585360e0e",
-      "child_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "student_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-11-29T05:57:30.061272+00:00",
@@ -33964,11 +33964,11 @@
       "class_id": "a1982a1a-9339-4915-b15c-40999d60eac2"
     }
   ],
-  "child_subject_assignments": [
+  "student_subject_assignments": [
     {
       "id": "bbd8aadd-3740-47a9-8031-60037341d1d4",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:19:18.203918+00:00",
@@ -33977,8 +33977,8 @@
     },
     {
       "id": "d4cd8866-c01d-40ee-8991-9025e4f7255c",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:19:18.203918+00:00",
@@ -33987,8 +33987,8 @@
     },
     {
       "id": "3a2baa9f-8148-4419-9c89-27ba4b232399",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:19:18.203918+00:00",
@@ -33997,8 +33997,8 @@
     },
     {
       "id": "399f427f-9ed8-47ae-9c96-9bce7b11b98f",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:19:18.203918+00:00",
@@ -34007,8 +34007,8 @@
     },
     {
       "id": "d5374b56-7883-4f87-ac1f-d8fe348ab637",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:19:18.203918+00:00",
@@ -34017,8 +34017,8 @@
     },
     {
       "id": "93da77db-95a6-4d2a-bbcf-8035a7e09264",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:19:18.203918+00:00",
@@ -34027,8 +34027,8 @@
     },
     {
       "id": "f512c852-219c-49a6-b150-2c384c87a4d3",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:19:18.203918+00:00",
@@ -34037,8 +34037,8 @@
     },
     {
       "id": "ac527936-e7ea-442e-affe-91d8f31095af",
-      "child_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:55:51.980276+00:00",
@@ -34047,8 +34047,8 @@
     },
     {
       "id": "a27ae023-dfc7-4bc5-a009-2f5e96d0f30d",
-      "child_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:55:51.980276+00:00",
@@ -34057,8 +34057,8 @@
     },
     {
       "id": "4977b8d8-af2a-4891-b7a6-e882165a5769",
-      "child_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:55:51.980276+00:00",
@@ -34067,8 +34067,8 @@
     },
     {
       "id": "a29bb550-9ccc-4fb4-b349-b900dcf7ef69",
-      "child_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "de72e3eb-15eb-4928-b09f-5871edc9152c",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-10-07T05:55:51.980276+00:00",
@@ -34077,8 +34077,8 @@
     },
     {
       "id": "4667cabb-a1e9-49f4-9fa2-872ae5e865ad",
-      "child_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "student_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-11-29T05:57:31.173767+00:00",
@@ -34087,8 +34087,8 @@
     },
     {
       "id": "d654abb6-dc8f-44fb-8586-bfc0f84cce33",
-      "child_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "student_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-11-29T05:57:31.173767+00:00",
@@ -34097,8 +34097,8 @@
     },
     {
       "id": "421bd00f-0809-4e06-b6be-25ef5c678122",
-      "child_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "student_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-11-29T05:57:31.173767+00:00",
@@ -34107,8 +34107,8 @@
     },
     {
       "id": "9b384691-868d-4df6-8231-cba67b82cc9e",
-      "child_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "student_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "academic_year": "2025",
       "is_current": true,
       "created_at": "2025-11-29T05:57:31.173767+00:00",
@@ -38052,17 +38052,17 @@
       "created_at": "2026-03-05T17:15:37.166108+00:00"
     }
   ],
-  "parent_child_relationships": [
+  "teacher_student_relationships": [
     {
       "id": "f38f3e7e-a1ed-4c05-800e-68d6871dafef",
-      "parent_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "child_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
+      "teacher_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
+      "student_id": "94297385-ba2f-42f2-a69c-73a8212889dd",
       "created_at": "2025-08-29T16:26:23.986977+00:00"
     },
     {
       "id": "9b88a6d8-eb86-4468-be33-8581b1839cbb",
-      "parent_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
-      "child_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
+      "teacher_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
+      "student_id": "9de18140-ba56-4224-a1ec-c7e3d40d0f5f",
       "created_at": "2025-11-29T05:56:11.005538+00:00"
     }
   ],
@@ -38094,7 +38094,7 @@
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
       "email": "praveen.matoria+parent@gmail.com",
       "full_name": "Praveen Matoria",
-      "role": "parent",
+      "role": "teacher",
       "is_approved": true,
       "avatar_url": null,
       "created_at": "2025-08-01T09:33:50.621328+00:00",
@@ -38116,7 +38116,7 @@
       "user_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
       "email": "sushilapander04@gmail.com",
       "full_name": "Sushila Pander",
-      "role": "parent",
+      "role": "teacher",
       "is_approved": true,
       "avatar_url": null,
       "created_at": "2025-11-29T05:48:48.452532+00:00",

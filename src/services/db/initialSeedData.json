@@ -25,7 +25,7 @@
   "classes": [
     {
       "id": "class-10-id",
-      "parent_id": "system-admin-id",
+      "teacher_id": "system-admin-id",
       "class_name": "Class 10",
       "class_key": "class_10",
       "display_order": 10,
@@ -35,7 +35,7 @@
     },
     {
       "id": "class-12-id",
-      "parent_id": "system-admin-id",
+      "teacher_id": "system-admin-id",
       "class_name": "Class 12",
       "class_key": "class_12",
       "display_order": 12,
@@ -47,7 +47,7 @@
   "subjects": [
     {
       "id": "subj-math-id",
-      "parent_id": "system-admin-id",
+      "teacher_id": "system-admin-id",
       "subject_name": "Mathematics",
       "subject_code": "MATH",
       "icon_name": "calculator",
@@ -59,7 +59,7 @@
     },
     {
       "id": "subj-sci-id",
-      "parent_id": "system-admin-id",
+      "teacher_id": "system-admin-id",
       "subject_name": "Science",
       "subject_code": "SCI",
       "icon_name": "flask",
@@ -70,8 +70,8 @@
       "updated_at": "2026-07-31T00:00:00.000Z"
     }
   ],
-  "child_class_assignments": [],
-  "child_subject_assignments": [],
+  "student_class_assignments": [],
+  "student_subject_assignments": [],
   "documents": [],
   "document_pages": [],
   "email_queue": [],
@@ -81,7 +81,7 @@
   "paper_attempts": [],
   "paper_sessions": [],
   "paper_violations": [],
-  "parent_child_relationships": [],
+  "teacher_student_relationships": [],
   "profiles": [
     {
       "id": "prof-admin-id",

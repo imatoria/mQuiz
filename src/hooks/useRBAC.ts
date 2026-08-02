@@ -22,7 +22,7 @@ export const useRBAC = () => {
   };
 
   const isAdmin = () => hasRole(['admin']) && profile?.is_approved;
-  const isParent = () => hasRole(['parent']) && profile?.is_approved;
+  const isTeacher = () => hasRole(['teacher']) && profile?.is_approved;
   const isStudent = () => hasRole(['student']);
   const isApproved = () => profile?.is_approved || profile?.role === 'student';
 
@@ -30,7 +30,8 @@ export const useRBAC = () => {
     hasRole,
     hasPermission,
     isAdmin,
-    isParent,
+    isTeacher,
+    isParent: isTeacher,
     isStudent,
     isChild: isStudent,
     isApproved,

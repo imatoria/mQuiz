@@ -60,7 +60,7 @@ class DatabaseService {
   async createClass(classData: any) {
     const record = {
       id: classData.id || crypto.randomUUID(),
-      parent_id: classData.parent_id || 'system',
+      teacher_id: classData.teacher_id || classData.parent_id || 'system',
       class_name: classData.class_name,
       class_key: classData.class_key || classData.class_name.toLowerCase().replace(/\s+/g, '_'),
       display_order: classData.display_order || 0,
@@ -68,7 +68,7 @@ class DatabaseService {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO classes (id, parent_id, class_name, class_key, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO classes (id, teacher_id, class_name, class_key, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   async getSubjects() {
@@ -78,7 +78,7 @@ class DatabaseService {
   async createSubject(subjectData: any) {
     const record = {
       id: subjectData.id || crypto.randomUUID(),
-      parent_id: subjectData.parent_id || 'system',
+      teacher_id: subjectData.teacher_id || subjectData.parent_id || 'system',
       subject_name: subjectData.subject_name,
       subject_code: subjectData.subject_code || subjectData.subject_name.substring(0, 4).toUpperCase(),
       icon_name: subjectData.icon_name || 'book',
@@ -88,7 +88,7 @@ class DatabaseService {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO subjects (id, parent_id, subject_name, subject_code, icon_name, color, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO subjects (id, teacher_id, subject_name, subject_code, icon_name, color, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   // --- Documents & Pages ---

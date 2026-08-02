@@ -34,7 +34,7 @@ const Home = () => {
     {
       icon: Users,
       title: "Multi-Role Support",
-      description: "Dedicated interfaces for Parents, Students, and Admins ensuring everyone gets the perfect experience."
+      description: "Dedicated interfaces for Teachers, Students, and Admins ensuring everyone gets the perfect experience."
     },
     {
       icon: Shield,

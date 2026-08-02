@@ -28,8 +28,8 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 
 interface NavigationProps {
-  currentRole: 'admin' | 'parent' | 'student' | null;
-  onRoleChange?: (role: 'admin' | 'parent' | 'student' | null) => void;
+  currentRole: 'admin' | 'teacher' | 'student' | null;
+  onRoleChange?: (role: 'admin' | 'teacher' | 'student' | null) => void;
   activeTabName?: string;
   activeTabIcon?: LucideIcon;
 }
@@ -57,9 +57,15 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
       color: 'bg-gradient-primary',
       features: ['All Access', 'User Management', 'AI Configuration']
     },
+    teacher: {
+      icon: Users,
+      label: 'Teacher',
+      color: 'bg-gradient-success',
+      features: ['Create Papers', 'Upload Documents', 'View Results']
+    },
     parent: {
       icon: Users,
-      label: 'Parent',
+      label: 'Teacher',
       color: 'bg-gradient-success',
       features: ['Create Papers', 'Upload Documents', 'View Results']
     },

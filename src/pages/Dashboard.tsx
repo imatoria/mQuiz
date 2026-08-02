@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { ParentDashboard } from '@/components/parent/ParentDashboard';
+import { TeacherDashboard } from '@/components/teacher/TeacherDashboard';
 import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,8 +29,9 @@ export const Dashboard = () => {
   switch (profile.role) {
     case 'admin':
       return <AdminDashboard />;
+    case 'teacher':
     case 'parent':
-      return <ParentDashboard />;
+      return <TeacherDashboard />;
     case 'student':
       return <StudentDashboard />;
     default:

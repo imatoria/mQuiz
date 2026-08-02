@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 interface RoleSelectorProps {
-  onRoleSelect: (role: 'admin' | 'parent' | 'student') => void;
+  onRoleSelect: (role: 'admin' | 'teacher' | 'student') => void;
 }
 
 export const RoleSelector = ({ onRoleSelect }: RoleSelectorProps) => {
@@ -30,17 +30,17 @@ export const RoleSelector = ({ onRoleSelect }: RoleSelectorProps) => {
       gradient: 'bg-gradient-primary'
     },
     {
-      id: 'parent' as const,
-      title: 'Parent/Teacher',
+      id: 'teacher' as const,
+      title: 'Teacher',
       description: 'Create and manage question papers',
       icon: Users,
       features: [
         'Upload pages',
         'Generate MCQ papers',
         'Set test schedules & time limits',
-        'Review child results'
+        'Review student results'
       ],
-      badge: 'Creator',
+      badge: 'Teacher',
       gradient: 'bg-gradient-success'
     },
     {

@@ -130,21 +130,21 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         // Handle IN clauses e.g. user_id IN (?, ?), child_id IN (?, ?)
         if (/\buser_id\s+IN\s*\(/i.test(cleanSql)) {
           rows = rows.filter(r => params.includes(r.user_id));
-        } else if (/\bchild_id\s+IN\s*\(/i.test(cleanSql)) {
-          rows = rows.filter(r => params.includes(r.child_id));
+        } else if (/\bstudent_id\s+IN\s*\(/i.test(cleanSql) || /\bchild_id\s+IN\s*\(/i.test(cleanSql)) {
+          rows = rows.filter(r => params.includes(r.student_id || r.child_id));
         } else if (/\bid\s+IN\s*\(/i.test(cleanSql)) {
           rows = rows.filter(r => params.includes(r.id));
-        } else if (/\bparent_id\s+IN\s*\(/i.test(cleanSql)) {
-          rows = rows.filter(r => params.includes(r.parent_id));
+        } else if (/\bteacher_id\s+IN\s*\(/i.test(cleanSql) || /\bparent_id\s+IN\s*\(/i.test(cleanSql)) {
+          rows = rows.filter(r => params.includes(r.teacher_id || r.parent_id));
         } else {
           // Handle standard equality filtering
           const paramVal = params[0];
           if (/\buser_id\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => r.user_id === paramVal);
-          } else if (/\bchild_id\s*=/i.test(cleanSql)) {
-            rows = rows.filter(r => r.child_id === paramVal);
-          } else if (/\bparent_id\s*=/i.test(cleanSql)) {
-            rows = rows.filter(r => r.parent_id === paramVal);
+          } else if (/\bstudent_id\s*=/i.test(cleanSql) || /\bchild_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => (r.student_id || r.child_id) === paramVal);
+          } else if (/\bteacher_id\s*=/i.test(cleanSql) || /\bparent_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => (r.teacher_id || r.parent_id) === paramVal);
           } else if (/\bclass_id\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => r.class_id === paramVal);
           } else if (/\bsubject_id\s*=/i.test(cleanSql)) {
@@ -191,7 +191,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
 
       if (typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
         const targetId = params[params.length - 1];
-        const index = rows.findIndex(r => r.id === targetId || r.user_id === targetId || r.child_id === targetId || r.parent_id === targetId);
+        const index = rows.findIndex(r => r.id === targetId || r.user_id === targetId || r.student_id === targetId || r.teacher_id === targetId || r.child_id === targetId || r.parent_id === targetId);
         if (index !== -1) {
           rows[index] = { ...rows[index], ...params[0] };
           this.persist();
@@ -220,6 +220,8 @@ export class SqliteWasmProvider implements IDatabaseProvider {
               const matches = whereValues.some(val => 
                 r.id === val || 
                 r.user_id === val || 
+                r.student_id === val || 
+                r.teacher_id === val ||
                 r.child_id === val || 
                 r.parent_id === val
               );
