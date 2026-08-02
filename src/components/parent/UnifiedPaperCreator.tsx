@@ -219,8 +219,9 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   // Auto-set difficulty filter when form difficulty is selected (removed as no longer needed)
 
   React.useEffect(() => {
-    if (formData.subject_parent_id && formData.class_parent_id && formData.difficulty_filter && formData.difficulty_filter.length > 0) {
+    if (formData.subject_parent_id && formData.class_parent_id) {
       loadQuestions();
+      loadAvailablePages();
     } else {
       setQuestions([]);
       setFilteredQuestions([]);
@@ -289,28 +290,41 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   };
 
   const loadQuestions = async () => {
-    if (!formData.subject_parent_id || !formData.class_parent_id || !formData.difficulty_filter || formData.difficulty_filter.length === 0) return;
-    
     setIsLoadingQuestions(true);
     try {
-      let query = supabase
+      // Get all subjects and classes from database to resolve matching names across duplicate IDs
+      const { data: allSubjectsData } = await supabase.from('subjects_parent').select('*');
+      const { data: allClassesData } = await supabase.from('classes_parent').select('*');
+
+      const selectedSubjectObj = (allSubjectsData || []).find((s: any) => s.id === formData.subject_parent_id);
+      const matchingSubjectIds = selectedSubjectObj
+        ? (allSubjectsData || []).filter((s: any) => s.subject_name?.toLowerCase() === selectedSubjectObj.subject_name?.toLowerCase()).map((s: any) => s.id)
+        : (formData.subject_parent_id ? [formData.subject_parent_id] : []);
+
+      const selectedClassObj = (allClassesData || []).find((c: any) => c.id === formData.class_parent_id);
+      const matchingClassIds = selectedClassObj
+        ? (allClassesData || []).filter((c: any) => c.class_name?.toLowerCase() === selectedClassObj.class_name?.toLowerCase()).map((c: any) => c.id)
+        : (formData.class_parent_id ? [formData.class_parent_id] : []);
+
+      const { data: rawQuestions, error } = await supabase
         .from('questions')
         .select('*')
-        .eq('subject_parent_id', formData.subject_parent_id)
-        .eq('class_parent_id', formData.class_parent_id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false });
 
-      // Filter by difficulty from form
-      if (formData.difficulty_filter.length > 0) {
-        query = query.in('difficulty', formData.difficulty_filter as ('easy' | 'medium' | 'difficult')[]);
-      }
-      
-      const { data, error } = await query;
-      
       if (error) throw error;
-      
-      setQuestions(data || []);
+
+      const filtered = (rawQuestions || []).filter((q: any) => {
+        // Match subject if selected
+        const matchesSubject = matchingSubjectIds.length === 0 || matchingSubjectIds.includes(q.subject_parent_id) || !q.subject_parent_id;
+        // Match class if selected
+        const matchesClass = matchingClassIds.length === 0 || matchingClassIds.includes(q.class_parent_id) || !q.class_parent_id;
+        // Match difficulty if specified
+        const matchesDifficulty = !formData.difficulty_filter || formData.difficulty_filter.length === 0 || formData.difficulty_filter.includes('all') || formData.difficulty_filter.includes(q.difficulty);
+        return matchesSubject && matchesClass && matchesDifficulty;
+      });
+
+      setQuestions(filtered);
     } catch (error) {
       console.error('Error loading questions:', error);
       toast({
@@ -824,17 +838,18 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
             <div className="space-y-2">
               <Label>Difficulty Level</Label>
               <Select 
-                value={formData.difficulty_filter?.[0] || ''} 
+                value={formData.difficulty_filter?.[0] || 'all'} 
                 onValueChange={(value) => setFormData(prev => ({ 
                   ...prev, 
-                  difficulty_filter: value ? [value] : [] 
+                  difficulty_filter: value && value !== 'all' ? [value] : ['all'] 
                 }))}
                 disabled={!!editingPaper}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty" />
+                  <SelectValue placeholder="All Difficulties" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All Difficulties</SelectItem>
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="difficult">Difficult</SelectItem>
@@ -1121,24 +1136,20 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                 </TabsContent>
 
                 <TabsContent value="unselected" className="space-y-4">
-                  {/* Requirement Notice */}
-                  {(!formData.subject_parent_id || !formData.class_parent_id || !formData.difficulty_filter || formData.difficulty_filter.length === 0) && (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-                        <div className="flex-1">
-                          <h4 className="font-medium text-amber-900">Required Selections</h4>
-                          <p className="text-sm text-amber-700 mt-1">
-                            Please select <strong>Subject</strong>, <strong>Class Level</strong>, and <strong>Difficulty</strong> above to view and select questions.
-                          </p>
-                        </div>
+                  {/* Requirement Notice (Informative tip when filters not selected) */}
+                  {(!formData.subject_parent_id || !formData.class_parent_id) && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-blue-600" />
+                        <p className="text-sm text-blue-700">
+                          Showing all available questions. Select <strong>Subject</strong> and <strong>Class Level</strong> above to filter for a specific class paper.
+                        </p>
                       </div>
                     </div>
                   )}
 
                   {/* Question Selection Filters */}
-                  {formData.subject_parent_id && formData.class_parent_id && formData.difficulty_filter && formData.difficulty_filter.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>Search Questions</Label>
                         <Input
@@ -1206,11 +1217,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                         </Popover>
                       </div>
                     </div>
-                  )}
                   
-                  {formData.subject_parent_id && formData.class_parent_id && formData.difficulty_filter && formData.difficulty_filter.length > 0 && (
-                    <>
-                      <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                         <Button 
                           type="button" 
                           variant="outline" 
@@ -1347,11 +1355,9 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                            </div>
                          </div>
                        )}
-                     </>
-                   )}
-                 </>
-               )}
-             </TabsContent>
+                      </>
+                    )}
+               </TabsContent>
            </Tabs>
          </div>
         
