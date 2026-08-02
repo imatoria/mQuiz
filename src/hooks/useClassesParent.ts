@@ -50,6 +50,7 @@ export const useClassesParent = () => {
       const sortedData = (data || []).sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0));
       setClasses(sortedData);
     } catch (err: any) {
+      console.error('Silenced Error:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);

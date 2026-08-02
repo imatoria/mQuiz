@@ -101,6 +101,7 @@ export const questionCache = {
               }
             }
           } catch (e) {
+      console.error('Silenced Error:', e);
             // Invalid cache entry, mark for removal
             keysToRemove.push(key);
           }
@@ -136,6 +137,7 @@ export const questionCache = {
         size
       };
     } catch (error) {
+      console.error('Silenced Error:', error);
       return { exists: false };
     }
   }

@@ -126,6 +126,7 @@ export function BookManager() {
 
       setGroupedBooks(grouped);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Error',
         description: error.message,
@@ -163,6 +164,7 @@ export function BookManager() {
       await fetchBooksData();
       setEditingPage(null);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to save page content',
@@ -196,6 +198,7 @@ export function BookManager() {
       setDeletingPageId(null);
       setSelectedPageIds([]);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete page',
@@ -230,6 +233,7 @@ export function BookManager() {
       setSelectedPageIds([]);
       setShowBulkDeleteDialog(false);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete pages',

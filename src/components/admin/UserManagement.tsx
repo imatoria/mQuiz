@@ -59,6 +59,7 @@ export const UserManagement = () => {
       if (error) throw error;
       setUsers(data || []);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error fetching users",
         description: error.message,
@@ -87,6 +88,7 @@ export const UserManagement = () => {
         description: `User has been ${isApproved ? 'approved' : 'rejected'} successfully.`,
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error updating user status",
         description: error.message,
@@ -120,6 +122,7 @@ export const UserManagement = () => {
       // Refresh users to ensure consistency
       fetchUsers();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error updating user role",
         description: error.message || "Unauthorized role change or admin limit exceeded",

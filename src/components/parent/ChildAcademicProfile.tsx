@@ -148,6 +148,7 @@ export const ChildAcademicProfile = ({
       onUpdate?.();
       onClose();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to update academic profile",
         description: error.message,

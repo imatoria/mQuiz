@@ -95,6 +95,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       onChange(newSubject.id);
       onSubjectsUpdate();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Failed to create subject',
         description: error.message,

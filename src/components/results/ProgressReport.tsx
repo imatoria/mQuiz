@@ -59,7 +59,7 @@ interface TestResult {
 export const ProgressReport = () => {
   const [progressData, setProgressData] = useState<StudentProgress[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
-  const [timeframe, setTimeframe] = useState<string>('30');
+  const [timeframe, setTimeframe] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -72,18 +72,19 @@ export const ProgressReport = () => {
     try {
       setLoading(true);
       
-      const rawAttemptsData = await dbService.getProvider().query('SELECT * FROM paper_attempts');
+      const { data: rawAttemptsData } = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
-      const days = parseInt(timeframe, 10) || 30;
-      const dateThreshold = new Date();
-      dateThreshold.setDate(dateThreshold.getDate() - days);
+      const days = parseInt(timeframe, 10);
+      const dateThreshold = isNaN(days) ? null : new Date();
+      if (dateThreshold) dateThreshold.setDate(dateThreshold.getDate() - days);
 
       const attemptsData = (rawAttemptsData || []).filter((a: any) => {
+        if (!dateThreshold) return true;
         const completedDate = new Date(a.completed_at || a.started_at || a.created_at || Date.now());
         return completedDate >= dateThreshold;
       });
 
-      const papersData = await dbService.getProvider().query('SELECT * FROM question_papers');
+      const { data: papersData } = await dbService.getProvider().query('SELECT * FROM question_papers');
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
 
       const attempts = (attemptsData || []).map((attempt: any) => {
@@ -98,25 +99,31 @@ export const ProgressReport = () => {
         };
       });
 
-      // Get user profiles separately
-      const userIds = [...new Set(attempts?.map(attempt => attempt.user_id) || [])];
-      let profiles: any[] = [];
-      if (userIds.length > 0) {
-        profiles = await dbService.getProvider().query(
-          `SELECT user_id, full_name FROM profiles WHERE user_id IN (${userIds.map(() => '?').join(',')})`,
-          userIds
-        );
-      }
-
-      const profileMap = profiles?.reduce((acc, profile) => {
-        acc[profile.user_id] = profile;
+      // Fetch ALL profiles then filter in JS to avoid IN-clause issues in SqliteWasmProvider
+      const { data: allProfiles } = await dbService.getProvider().query('SELECT * FROM profiles');
+      const profileMap = (allProfiles || []).reduce((acc: Record<string, any>, p: any) => {
+        acc[p.user_id] = p;
         return acc;
-      }, {} as Record<string, any>) || {};
+      }, {});
+
+      // If parent, restrict attempts to their linked children only
+      let allowedUserIds: Set<string> | null = null;
+      if (profile?.role === 'parent') {
+        const { data: relationships } = await dbService.getProvider().query(
+          'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+          [profile.user_id]
+        );
+        allowedUserIds = new Set((relationships || []).map((r: any) => r.child_id));
+      }
 
       // Process data into progress reports
       const progressMap = new Map<string, StudentProgress>();
 
-      attempts?.forEach((attempt: any) => {
+      attempts?.filter((attempt: any) => {
+        if (!attempt.user_id) return false;
+        if (allowedUserIds) return allowedUserIds.has(attempt.user_id);
+        return true;
+      }).forEach((attempt: any) => {
         const studentId = attempt.user_id;
         const studentName = profileMap[studentId]?.full_name || 'Unknown Student';
         
@@ -167,6 +174,7 @@ export const ProgressReport = () => {
 
       setProgressData(progressArray);
     } catch (error: any) {
+      console.error('Error in fetchProgressData:', error);
       toast({
         title: "Error",
         description: "Failed to fetch progress data",
@@ -181,27 +189,30 @@ export const ProgressReport = () => {
     if (profile?.role !== 'parent') return [];
     
     // Get children relationships
-    const relationships = await dbService.getProvider().query(
+    const { data: relationships, error: relError } = await dbService.getProvider().query(
       'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
       [profile.user_id]
     );
 
-    if (!relationships) return [];
+    if (relError || !relationships) return [];
 
     const childIds = relationships.map((rel: any) => rel.child_id);
     
     let children: any[] = [];
     if (childIds.length > 0) {
-      children = await dbService.getProvider().query(
+      const { data: childrenData, error: childError } = await dbService.getProvider().query(
         `SELECT user_id, full_name FROM profiles WHERE user_id IN (${childIds.map(() => '?').join(',')})`,
         childIds
       );
+      if (!childError && childrenData) {
+        children = childrenData;
+      }
     }
 
-    return children?.map(child => ({
+    return children.map(child => ({
       child_id: child.user_id,
       profiles: child
-    })) || [];
+    }));
   };
 
   const [studentList, setStudentList] = useState<any[]>([]);
@@ -302,6 +313,7 @@ export const ProgressReport = () => {
             <SelectValue placeholder="Select timeframe" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
             <SelectItem value="7">Last 7 days</SelectItem>
             <SelectItem value="30">Last 30 days</SelectItem>
             <SelectItem value="90">Last 3 months</SelectItem>

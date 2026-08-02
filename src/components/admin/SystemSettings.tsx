@@ -99,6 +99,7 @@ export const SystemSettings = () => {
         description: "System settings have been updated successfully.",
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to save settings",
         description: error.message,

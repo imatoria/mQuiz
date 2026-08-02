@@ -13,7 +13,7 @@ import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, Pagi
 
 interface Document {
   id: string;
-  title: string;
+  file_name: string;
   subject_id: string;
   class_id: string;
   processing_status: string;
@@ -148,7 +148,7 @@ export const DocumentLibrary = () => {
   };
 
   const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = doc.file_name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSubject = !selectedSubject || selectedSubject === 'all' || doc.subject_id === selectedSubject;
     const matchesClass = !selectedClass || selectedClass === 'all' || doc.class_id === selectedClass;
     const matchesStatus = !selectedStatus || selectedStatus === 'all' || doc.processing_status === selectedStatus;
@@ -391,7 +391,7 @@ export const DocumentLibrary = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <CardTitle className="text-base line-clamp-2 flex-1">
-                        {document.title}
+                        {document.file_name}
                       </CardTitle>
                       <div className="flex flex-col items-end gap-1 ml-2">
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">

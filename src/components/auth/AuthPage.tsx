@@ -120,6 +120,7 @@ export const AuthPage = ({
         throw new Error('Password reset is not supported in the current environment.');
       }
     } catch (error: any) {
+      console.error('Silenced Error:', error);
       setError(error.message || 'An unexpected error occurred');
     } finally {
       setIsLoading(false);

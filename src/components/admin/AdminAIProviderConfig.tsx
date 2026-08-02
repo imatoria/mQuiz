@@ -59,6 +59,7 @@ export const AdminAIProviderConfig = () => {
       if (error) throw error;
       setProviders((data || []).filter(p => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error fetching AI providers",
         description: error.message,
@@ -132,6 +133,7 @@ export const AdminAIProviderConfig = () => {
       fetchProviders();
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to save provider",
         description: error.message,
@@ -160,6 +162,7 @@ export const AdminAIProviderConfig = () => {
         description: `Provider has been ${isActive ? 'enabled' : 'disabled'} successfully.`,
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error updating provider status",
         description: error.message,
@@ -188,6 +191,7 @@ export const AdminAIProviderConfig = () => {
         description: `${providerName} has been deleted successfully.`,
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to delete provider",
         description: error.message,

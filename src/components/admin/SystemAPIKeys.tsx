@@ -54,6 +54,7 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
       setProviders((data || []).filter(p => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
       checkConfiguredKeys();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error fetching AI providers",
         description: error.message,
@@ -117,6 +118,7 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
       setConfiguredKeys(newConfiguredKeys);
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to save API keys. Please try again.",

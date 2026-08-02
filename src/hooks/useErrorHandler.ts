@@ -44,6 +44,7 @@ export const useErrorHandler = (options: UseErrorHandlerOptions = {}) => {
     try {
       await operation();
     } catch (error) {
+      console.error('Silenced Error:', error);
       handleError(error);
     } finally {
       setIsRetrying(false);
@@ -58,6 +59,7 @@ export const useErrorHandler = (options: UseErrorHandlerOptions = {}) => {
         clearError();
         return await fn(...args);
       } catch (error) {
+      console.error('Silenced Error:', error);
         handleError(error);
         return undefined;
       }

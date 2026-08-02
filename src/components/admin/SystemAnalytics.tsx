@@ -212,6 +212,7 @@ export const SystemAnalytics = () => {
       setTestActivityData(testActivityData);
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error fetching analytics",
         description: error.message,

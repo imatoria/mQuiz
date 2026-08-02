@@ -104,6 +104,7 @@ export class CloudflareD1Provider implements IDatabaseProvider {
 
       return { success: true };
     } catch (err: any) {
+      console.error('Silenced Error:', err);
       return this.fallbackProvider.batch(operations);
     }
   }

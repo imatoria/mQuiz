@@ -58,6 +58,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ open, onOpenChan
         docRef.current = pdf;
         setNumPages(pdf.numPages);
       } catch (e: any) {
+      console.error('Error:', e);
         toast({ title: 'Unable to load PDF', description: e.message, variant: 'destructive' });
       } finally {
         setLoading(false);

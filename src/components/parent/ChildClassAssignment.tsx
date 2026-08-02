@@ -86,6 +86,7 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
         description: `${childName} has been assigned to ${selectedClassName}`,
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to assign class",
         description: error.message,

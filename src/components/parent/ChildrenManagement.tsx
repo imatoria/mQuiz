@@ -187,6 +187,7 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
       onChildrenUpdate?.();
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to add child",
         description: error.message,
@@ -222,6 +223,7 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
       onChildrenUpdate?.();
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to remove child",
         description: error.message,
@@ -248,6 +250,7 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
 
       fetchChildren();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to update status",
         description: error.message,

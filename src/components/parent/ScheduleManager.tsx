@@ -88,6 +88,7 @@ export const ScheduleManager = () => {
 
       handleRefresh();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Delete failed",
         description: error.message,

@@ -93,6 +93,7 @@ export const SecurityDashboard = () => {
       });
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error fetching security data",
         description: error.message,

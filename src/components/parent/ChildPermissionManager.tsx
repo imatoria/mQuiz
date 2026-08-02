@@ -92,6 +92,7 @@ export const ChildPermissionManager = () => {
         setPermissions(defaultPermissions);
       }
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error fetching children",
         description: error.message,
@@ -121,6 +122,7 @@ export const ChildPermissionManager = () => {
         description: "Child permissions have been updated successfully.",
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to save permissions",
         description: error.message,

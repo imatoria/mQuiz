@@ -204,6 +204,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       onPaperGenerated();
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Generation failed",
         description: error.message,

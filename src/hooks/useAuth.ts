@@ -117,6 +117,7 @@ export const useAuth = () => {
       setProfile(updatedProfile);
       return { data: updatedProfile, error: null };
     } catch (error: any) {
+      console.error('Silenced Error:', error);
       return { data: null, error: error.message };
     }
   };

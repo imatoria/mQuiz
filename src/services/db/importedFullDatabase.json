@@ -4971,13 +4971,12 @@
         "deleted_at": null,
         "difficulty": "medium",
         "is_deleted": false,
-        "subject_id": "d215b2b9-fd4a-47a6-a418-b803fb6d04fd",
+        "subject_id": "275a5e79-72d2-474e-96f7-4ce4cd042a22",
         "class_level": "4",
         "page_number": 1,
         "question_text": "Which of the following expressions is equal to 14?",
         "correct_answer": "D",
-        "class_id": null,
-        "subject_id": "275a5e79-72d2-474e-96f7-4ce4cd042a22"
+        "class_id": null
       },
       "ip_address": null,
       "user_agent": null,
@@ -32940,13 +32939,12 @@
         "deleted_at": null,
         "difficulty": "medium",
         "is_deleted": false,
-        "subject_id": "d215b2b9-fd4a-47a6-a418-b803fb6d04fd",
+        "subject_id": "275a5e79-72d2-474e-96f7-4ce4cd042a22",
         "class_level": "6",
         "page_number": 1,
         "question_text": "If you change the position of the brackets in the expression 10 + 5 × 2, how many different answers can you get?",
         "correct_answer": "C",
-        "class_id": null,
-        "subject_id": "275a5e79-72d2-474e-96f7-4ce4cd042a22"
+        "class_id": null
       },
       "ip_address": null,
       "user_agent": null,
@@ -34122,142 +34120,142 @@
     {
       "id": "4134ddf1-24e0-453a-9412-ddb3b41bb7db",
       "user_id": "4c41ae04-14ba-40e6-8b97-fce8e4045790",
-      "title": "booking_tickets_JHA4237147642",
       "total_pages": null,
       "processing_status": "failed",
       "created_at": "2025-08-04T01:06:56.730067+00:00",
       "subject_id": null,
-      "class_id": null
+      "class_id": null,
+      "file_name": "booking_tickets_JHA4237147642"
     },
     {
       "id": "1032f7e2-8fa2-4fc2-bdd4-1dcaa91d1bc0",
       "user_id": "4c41ae04-14ba-40e6-8b97-fce8e4045790",
-      "title": "Itinerary",
       "total_pages": null,
       "processing_status": "failed",
       "created_at": "2025-08-04T01:09:33.020512+00:00",
       "subject_id": null,
-      "class_id": null
+      "class_id": null,
+      "file_name": "Itinerary"
     },
     {
       "id": "2ba3cc6b-57a6-4eaf-9a5b-68f59ad2dc7a",
       "user_id": "4c41ae04-14ba-40e6-8b97-fce8e4045790",
-      "title": "Itinerary",
       "total_pages": null,
       "processing_status": "failed",
       "created_at": "2025-08-04T01:11:30.781999+00:00",
       "subject_id": null,
-      "class_id": null
+      "class_id": null,
+      "file_name": "Itinerary"
     },
     {
       "id": "2f09e427-a63d-4b53-bb57-c2dec980994c",
       "user_id": "4c41ae04-14ba-40e6-8b97-fce8e4045790",
-      "title": "Itinerary",
       "total_pages": 1,
       "processing_status": "completed",
       "created_at": "2025-08-04T01:13:19.764165+00:00",
       "subject_id": null,
-      "class_id": null
+      "class_id": null,
+      "file_name": "Itinerary"
     },
     {
       "id": "b15b932e-5842-4dd4-9e53-173bb75577be",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Itinerary - Pages 10-15",
       "total_pages": null,
       "processing_status": "stored",
       "created_at": "2025-08-15T15:56:03.316088+00:00",
       "subject_id": "2cb15629-6ba2-4567-8dfb-a72a177981fd",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Itinerary - Pages 10-15"
     },
     {
       "id": "b8b4ba9e-bb0d-4b70-a133-ba6255b4094e",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Project from 071725 - Contract - Pages 1-12",
       "total_pages": 12,
       "processing_status": "completed",
       "created_at": "2025-08-15T08:38:07.24351+00:00",
       "subject_id": "2cb15629-6ba2-4567-8dfb-a72a177981fd",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Project from 071725 - Contract - Pages 1-12"
     },
     {
       "id": "a9006485-babc-4b84-bd6d-84abe16b4a9f",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Physics Ch1 - Pages 4-22",
       "total_pages": 19,
       "processing_status": "completed",
       "created_at": "2025-11-23T07:53:25.961937+00:00",
       "subject_id": "58a9ab51-9585-41e8-9b50-774096dd3313",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Physics Ch1 - Pages 4-22"
     },
     {
       "id": "6d4f4a50-51be-4bfc-97a9-4980be2edca5",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Physics Ch1 - Pages 4-22",
       "total_pages": 19,
       "processing_status": "completed",
       "created_at": "2025-11-24T14:21:51.768949+00:00",
       "subject_id": "58a9ab51-9585-41e8-9b50-774096dd3313",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Physics Ch1 - Pages 4-22"
     },
     {
       "id": "9762c9ea-3e14-4dae-af10-66ff7f3014cc",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Chemistry Ch1 - Pages 2-27",
       "total_pages": 26,
       "processing_status": "completed",
       "created_at": "2025-11-24T14:46:57.803647+00:00",
       "subject_id": "ff37abd6-9291-4754-a0c2-379c91e4847a",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Chemistry Ch1 - Pages 2-27"
     },
     {
       "id": "93714bae-1077-4510-825d-905a57bdfb98",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Biology Ch1 - Pages 3-20",
       "total_pages": 18,
       "processing_status": "completed",
       "created_at": "2025-11-26T14:21:03.177826+00:00",
       "subject_id": "7dd77245-6d94-4f28-93a6-a55f291ae220",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Biology Ch1 - Pages 3-20"
     },
     {
       "id": "e6239a81-99a1-4296-887d-7f3679c65566",
       "user_id": "9a483b1b-77b7-4aa0-a2e3-1b6a56a6bc50",
-      "title": "Science Ch1 - Pages 1-13",
       "total_pages": 13,
       "processing_status": "completed",
       "created_at": "2025-11-29T06:15:10.236212+00:00",
       "subject_id": "916f6d9f-4124-4b6a-a01d-e68b3b622e2b",
-      "class_id": "a1982a1a-9339-4915-b15c-40999d60eac2"
+      "class_id": "a1982a1a-9339-4915-b15c-40999d60eac2",
+      "file_name": "Science Ch1 - Pages 1-13"
     },
     {
       "id": "1243c6a2-65e0-4d23-be43-9cb21c260f39",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Biology Ch2 - Pages 21-38",
       "total_pages": 18,
       "processing_status": "completed",
       "created_at": "2025-11-29T07:50:22.651684+00:00",
       "subject_id": "7dd77245-6d94-4f28-93a6-a55f291ae220",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Biology Ch2 - Pages 21-38"
     },
     {
       "id": "4e6e5d6e-4f29-47cb-8134-2fee6045b4e9",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Biology Ch4 - Pages 51-64",
       "total_pages": 14,
       "processing_status": "completed",
       "created_at": "2025-11-29T08:11:19.590611+00:00",
       "subject_id": "7dd77245-6d94-4f28-93a6-a55f291ae220",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Biology Ch4 - Pages 51-64"
     },
     {
       "id": "81f05f16-a866-40d6-97c1-70a7bc23ac3a",
       "user_id": "32383bef-bf66-4b8e-81e8-69d1bea635bd",
-      "title": "Physics Ch1 - Pages 24-42",
       "total_pages": 19,
       "processing_status": "completed",
       "created_at": "2026-03-05T14:40:16.911833+00:00",
       "subject_id": "58a9ab51-9585-41e8-9b50-774096dd3313",
-      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35"
+      "class_id": "7dfa7970-1ac0-4f55-8a45-564654739c35",
+      "file_name": "Physics Ch1 - Pages 24-42"
     }
   ],
   "document_pages": [

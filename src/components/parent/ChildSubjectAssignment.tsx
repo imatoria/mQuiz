@@ -97,6 +97,7 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
         description: `${selectedSubjects.length} subjects assigned to ${childName}`,
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to assign subjects",
         description: error.message,

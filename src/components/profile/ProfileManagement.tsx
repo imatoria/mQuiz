@@ -159,6 +159,7 @@ export const ProfileManagement = () => {
         description: 'Profile updated successfully',
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Error',
         description: error.message,

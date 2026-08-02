@@ -94,6 +94,7 @@ export const ExportManager = () => {
       setTestList(tests || []);
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to fetch data",
@@ -145,6 +146,7 @@ export const ExportManager = () => {
       return exportData;
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to fetch export data",
@@ -260,6 +262,7 @@ export const ExportManager = () => {
       });
       
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to generate PDF",
@@ -327,6 +330,7 @@ export const ExportManager = () => {
       });
       
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to generate Excel file",

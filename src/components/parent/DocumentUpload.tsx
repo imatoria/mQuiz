@@ -29,8 +29,6 @@ export const DocumentUpload = ({
 }: DocumentUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [originalFileName, setOriginalFileName] = useState('');
-  const [title, setTitle] = useState('');
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [subject, setSubject] = useState('');
   const [classLevel, setClassLevel] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -103,49 +101,7 @@ export const DocumentUpload = ({
 
     fetchUsedPages();
   }, [subject, classLevel]);
-  const generateTitleWithPages = () => {
-    if (!originalFileName) return '';
-    const baseName = originalFileName.replace(/\.pdf$/i, '');
-    if (selectedPages.length === 0) {
-      return baseName;
-    } else if (selectedPages.length === 1) {
-      return `${baseName} - Page ${selectedPages[0]}`;
-    } else {
-      // Sort pages and create ranges
-      const sortedPages = [...selectedPages].sort((a, b) => a - b);
-      const ranges: string[] = [];
-      let rangeStart = sortedPages[0];
-      let rangeEnd = sortedPages[0];
-      for (let i = 1; i < sortedPages.length; i++) {
-        if (sortedPages[i] === rangeEnd + 1) {
-          rangeEnd = sortedPages[i];
-        } else {
-          if (rangeStart === rangeEnd) {
-            ranges.push(`${rangeStart}`);
-          } else {
-            ranges.push(`${rangeStart}-${rangeEnd}`);
-          }
-          rangeStart = sortedPages[i];
-          rangeEnd = sortedPages[i];
-        }
-      }
 
-      // Add the last range
-      if (rangeStart === rangeEnd) {
-        ranges.push(`${rangeStart}`);
-      } else {
-        ranges.push(`${rangeStart}-${rangeEnd}`);
-      }
-      return `${baseName} - Pages ${ranges.join(', ')}`;
-    }
-  };
-
-  // Update title when pages selection changes
-  React.useEffect(() => {
-    if (!isEditingTitle && originalFileName) {
-      setTitle(generateTitleWithPages());
-    }
-  }, [selectedPages, originalFileName, isEditingTitle]);
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
     if (!selectedFile || selectedFile.type !== 'application/pdf') {
@@ -164,10 +120,7 @@ export const DocumentUpload = ({
       return;
     }
     setFile(selectedFile);
-    const fileName = selectedFile.name.replace(/\.pdf$/i, '');
     setOriginalFileName(selectedFile.name);
-    setTitle(fileName);
-    setIsEditingTitle(false);
 
     // Detect pages using pdf.js
     try {
@@ -196,23 +149,9 @@ export const DocumentUpload = ({
       setLoadingPages(false);
     }
   };
-  const handleTitleToggle = () => {
-    if (isEditingTitle) {
-      setIsEditingTitle(false);
-      setTitle(generateTitleWithPages());
-    } else {
-      setIsEditingTitle(true);
-    }
-  };
-  const handleTitleChange = (newTitle: string) => {
-    setTitle(newTitle);
-    // If user manually changes title, don't auto-update it anymore for this session
-    if (newTitle !== generateTitleWithPages()) {
-      setIsEditingTitle(true);
-    }
-  };
+
   const handleUpload = async () => {
-    if (!file || !title || !subject || !classLevel) {
+    if (!file || !subject || !classLevel) {
       toast({
         title: "Missing information",
         description: "Please fill in all fields and select a file.",
@@ -234,8 +173,8 @@ export const DocumentUpload = ({
 
       const newDocId = crypto.randomUUID();
       const { error: dbError } = await dbService.getProvider().execute(
-        'INSERT INTO documents (id, user_id, title, subject_id, class_id, processing_status, total_pages) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [newDocId, user.id, title, subject, classLevel, 'completed', selectedPages.length > 0 ? selectedPages.length : doc.numPages]
+        'INSERT INTO documents (id, user_id, file_name, subject_id, class_id, processing_status, total_pages) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [newDocId, user.id, originalFileName, subject, classLevel, 'completed', selectedPages.length > 0 ? selectedPages.length : doc.numPages]
       );
       if (dbError) throw dbError;
       const documentData = { id: newDocId };
@@ -358,17 +297,15 @@ export const DocumentUpload = ({
         description: `${selectedPages.length} ${selectedPages.length === 1 ? 'page' : 'pages'} stored with original page numbers.`,
       });
 
-      // Reset form
       setFile(null);
       setOriginalFileName('');
-      setTitle('');
       setSubject('');
       setClassLevel('');
       setSelectedPages([]);
       setAvailablePages([]);
-      setIsEditingTitle(false);
       onDocumentUploaded();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Upload failed",
         description: error.message,
@@ -397,15 +334,6 @@ export const DocumentUpload = ({
             </div>}
         </div>
 
-        <div>
-          <Label htmlFor="title">Title</Label>
-          <div className="flex gap-2 mt-1">
-            <Input id="title" value={title} onChange={e => handleTitleChange(e.target.value)} placeholder="Enter title" className="flex-1" readOnly={!isEditingTitle} />
-            {originalFileName && <Button type="button" variant="outline" size="icon" onClick={handleTitleToggle} title={isEditingTitle ? 'Switch to Automatic title' : 'Switch to Manual title'}>
-                {isEditingTitle ? <Sparkles className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
-              </Button>}
-          </div>
-        </div>
 
         <div>
           <Label htmlFor="subject">Subject</Label>
@@ -464,7 +392,7 @@ export const DocumentUpload = ({
           </div>
         </div>
  
-        <Button onClick={handleUpload} disabled={!file || !title || !subject || !classLevel || isUploading || numPages === 0 || selectedPages.length === 0 || selectedPages.length > numPages} className="w-full">
+        <Button onClick={handleUpload} disabled={!file || !subject || !classLevel || isUploading || numPages === 0 || selectedPages.length === 0 || selectedPages.length > numPages} className="w-full">
           {isUploading ? <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Uploading...

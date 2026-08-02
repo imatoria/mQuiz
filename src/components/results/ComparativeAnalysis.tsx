@@ -131,6 +131,7 @@ export const ComparativeAnalysis = () => {
       }
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to fetch comparison data",

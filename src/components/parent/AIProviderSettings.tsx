@@ -93,6 +93,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
       setProviders((providersData || []).filter((p: any) => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
       setUserKeys(keysData || []);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error fetching AI providers",
         description: error.message,
@@ -165,6 +166,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
       onSettingsUpdate?.();
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to save API key",
         description: error.message || "Server-side encryption failed",
@@ -197,6 +199,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
       onSettingsUpdate?.();
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to delete API key",
         description: error.message,
@@ -236,6 +239,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
       onSettingsUpdate?.();
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Failed to clear API key",
         description: error.message,

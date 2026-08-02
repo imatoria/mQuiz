@@ -31,6 +31,7 @@ export const SubjectManagementParent = () => {
       setNewDescription('');
       setIsAdding(false);
     } catch (error: any) {
+      console.error('Silenced Error:', error);
       toast.error(error.message || 'Failed to add subject');
     }
   };
@@ -49,6 +50,7 @@ export const SubjectManagementParent = () => {
       toast.success('Subject updated successfully');
       setEditingId(null);
     } catch (error: any) {
+      console.error('Silenced Error:', error);
       toast.error(error.message || 'Failed to update subject');
     }
   };
@@ -60,6 +62,7 @@ export const SubjectManagementParent = () => {
       await deleteSubject(id);
       toast.success('Subject deleted successfully');
     } catch (error: any) {
+      console.error('Silenced Error:', error);
       toast.error(error.message || 'Failed to delete subject');
     }
   };

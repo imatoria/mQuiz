@@ -126,6 +126,7 @@ export const PapersManager: React.FC = () => {
 
       handleRefresh();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Delete failed",
         description: error.message,
@@ -150,6 +151,7 @@ export const PapersManager: React.FC = () => {
 
       handleRefresh();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Restore failed",
         description: error.message,
@@ -295,6 +297,7 @@ export const PapersManager: React.FC = () => {
         printWindow.print();
       };
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Print failed",
         description: error.message,

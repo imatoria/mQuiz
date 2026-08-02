@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS child_subject_assignments (
 CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  title TEXT NOT NULL,
+  file_name TEXT NOT NULL,
   class_id TEXT,
   subject_id TEXT,
   total_pages INTEGER DEFAULT 0,

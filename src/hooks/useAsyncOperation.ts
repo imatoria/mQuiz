@@ -32,6 +32,7 @@ export const useAsyncOperation = (options: UseAsyncOperationOptions = {}) => {
       
       return result;
     } catch (err) {
+      console.error('Silenced Error:', err);
       handleError(err);
       return undefined;
     } finally {

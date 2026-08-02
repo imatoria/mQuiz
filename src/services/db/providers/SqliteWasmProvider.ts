@@ -78,6 +78,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       const results = this.evaluateQuery<T>(sql, params);
       return { data: results, error: null, count: results.length };
     } catch (err: any) {
+      console.error('Silenced Error:', err);
       return { data: null, error: err };
     }
   }
@@ -97,6 +98,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       this.persist();
       return { success: true, changes };
     } catch (err: any) {
+      console.error('Silenced Error:', err);
       return { success: false, error: err };
     }
   }
@@ -110,6 +112,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       this.persist();
       return { success: true };
     } catch (err: any) {
+      console.error('Silenced Error:', err);
       return { success: false, error: err };
     }
   }

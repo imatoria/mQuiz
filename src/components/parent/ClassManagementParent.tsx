@@ -28,6 +28,7 @@ export const ClassManagementParent = () => {
       setNewClassName('');
       setIsAdding(false);
     } catch (error: any) {
+      console.error('Silenced Error:', error);
       toast.error(error.message || 'Failed to add class');
     }
   };
@@ -43,6 +44,7 @@ export const ClassManagementParent = () => {
       toast.success('Class updated successfully');
       setEditingId(null);
     } catch (error: any) {
+      console.error('Silenced Error:', error);
       toast.error(error.message || 'Failed to update class');
     }
   };
@@ -54,6 +56,7 @@ export const ClassManagementParent = () => {
       await deleteClass(id);
       toast.success('Class deleted successfully');
     } catch (error: any) {
+      console.error('Silenced Error:', error);
       toast.error(error.message || 'Failed to delete class');
     }
   };

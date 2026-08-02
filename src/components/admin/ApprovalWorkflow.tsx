@@ -51,6 +51,7 @@ export const ApprovalWorkflow = () => {
       if (error) throw error;
       setPendingUsers(data || []);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to load pending users',
@@ -108,6 +109,7 @@ export const ApprovalWorkflow = () => {
       });
 
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Error',
         description: error.message,

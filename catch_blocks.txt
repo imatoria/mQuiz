@@ -1,0 +1,800 @@
+
+> src\components\admin\AdminAIProviderConfig.tsx:61:    } catch (error: any) {
+  src\components\admin\AdminAIProviderConfig.tsx:62:      toast({
+  src\components\admin\AdminAIProviderConfig.tsx:63:        title: "Error fetching AI providers",
+  src\components\admin\AdminAIProviderConfig.tsx:64:        description: error.message,
+  src\components\admin\AdminAIProviderConfig.tsx:65:        variant: "destructive",
+  src\components\admin\AdminAIProviderConfig.tsx:66:      });
+> src\components\admin\AdminAIProviderConfig.tsx:134:    } catch (error: any) {
+  src\components\admin\AdminAIProviderConfig.tsx:135:      toast({
+  src\components\admin\AdminAIProviderConfig.tsx:136:        title: "Failed to save provider",
+  src\components\admin\AdminAIProviderConfig.tsx:137:        description: error.message,
+  src\components\admin\AdminAIProviderConfig.tsx:138:        variant: "destructive",
+  src\components\admin\AdminAIProviderConfig.tsx:139:      });
+> src\components\admin\AdminAIProviderConfig.tsx:162:    } catch (error: any) {
+  src\components\admin\AdminAIProviderConfig.tsx:163:      toast({
+  src\components\admin\AdminAIProviderConfig.tsx:164:        title: "Error updating provider status",
+  src\components\admin\AdminAIProviderConfig.tsx:165:        description: error.message,
+  src\components\admin\AdminAIProviderConfig.tsx:166:        variant: "destructive",
+  src\components\admin\AdminAIProviderConfig.tsx:167:      });
+> src\components\admin\AdminAIProviderConfig.tsx:190:    } catch (error: any) {
+  src\components\admin\AdminAIProviderConfig.tsx:191:      toast({
+  src\components\admin\AdminAIProviderConfig.tsx:192:        title: "Failed to delete provider",
+  src\components\admin\AdminAIProviderConfig.tsx:193:        description: error.message,
+  src\components\admin\AdminAIProviderConfig.tsx:194:        variant: "destructive",
+  src\components\admin\AdminAIProviderConfig.tsx:195:      });
+> src\components\admin\ApprovalWorkflow.tsx:53:    } catch (error: any) {
+  src\components\admin\ApprovalWorkflow.tsx:54:      toast({
+  src\components\admin\ApprovalWorkflow.tsx:55:        title: 'Error',
+  src\components\admin\ApprovalWorkflow.tsx:56:        description: 'Failed to load pending users',
+  src\components\admin\ApprovalWorkflow.tsx:57:        variant: 'destructive',
+  src\components\admin\ApprovalWorkflow.tsx:58:      });
+> src\components\admin\ApprovalWorkflow.tsx:110:    } catch (error: any) {
+  src\components\admin\ApprovalWorkflow.tsx:111:      toast({
+  src\components\admin\ApprovalWorkflow.tsx:112:        title: 'Error',
+  src\components\admin\ApprovalWorkflow.tsx:113:        description: error.message,
+  src\components\admin\ApprovalWorkflow.tsx:114:        variant: 'destructive',
+  src\components\admin\ApprovalWorkflow.tsx:115:      });
+> src\components\admin\ContentModeration.tsx:154:    } catch (error: any) {
+  src\components\admin\ContentModeration.tsx:155:      toast({
+  src\components\admin\ContentModeration.tsx:156:        title: "Error fetching content",
+  src\components\admin\ContentModeration.tsx:157:        description: error.message,
+  src\components\admin\ContentModeration.tsx:158:        variant: "destructive",
+  src\components\admin\ContentModeration.tsx:159:      });
+> src\components\admin\ContentModeration.tsx:182:    } catch (error: any) {
+  src\components\admin\ContentModeration.tsx:183:      toast({
+  src\components\admin\ContentModeration.tsx:184:        title: "Error updating pages status",
+  src\components\admin\ContentModeration.tsx:185:        description: error.message,
+  src\components\admin\ContentModeration.tsx:186:        variant: "destructive",
+  src\components\admin\ContentModeration.tsx:187:      });
+> src\components\admin\SecurityDashboard.tsx:95:    } catch (error: any) {
+  src\components\admin\SecurityDashboard.tsx:96:      toast({
+  src\components\admin\SecurityDashboard.tsx:97:        title: "Error fetching security data",
+  src\components\admin\SecurityDashboard.tsx:98:        description: error.message,
+  src\components\admin\SecurityDashboard.tsx:99:        variant: "destructive",
+  src\components\admin\SecurityDashboard.tsx:100:      });
+> src\components\admin\SystemAnalytics.tsx:214:    } catch (error: any) {
+  src\components\admin\SystemAnalytics.tsx:215:      toast({
+  src\components\admin\SystemAnalytics.tsx:216:        title: "Error fetching analytics",
+  src\components\admin\SystemAnalytics.tsx:217:        description: error.message,
+  src\components\admin\SystemAnalytics.tsx:218:        variant: "destructive",
+  src\components\admin\SystemAnalytics.tsx:219:      });
+> src\components\admin\SystemAPIKeys.tsx:56:    } catch (error: any) {
+  src\components\admin\SystemAPIKeys.tsx:57:      toast({
+  src\components\admin\SystemAPIKeys.tsx:58:        title: "Error fetching AI providers",
+  src\components\admin\SystemAPIKeys.tsx:59:        description: error.message,
+  src\components\admin\SystemAPIKeys.tsx:60:        variant: "destructive",
+  src\components\admin\SystemAPIKeys.tsx:61:      });
+> src\components\admin\SystemAPIKeys.tsx:119:    } catch (error: any) {
+  src\components\admin\SystemAPIKeys.tsx:120:      toast({
+  src\components\admin\SystemAPIKeys.tsx:121:        title: "Error",
+  src\components\admin\SystemAPIKeys.tsx:122:        description: "Failed to save API keys. Please try again.",
+  src\components\admin\SystemAPIKeys.tsx:123:        variant: "destructive"
+  src\components\admin\SystemAPIKeys.tsx:124:      });
+> src\components\admin\SystemSettings.tsx:101:    } catch (error: any) {
+  src\components\admin\SystemSettings.tsx:102:      toast({
+  src\components\admin\SystemSettings.tsx:103:        title: "Failed to save settings",
+  src\components\admin\SystemSettings.tsx:104:        description: error.message,
+  src\components\admin\SystemSettings.tsx:105:        variant: "destructive",
+  src\components\admin\SystemSettings.tsx:106:      });
+> src\components\admin\UserManagement.tsx:61:    } catch (error: any) {
+  src\components\admin\UserManagement.tsx:62:      toast({
+  src\components\admin\UserManagement.tsx:63:        title: "Error fetching users",
+  src\components\admin\UserManagement.tsx:64:        description: error.message,
+  src\components\admin\UserManagement.tsx:65:        variant: "destructive",
+  src\components\admin\UserManagement.tsx:66:      });
+> src\components\admin\UserManagement.tsx:89:    } catch (error: any) {
+  src\components\admin\UserManagement.tsx:90:      toast({
+  src\components\admin\UserManagement.tsx:91:        title: "Error updating user status",
+  src\components\admin\UserManagement.tsx:92:        description: error.message,
+  src\components\admin\UserManagement.tsx:93:        variant: "destructive",
+  src\components\admin\UserManagement.tsx:94:      });
+> src\components\admin\UserManagement.tsx:122:    } catch (error: any) {
+  src\components\admin\UserManagement.tsx:123:      toast({
+  src\components\admin\UserManagement.tsx:124:        title: "Error updating user role",
+  src\components\admin\UserManagement.tsx:125:        description: error.message || "Unauthorized role change or admin limit exceeded",
+  src\components\admin\UserManagement.tsx:126:        variant: "destructive",
+  src\components\admin\UserManagement.tsx:127:      });
+> src\components\announcements\AnnouncementSystem.tsx:127:    } catch (error) {
+  src\components\announcements\AnnouncementSystem.tsx:128:      console.error('Error fetching announcements:', error);
+  src\components\announcements\AnnouncementSystem.tsx:129:      toast({
+  src\components\announcements\AnnouncementSystem.tsx:130:        title: 'Error',
+  src\components\announcements\AnnouncementSystem.tsx:131:        description: 'Failed to load announcements',
+  src\components\announcements\AnnouncementSystem.tsx:132:        variant: 'destructive',
+> src\components\announcements\AnnouncementSystem.tsx:185:    } catch (error) {
+  src\components\announcements\AnnouncementSystem.tsx:186:      console.error('Error creating announcement:', error);
+  src\components\announcements\AnnouncementSystem.tsx:187:      toast({
+  src\components\announcements\AnnouncementSystem.tsx:188:        title: 'Error',
+  src\components\announcements\AnnouncementSystem.tsx:189:        description: 'Failed to create announcement',
+  src\components\announcements\AnnouncementSystem.tsx:190:        variant: 'destructive',
+> src\components\announcements\AnnouncementSystem.tsx:216:    } catch (error) {
+  src\components\announcements\AnnouncementSystem.tsx:217:      console.error('Error creating notifications:', error);
+  src\components\announcements\AnnouncementSystem.tsx:218:    }
+  src\components\announcements\AnnouncementSystem.tsx:219:  };
+  src\components\announcements\AnnouncementSystem.tsx:220:
+  src\components\announcements\AnnouncementSystem.tsx:221:  const markAsRead = async (announcementId: string) => {
+> src\components\announcements\AnnouncementSystem.tsx:239:    } catch (error) {
+  src\components\announcements\AnnouncementSystem.tsx:240:      console.error('Error marking announcement as read:', error);
+  src\components\announcements\AnnouncementSystem.tsx:241:    }
+  src\components\announcements\AnnouncementSystem.tsx:242:  };
+  src\components\announcements\AnnouncementSystem.tsx:243:
+  src\components\announcements\AnnouncementSystem.tsx:244:  const toggleAnnouncementStatus = async (announcementId: string, isActive: boolean) => {
+> src\components\announcements\AnnouncementSystem.tsx:259:    } catch (error) {
+  src\components\announcements\AnnouncementSystem.tsx:260:      console.error('Error toggling announcement status:', error);
+  src\components\announcements\AnnouncementSystem.tsx:261:      toast({
+  src\components\announcements\AnnouncementSystem.tsx:262:        title: 'Error',
+  src\components\announcements\AnnouncementSystem.tsx:263:        description: 'Failed to update announcement status',
+  src\components\announcements\AnnouncementSystem.tsx:264:        variant: 'destructive',
+> src\components\auth\AuthPage.tsx:122:    } catch (error: any) {
+  src\components\auth\AuthPage.tsx:123:      setError(error.message || 'An unexpected error occurred');
+  src\components\auth\AuthPage.tsx:124:    } finally {
+  src\components\auth\AuthPage.tsx:125:      setIsLoading(false);
+  src\components\auth\AuthPage.tsx:126:    }
+  src\components\auth\AuthPage.tsx:127:  };
+> src\components\communications\EmailNotificationSettings.tsx:75:    } catch (error) {
+  src\components\communications\EmailNotificationSettings.tsx:76:      console.error('Error loading email settings:', error);
+  src\components\communications\EmailNotificationSettings.tsx:77:    }
+  src\components\communications\EmailNotificationSettings.tsx:78:  };
+  src\components\communications\EmailNotificationSettings.tsx:79:
+  src\components\communications\EmailNotificationSettings.tsx:80:  const saveEmailSettings = async (newSettings: EmailSettings) => {
+> src\components\communications\EmailNotificationSettings.tsx:88:    } catch (error) {
+  src\components\communications\EmailNotificationSettings.tsx:89:      console.error('Error saving email settings:', error);
+  src\components\communications\EmailNotificationSettings.tsx:90:      toast({
+  src\components\communications\EmailNotificationSettings.tsx:91:        title: 'Error',
+  src\components\communications\EmailNotificationSettings.tsx:92:        description: 'Failed to save settings',
+  src\components\communications\EmailNotificationSettings.tsx:93:        variant: 'destructive',
+> src\components\communications\EmailNotificationSettings.tsx:108:    } catch (error) {
+  src\components\communications\EmailNotificationSettings.tsx:109:      console.error('Error loading email queue:', error);
+  src\components\communications\EmailNotificationSettings.tsx:110:      toast({
+  src\components\communications\EmailNotificationSettings.tsx:111:        title: 'Error',
+  src\components\communications\EmailNotificationSettings.tsx:112:        description: 'Failed to load email queue',
+  src\components\communications\EmailNotificationSettings.tsx:113:        variant: 'destructive',
+> src\components\communications\EmailNotificationSettings.tsx:147:    } catch (error) {
+  src\components\communications\EmailNotificationSettings.tsx:148:      console.error('Error sending test email:', error);
+  src\components\communications\EmailNotificationSettings.tsx:149:      toast({
+  src\components\communications\EmailNotificationSettings.tsx:150:        title: 'Error',
+  src\components\communications\EmailNotificationSettings.tsx:151:        description: 'Failed to queue test email',
+  src\components\communications\EmailNotificationSettings.tsx:152:        variant: 'destructive',
+> src\components\communications\EmailNotificationSettings.tsx:174:    } catch (error) {
+  src\components\communications\EmailNotificationSettings.tsx:175:      console.error('Error retrying email:', error);
+  src\components\communications\EmailNotificationSettings.tsx:176:      toast({
+  src\components\communications\EmailNotificationSettings.tsx:177:        title: 'Error',
+  src\components\communications\EmailNotificationSettings.tsx:178:        description: 'Failed to retry email',
+  src\components\communications\EmailNotificationSettings.tsx:179:        variant: 'destructive',
+> src\components\messaging\MessageCenter.tsx:111:    } catch (error) {
+  src\components\messaging\MessageCenter.tsx:112:      console.error('Error fetching messages:', error);
+  src\components\messaging\MessageCenter.tsx:113:      toast({
+  src\components\messaging\MessageCenter.tsx:114:        title: 'Error',
+  src\components\messaging\MessageCenter.tsx:115:        description: 'Failed to load messages',
+  src\components\messaging\MessageCenter.tsx:116:        variant: 'destructive',
+> src\components\messaging\MessageCenter.tsx:152:    } catch (error) {
+  src\components\messaging\MessageCenter.tsx:153:      console.error('Error fetching users:', error);
+  src\components\messaging\MessageCenter.tsx:154:    }
+  src\components\messaging\MessageCenter.tsx:155:  };
+  src\components\messaging\MessageCenter.tsx:156:
+  src\components\messaging\MessageCenter.tsx:157:  const subscribeToMessages = () => {
+> src\components\messaging\MessageCenter.tsx:197:    } catch (error) {
+  src\components\messaging\MessageCenter.tsx:198:      console.error('Error sending message:', error);
+  src\components\messaging\MessageCenter.tsx:199:      toast({
+  src\components\messaging\MessageCenter.tsx:200:        title: 'Error',
+  src\components\messaging\MessageCenter.tsx:201:        description: 'Failed to send message',
+  src\components\messaging\MessageCenter.tsx:202:        variant: 'destructive',
+> src\components\messaging\MessageCenter.tsx:233:    } catch (error) {
+  src\components\messaging\MessageCenter.tsx:234:      console.error('Error sending reply:', error);
+  src\components\messaging\MessageCenter.tsx:235:      toast({
+  src\components\messaging\MessageCenter.tsx:236:        title: 'Error',
+  src\components\messaging\MessageCenter.tsx:237:        description: 'Failed to send reply',
+  src\components\messaging\MessageCenter.tsx:238:        variant: 'destructive',
+> src\components\messaging\MessageCenter.tsx:259:    } catch (error) {
+  src\components\messaging\MessageCenter.tsx:260:      console.error('Error marking message as read:', error);
+  src\components\messaging\MessageCenter.tsx:261:    }
+  src\components\messaging\MessageCenter.tsx:262:  };
+  src\components\messaging\MessageCenter.tsx:263:
+  src\components\messaging\MessageCenter.tsx:264:  const deleteMessage = async (messageId: string) => {
+> src\components\messaging\MessageCenter.tsx:282:    } catch (error) {
+  src\components\messaging\MessageCenter.tsx:283:      console.error('Error deleting message:', error);
+  src\components\messaging\MessageCenter.tsx:284:      toast({
+  src\components\messaging\MessageCenter.tsx:285:        title: 'Error',
+  src\components\messaging\MessageCenter.tsx:286:        description: 'Failed to delete message',
+  src\components\messaging\MessageCenter.tsx:287:        variant: 'destructive',
+> src\components\notifications\NotificationCenter.tsx:85:    } catch (error) {
+  src\components\notifications\NotificationCenter.tsx:86:      console.error('Error fetching notifications:', error);
+  src\components\notifications\NotificationCenter.tsx:87:      toast({
+  src\components\notifications\NotificationCenter.tsx:88:        title: 'Error',
+  src\components\notifications\NotificationCenter.tsx:89:        description: 'Failed to load notifications',
+  src\components\notifications\NotificationCenter.tsx:90:        variant: 'destructive',
+> src\components\notifications\NotificationCenter.tsx:118:    } catch (error) {
+  src\components\notifications\NotificationCenter.tsx:119:      console.error('Error marking notification as read:', error);
+  src\components\notifications\NotificationCenter.tsx:120:    }
+  src\components\notifications\NotificationCenter.tsx:121:  };
+  src\components\notifications\NotificationCenter.tsx:122:
+  src\components\notifications\NotificationCenter.tsx:123:  const markAllAsRead = async () => {
+> src\components\notifications\NotificationCenter.tsx:136:    } catch (error) {
+  src\components\notifications\NotificationCenter.tsx:137:      console.error('Error marking all notifications as read:', error);
+  src\components\notifications\NotificationCenter.tsx:138:    }
+  src\components\notifications\NotificationCenter.tsx:139:  };
+  src\components\notifications\NotificationCenter.tsx:140:
+  src\components\notifications\NotificationCenter.tsx:141:  const deleteNotification = async (notificationId: string) => {
+> src\components\notifications\NotificationCenter.tsx:155:    } catch (error) {
+  src\components\notifications\NotificationCenter.tsx:156:      console.error('Error deleting notification:', error);
+  src\components\notifications\NotificationCenter.tsx:157:    }
+  src\components\notifications\NotificationCenter.tsx:158:  };
+  src\components\notifications\NotificationCenter.tsx:159:
+  src\components\notifications\NotificationCenter.tsx:160:  return (
+> src\components\parent\AIProviderSettings.tsx:95:    } catch (error: any) {
+  src\components\parent\AIProviderSettings.tsx:96:      toast({
+  src\components\parent\AIProviderSettings.tsx:97:        title: "Error fetching AI providers",
+  src\components\parent\AIProviderSettings.tsx:98:        description: error.message,
+  src\components\parent\AIProviderSettings.tsx:99:        variant: "destructive",
+  src\components\parent\AIProviderSettings.tsx:100:      });
+> src\components\parent\AIProviderSettings.tsx:167:    } catch (error: any) {
+  src\components\parent\AIProviderSettings.tsx:168:      toast({
+  src\components\parent\AIProviderSettings.tsx:169:        title: "Failed to save API key",
+  src\components\parent\AIProviderSettings.tsx:170:        description: error.message || "Server-side encryption failed",
+  src\components\parent\AIProviderSettings.tsx:171:        variant: "destructive",
+  src\components\parent\AIProviderSettings.tsx:172:      });
+> src\components\parent\AIProviderSettings.tsx:199:    } catch (error: any) {
+  src\components\parent\AIProviderSettings.tsx:200:      toast({
+  src\components\parent\AIProviderSettings.tsx:201:        title: "Failed to delete API key",
+  src\components\parent\AIProviderSettings.tsx:202:        description: error.message,
+  src\components\parent\AIProviderSettings.tsx:203:        variant: "destructive",
+  src\components\parent\AIProviderSettings.tsx:204:      });
+> src\components\parent\AIProviderSettings.tsx:238:    } catch (error: any) {
+  src\components\parent\AIProviderSettings.tsx:239:      toast({
+  src\components\parent\AIProviderSettings.tsx:240:        title: "Failed to clear API key",
+  src\components\parent\AIProviderSettings.tsx:241:        description: error.message,
+  src\components\parent\AIProviderSettings.tsx:242:        variant: "destructive",
+  src\components\parent\AIProviderSettings.tsx:243:      });
+> src\components\parent\AIProviderSettings.tsx:314:    } catch (error: any) {
+  src\components\parent\AIProviderSettings.tsx:315:      console.error('handleTestKey error:', error);
+  src\components\parent\AIProviderSettings.tsx:316:
+  src\components\parent\AIProviderSettings.tsx:317:      setTestResults(prev => ({
+  src\components\parent\AIProviderSettings.tsx:318:        ...prev,
+  src\components\parent\AIProviderSettings.tsx:319:        [userKey.id]: {
+> src\components\parent\AIQuestionGenerator.tsx:117:    } catch (error) {
+  src\components\parent\AIQuestionGenerator.tsx:118:      console.error('Error fetching documents:', error);
+  src\components\parent\AIQuestionGenerator.tsx:119:    }
+  src\components\parent\AIQuestionGenerator.tsx:120:  };
+  src\components\parent\AIQuestionGenerator.tsx:121:
+  src\components\parent\AIQuestionGenerator.tsx:122:  const fetchAvailablePages = async () => {
+> src\components\parent\AIQuestionGenerator.tsx:232:    } catch (error: any) {
+  src\components\parent\AIQuestionGenerator.tsx:233:      toast({
+  src\components\parent\AIQuestionGenerator.tsx:234:        title: 'Generation Failed',
+  src\components\parent\AIQuestionGenerator.tsx:235:        description: error.message || 'Failed to generate questions. Please try again.',
+  src\components\parent\AIQuestionGenerator.tsx:236:        variant: 'destructive',
+  src\components\parent\AIQuestionGenerator.tsx:237:      });
+> src\components\parent\BookManager.tsx:128:    } catch (error: any) {
+  src\components\parent\BookManager.tsx:129:      toast({
+  src\components\parent\BookManager.tsx:130:        title: 'Error',
+  src\components\parent\BookManager.tsx:131:        description: error.message,
+  src\components\parent\BookManager.tsx:132:        variant: 'destructive'
+  src\components\parent\BookManager.tsx:133:      });
+> src\components\parent\BookManager.tsx:165:    } catch (error: any) {
+  src\components\parent\BookManager.tsx:166:      toast({
+  src\components\parent\BookManager.tsx:167:        title: 'Error',
+  src\components\parent\BookManager.tsx:168:        description: 'Failed to save page content',
+  src\components\parent\BookManager.tsx:169:        variant: 'destructive'
+  src\components\parent\BookManager.tsx:170:      });
+> src\components\parent\BookManager.tsx:198:    } catch (error: any) {
+  src\components\parent\BookManager.tsx:199:      toast({
+  src\components\parent\BookManager.tsx:200:        title: 'Error',
+  src\components\parent\BookManager.tsx:201:        description: 'Failed to delete page',
+  src\components\parent\BookManager.tsx:202:        variant: 'destructive'
+  src\components\parent\BookManager.tsx:203:      });
+> src\components\parent\BookManager.tsx:232:    } catch (error: any) {
+  src\components\parent\BookManager.tsx:233:      toast({
+  src\components\parent\BookManager.tsx:234:        title: 'Error',
+  src\components\parent\BookManager.tsx:235:        description: 'Failed to delete pages',
+  src\components\parent\BookManager.tsx:236:        variant: 'destructive'
+  src\components\parent\BookManager.tsx:237:      });
+> src\components\parent\BulkQuestionOperations.tsx:174:    } catch (error) {
+  src\components\parent\BulkQuestionOperations.tsx:175:      console.error('Import error:', error);
+  src\components\parent\BulkQuestionOperations.tsx:176:      setImportResult({
+  src\components\parent\BulkQuestionOperations.tsx:177:        success: 0,
+  src\components\parent\BulkQuestionOperations.tsx:178:        errors: [error instanceof Error ? error.message : 'Unknown error occurred'],
+  src\components\parent\BulkQuestionOperations.tsx:179:        total: 0
+> src\components\parent\BulkQuestionOperations.tsx:287:    } catch (error) {
+  src\components\parent\BulkQuestionOperations.tsx:288:      console.error('Export error:', error);
+  src\components\parent\BulkQuestionOperations.tsx:289:      toast({
+  src\components\parent\BulkQuestionOperations.tsx:290:        title: "Error",
+  src\components\parent\BulkQuestionOperations.tsx:291:        description: "Failed to export questions.",
+  src\components\parent\BulkQuestionOperations.tsx:292:        variant: "destructive",
+> src\components\parent\ChildAcademicProfile.tsx:69:    } catch (error: any) {
+  src\components\parent\ChildAcademicProfile.tsx:70:      console.error('Error loading academic profile:', error);
+  src\components\parent\ChildAcademicProfile.tsx:71:      toast({
+  src\components\parent\ChildAcademicProfile.tsx:72:        title: "Error loading academic profile",
+  src\components\parent\ChildAcademicProfile.tsx:73:        description: error.message,
+  src\components\parent\ChildAcademicProfile.tsx:74:        variant: "destructive",
+> src\components\parent\ChildAcademicProfile.tsx:150:    } catch (error: any) {
+  src\components\parent\ChildAcademicProfile.tsx:151:      toast({
+  src\components\parent\ChildAcademicProfile.tsx:152:        title: "Failed to update academic profile",
+  src\components\parent\ChildAcademicProfile.tsx:153:        description: error.message,
+  src\components\parent\ChildAcademicProfile.tsx:154:        variant: "destructive",
+  src\components\parent\ChildAcademicProfile.tsx:155:      });
+> src\components\parent\ChildClassAssignment.tsx:46:    } catch (error: any) {
+  src\components\parent\ChildClassAssignment.tsx:47:      console.error('Error fetching child class:', error);
+  src\components\parent\ChildClassAssignment.tsx:48:    } finally {
+  src\components\parent\ChildClassAssignment.tsx:49:      setIsLoading(false);
+  src\components\parent\ChildClassAssignment.tsx:50:    }
+  src\components\parent\ChildClassAssignment.tsx:51:  };
+> src\components\parent\ChildClassAssignment.tsx:88:    } catch (error: any) {
+  src\components\parent\ChildClassAssignment.tsx:89:      toast({
+  src\components\parent\ChildClassAssignment.tsx:90:        title: "Failed to assign class",
+  src\components\parent\ChildClassAssignment.tsx:91:        description: error.message,
+  src\components\parent\ChildClassAssignment.tsx:92:        variant: "destructive",
+  src\components\parent\ChildClassAssignment.tsx:93:      });
+> src\components\parent\ChildPermissionManager.tsx:94:    } catch (error: any) {
+  src\components\parent\ChildPermissionManager.tsx:95:      toast({
+  src\components\parent\ChildPermissionManager.tsx:96:        title: "Error fetching children",
+  src\components\parent\ChildPermissionManager.tsx:97:        description: error.message,
+  src\components\parent\ChildPermissionManager.tsx:98:        variant: "destructive",
+  src\components\parent\ChildPermissionManager.tsx:99:      });
+> src\components\parent\ChildPermissionManager.tsx:123:    } catch (error: any) {
+  src\components\parent\ChildPermissionManager.tsx:124:      toast({
+  src\components\parent\ChildPermissionManager.tsx:125:        title: "Failed to save permissions",
+  src\components\parent\ChildPermissionManager.tsx:126:        description: error.message,
+  src\components\parent\ChildPermissionManager.tsx:127:        variant: "destructive",
+  src\components\parent\ChildPermissionManager.tsx:128:      });
+> src\components\parent\ChildrenManagement.tsx:133:    } catch (error: any) {
+  src\components\parent\ChildrenManagement.tsx:134:      console.error('ChildrenManagement: Error fetching children:', error);
+  src\components\parent\ChildrenManagement.tsx:135:      toast({
+  src\components\parent\ChildrenManagement.tsx:136:        title: "Error fetching children",
+  src\components\parent\ChildrenManagement.tsx:137:        description: error.message,
+  src\components\parent\ChildrenManagement.tsx:138:        variant: "destructive",
+> src\components\parent\ChildrenManagement.tsx:189:    } catch (error: any) {
+  src\components\parent\ChildrenManagement.tsx:190:      toast({
+  src\components\parent\ChildrenManagement.tsx:191:        title: "Failed to add child",
+  src\components\parent\ChildrenManagement.tsx:192:        description: error.message,
+  src\components\parent\ChildrenManagement.tsx:193:        variant: "destructive",
+  src\components\parent\ChildrenManagement.tsx:194:      });
+> src\components\parent\ChildrenManagement.tsx:224:    } catch (error: any) {
+  src\components\parent\ChildrenManagement.tsx:225:      toast({
+  src\components\parent\ChildrenManagement.tsx:226:        title: "Failed to remove child",
+  src\components\parent\ChildrenManagement.tsx:227:        description: error.message,
+  src\components\parent\ChildrenManagement.tsx:228:        variant: "destructive",
+  src\components\parent\ChildrenManagement.tsx:229:      });
+> src\components\parent\ChildrenManagement.tsx:250:    } catch (error: any) {
+  src\components\parent\ChildrenManagement.tsx:251:      toast({
+  src\components\parent\ChildrenManagement.tsx:252:        title: "Failed to update status",
+  src\components\parent\ChildrenManagement.tsx:253:        description: error.message,
+  src\components\parent\ChildrenManagement.tsx:254:        variant: "destructive",
+  src\components\parent\ChildrenManagement.tsx:255:      });
+> src\components\parent\ChildSubjectAssignment.tsx:47:    } catch (error: any) {
+  src\components\parent\ChildSubjectAssignment.tsx:48:      console.error('Error fetching subject data:', error);
+  src\components\parent\ChildSubjectAssignment.tsx:49:      toast({
+  src\components\parent\ChildSubjectAssignment.tsx:50:        title: "Error loading subjects",
+  src\components\parent\ChildSubjectAssignment.tsx:51:        description: error.message,
+  src\components\parent\ChildSubjectAssignment.tsx:52:        variant: "destructive",
+> src\components\parent\ChildSubjectAssignment.tsx:99:    } catch (error: any) {
+  src\components\parent\ChildSubjectAssignment.tsx:100:      toast({
+  src\components\parent\ChildSubjectAssignment.tsx:101:        title: "Failed to assign subjects",
+  src\components\parent\ChildSubjectAssignment.tsx:102:        description: error.message,
+  src\components\parent\ChildSubjectAssignment.tsx:103:        variant: "destructive",
+  src\components\parent\ChildSubjectAssignment.tsx:104:      });
+> src\components\parent\ClassManagementParent.tsx:30:    } catch (error: any) {
+  src\components\parent\ClassManagementParent.tsx:31:      toast.error(error.message || 'Failed to add class');
+  src\components\parent\ClassManagementParent.tsx:32:    }
+  src\components\parent\ClassManagementParent.tsx:33:  };
+  src\components\parent\ClassManagementParent.tsx:34:
+  src\components\parent\ClassManagementParent.tsx:35:  const handleUpdate = async (id: string) => {
+> src\components\parent\ClassManagementParent.tsx:45:    } catch (error: any) {
+  src\components\parent\ClassManagementParent.tsx:46:      toast.error(error.message || 'Failed to update class');
+  src\components\parent\ClassManagementParent.tsx:47:    }
+  src\components\parent\ClassManagementParent.tsx:48:  };
+  src\components\parent\ClassManagementParent.tsx:49:
+  src\components\parent\ClassManagementParent.tsx:50:  const handleDelete = async (id: string) => {
+> src\components\parent\ClassManagementParent.tsx:56:    } catch (error: any) {
+  src\components\parent\ClassManagementParent.tsx:57:      toast.error(error.message || 'Failed to delete class');
+  src\components\parent\ClassManagementParent.tsx:58:    }
+  src\components\parent\ClassManagementParent.tsx:59:  };
+  src\components\parent\ClassManagementParent.tsx:60:
+  src\components\parent\ClassManagementParent.tsx:61:  if (isLoading) return <LoadingState />;
+> src\components\parent\ContentSharing.tsx:124:    } catch (error) {
+  src\components\parent\ContentSharing.tsx:125:      console.error('Error fetching data:', error);
+  src\components\parent\ContentSharing.tsx:126:      toast({
+  src\components\parent\ContentSharing.tsx:127:        title: "Error",
+  src\components\parent\ContentSharing.tsx:128:        description: "Failed to load sharing data",
+  src\components\parent\ContentSharing.tsx:129:        variant: "destructive"
+> src\components\parent\ContentSharing.tsx:164:    } catch (error) {
+  src\components\parent\ContentSharing.tsx:165:      console.error('Error sharing pages:', error);
+  src\components\parent\ContentSharing.tsx:166:      toast({
+  src\components\parent\ContentSharing.tsx:167:        title: "Error",
+  src\components\parent\ContentSharing.tsx:168:        description: "Failed to share pages",
+  src\components\parent\ContentSharing.tsx:169:        variant: "destructive"
+> src\components\parent\ContentSharing.tsx:183:    } catch (error) {
+  src\components\parent\ContentSharing.tsx:184:      console.error('Error revoking share:', error);
+  src\components\parent\ContentSharing.tsx:185:      toast({
+  src\components\parent\ContentSharing.tsx:186:        title: "Error",
+  src\components\parent\ContentSharing.tsx:187:        description: "Failed to revoke share",
+  src\components\parent\ContentSharing.tsx:188:        variant: "destructive"
+> src\components\parent\DocumentLibrary.tsx:70:    } catch (error) {
+  src\components\parent\DocumentLibrary.tsx:71:      console.error('Error fetching data:', error);
+  src\components\parent\DocumentLibrary.tsx:72:      toast({
+  src\components\parent\DocumentLibrary.tsx:73:        title: "Error",
+  src\components\parent\DocumentLibrary.tsx:74:        description: "Failed to load pages",
+  src\components\parent\DocumentLibrary.tsx:75:        variant: "destructive"
+> src\components\parent\DocumentLibrary.tsx:140:    } catch (error) {
+  src\components\parent\DocumentLibrary.tsx:141:      console.error('Error regenerating questions:', error);
+  src\components\parent\DocumentLibrary.tsx:142:      toast({
+  src\components\parent\DocumentLibrary.tsx:143:        title: "Error",
+  src\components\parent\DocumentLibrary.tsx:144:        description: "Failed to regenerate questions. Please try again.",
+  src\components\parent\DocumentLibrary.tsx:145:        variant: "destructive"
+> src\components\parent\DocumentProcessingStatus.tsx:78:    } catch (error: any) {
+  src\components\parent\DocumentProcessingStatus.tsx:79:      console.error('Error fetching documents:', error);
+  src\components\parent\DocumentProcessingStatus.tsx:80:      toast({
+  src\components\parent\DocumentProcessingStatus.tsx:81:        title: "Error",
+  src\components\parent\DocumentProcessingStatus.tsx:82:        description: "Failed to fetch pages status",
+  src\components\parent\DocumentProcessingStatus.tsx:83:        variant: "destructive"
+> src\components\parent\DocumentProcessingStatus.tsx:124:    } catch (error: any) {
+  src\components\parent\DocumentProcessingStatus.tsx:125:      console.error('Error retrying document processing:', error);
+  src\components\parent\DocumentProcessingStatus.tsx:126:      toast({
+  src\components\parent\DocumentProcessingStatus.tsx:127:        title: "Retry Failed",
+  src\components\parent\DocumentProcessingStatus.tsx:128:        description: error.message || "Failed to retry pages processing",
+  src\components\parent\DocumentProcessingStatus.tsx:129:        variant: "destructive"
+> src\components\parent\DocumentUpload.tsx:95:      } catch (err) {
+  src\components\parent\DocumentUpload.tsx:96:        console.error('Failed to fetch used pages', err);
+  src\components\parent\DocumentUpload.tsx:97:      } finally {
+  src\components\parent\DocumentUpload.tsx:98:        setFetchingUsedPages(false);
+  src\components\parent\DocumentUpload.tsx:99:      }
+  src\components\parent\DocumentUpload.tsx:100:    };
+> src\components\parent\DocumentUpload.tsx:143:    } catch (err) {
+  src\components\parent\DocumentUpload.tsx:144:      console.error('Failed to read PDF pages', err);
+  src\components\parent\DocumentUpload.tsx:145:      setAvailablePages([]);
+  src\components\parent\DocumentUpload.tsx:146:      setSelectedPages([]);
+  src\components\parent\DocumentUpload.tsx:147:      setNumPages(0);
+  src\components\parent\DocumentUpload.tsx:148:    } finally {
+> src\components\parent\DocumentUpload.tsx:271:          } catch (ocrError) {
+  src\components\parent\DocumentUpload.tsx:272:            console.error(`PDF Page ${pdfPageIndex}: OCR failed:`, ocrError);
+  src\components\parent\DocumentUpload.tsx:273:            // Continue with whatever text we have
+  src\components\parent\DocumentUpload.tsx:274:          }
+  src\components\parent\DocumentUpload.tsx:275:        }
+  src\components\parent\DocumentUpload.tsx:276:        
+> src\components\parent\DocumentUpload.tsx:307:    } catch (error: any) {
+  src\components\parent\DocumentUpload.tsx:308:      toast({
+  src\components\parent\DocumentUpload.tsx:309:        title: "Upload failed",
+  src\components\parent\DocumentUpload.tsx:310:        description: error.message,
+  src\components\parent\DocumentUpload.tsx:311:        variant: "destructive"
+  src\components\parent\DocumentUpload.tsx:312:      });
+> src\components\parent\EnhancedPaperManager.tsx:114:    } catch (error) {
+  src\components\parent\EnhancedPaperManager.tsx:115:      console.error('Error loading papers:', error);
+  src\components\parent\EnhancedPaperManager.tsx:116:      toast({
+  src\components\parent\EnhancedPaperManager.tsx:117:        title: "Error",
+  src\components\parent\EnhancedPaperManager.tsx:118:        description: "Failed to load papers",
+  src\components\parent\EnhancedPaperManager.tsx:119:        variant: "destructive"
+> src\components\parent\EnhancedPaperManager.tsx:227:    } catch (error) {
+  src\components\parent\EnhancedPaperManager.tsx:228:      console.error('Error deleting paper:', error);
+  src\components\parent\EnhancedPaperManager.tsx:229:      toast({
+  src\components\parent\EnhancedPaperManager.tsx:230:        title: "Error",
+  src\components\parent\EnhancedPaperManager.tsx:231:        description: "Failed to delete paper",
+  src\components\parent\EnhancedPaperManager.tsx:232:        variant: "destructive"
+> src\components\parent\PapersManager.tsx:128:    } catch (error: any) {
+  src\components\parent\PapersManager.tsx:129:      toast({
+  src\components\parent\PapersManager.tsx:130:        title: "Delete failed",
+  src\components\parent\PapersManager.tsx:131:        description: error.message,
+  src\components\parent\PapersManager.tsx:132:        variant: "destructive",
+  src\components\parent\PapersManager.tsx:133:      });
+> src\components\parent\PapersManager.tsx:152:    } catch (error: any) {
+  src\components\parent\PapersManager.tsx:153:      toast({
+  src\components\parent\PapersManager.tsx:154:        title: "Restore failed",
+  src\components\parent\PapersManager.tsx:155:        description: error.message,
+  src\components\parent\PapersManager.tsx:156:        variant: "destructive",
+  src\components\parent\PapersManager.tsx:157:      });
+> src\components\parent\PapersManager.tsx:297:    } catch (error: any) {
+  src\components\parent\PapersManager.tsx:298:      toast({
+  src\components\parent\PapersManager.tsx:299:        title: "Print failed",
+  src\components\parent\PapersManager.tsx:300:        description: error.message,
+  src\components\parent\PapersManager.tsx:301:        variant: "destructive",
+  src\components\parent\PapersManager.tsx:302:      });
+> src\components\parent\QuestionBank.tsx:98:    } catch (error) {
+  src\components\parent\QuestionBank.tsx:99:      console.error('Error fetching data:', error);
+  src\components\parent\QuestionBank.tsx:100:      toast({
+  src\components\parent\QuestionBank.tsx:101:        title: "Error",
+  src\components\parent\QuestionBank.tsx:102:        description: "Failed to fetch questions.",
+  src\components\parent\QuestionBank.tsx:103:        variant: "destructive",
+> src\components\parent\QuestionBank.tsx:213:    } catch (error) {
+  src\components\parent\QuestionBank.tsx:214:      console.error('Error updating question:', error);
+  src\components\parent\QuestionBank.tsx:215:      toast({
+  src\components\parent\QuestionBank.tsx:216:        title: "Error",
+  src\components\parent\QuestionBank.tsx:217:        description: "Failed to update question.",
+  src\components\parent\QuestionBank.tsx:218:        variant: "destructive",
+> src\components\parent\QuestionBank.tsx:241:    } catch (error) {
+  src\components\parent\QuestionBank.tsx:242:      console.error('Error deleting question:', error);
+  src\components\parent\QuestionBank.tsx:243:      toast({
+  src\components\parent\QuestionBank.tsx:244:        title: "Error",
+  src\components\parent\QuestionBank.tsx:245:        description: "Failed to delete question.",
+  src\components\parent\QuestionBank.tsx:246:        variant: "destructive",
+> src\components\parent\QuestionPaperGenerator.tsx:206:    } catch (error: any) {
+  src\components\parent\QuestionPaperGenerator.tsx:207:      toast({
+  src\components\parent\QuestionPaperGenerator.tsx:208:        title: "Generation failed",
+  src\components\parent\QuestionPaperGenerator.tsx:209:        description: error.message,
+  src\components\parent\QuestionPaperGenerator.tsx:210:        variant: "destructive",
+  src\components\parent\QuestionPaperGenerator.tsx:211:      });
+> src\components\parent\ScheduleManager.tsx:90:    } catch (error: any) {
+  src\components\parent\ScheduleManager.tsx:91:      toast({
+  src\components\parent\ScheduleManager.tsx:92:        title: "Delete failed",
+  src\components\parent\ScheduleManager.tsx:93:        description: error.message,
+  src\components\parent\ScheduleManager.tsx:94:        variant: "destructive",
+  src\components\parent\ScheduleManager.tsx:95:      });
+> src\components\parent\SubjectManagementParent.tsx:33:    } catch (error: any) {
+  src\components\parent\SubjectManagementParent.tsx:34:      toast.error(error.message || 'Failed to add subject');
+  src\components\parent\SubjectManagementParent.tsx:35:    }
+  src\components\parent\SubjectManagementParent.tsx:36:  };
+  src\components\parent\SubjectManagementParent.tsx:37:
+  src\components\parent\SubjectManagementParent.tsx:38:  const handleUpdate = async (id: string) => {
+> src\components\parent\SubjectManagementParent.tsx:51:    } catch (error: any) {
+  src\components\parent\SubjectManagementParent.tsx:52:      toast.error(error.message || 'Failed to update subject');
+  src\components\parent\SubjectManagementParent.tsx:53:    }
+  src\components\parent\SubjectManagementParent.tsx:54:  };
+  src\components\parent\SubjectManagementParent.tsx:55:
+  src\components\parent\SubjectManagementParent.tsx:56:  const handleDelete = async (id: string) => {
+> src\components\parent\SubjectManagementParent.tsx:62:    } catch (error: any) {
+  src\components\parent\SubjectManagementParent.tsx:63:      toast.error(error.message || 'Failed to delete subject');
+  src\components\parent\SubjectManagementParent.tsx:64:    }
+  src\components\parent\SubjectManagementParent.tsx:65:  };
+  src\components\parent\SubjectManagementParent.tsx:66:
+  src\components\parent\SubjectManagementParent.tsx:67:  if (isLoading) return <LoadingState />;
+> src\components\parent\TagManagement.tsx:56:    } catch (error) {
+  src\components\parent\TagManagement.tsx:57:      console.error('Error fetching tags:', error);
+  src\components\parent\TagManagement.tsx:58:    }
+  src\components\parent\TagManagement.tsx:59:  };
+  src\components\parent\TagManagement.tsx:60:
+  src\components\parent\TagManagement.tsx:61:  const fetchDocumentTags = async () => {
+> src\components\parent\TagManagement.tsx:82:    } catch (error) {
+  src\components\parent\TagManagement.tsx:83:      console.error('Error fetching document tags:', error);
+  src\components\parent\TagManagement.tsx:84:    } finally {
+  src\components\parent\TagManagement.tsx:85:      setLoading(false);
+  src\components\parent\TagManagement.tsx:86:    }
+  src\components\parent\TagManagement.tsx:87:  };
+> src\components\parent\TagManagement.tsx:111:    } catch (error) {
+  src\components\parent\TagManagement.tsx:112:      console.error('Error creating tag:', error);
+  src\components\parent\TagManagement.tsx:113:      toast({
+  src\components\parent\TagManagement.tsx:114:        title: "Error",
+  src\components\parent\TagManagement.tsx:115:        description: "Failed to create tag",
+  src\components\parent\TagManagement.tsx:116:        variant: "destructive"
+> src\components\parent\TagManagement.tsx:129:    } catch (error) {
+  src\components\parent\TagManagement.tsx:130:      console.error('Error adding tag to document:', error);
+  src\components\parent\TagManagement.tsx:131:      toast({
+  src\components\parent\TagManagement.tsx:132:        title: "Error",
+  src\components\parent\TagManagement.tsx:133:        description: "Failed to add tag to document",
+  src\components\parent\TagManagement.tsx:134:        variant: "destructive"
+> src\components\parent\TagManagement.tsx:145:    } catch (error) {
+  src\components\parent\TagManagement.tsx:146:      console.error('Error removing tag from document:', error);
+  src\components\parent\TagManagement.tsx:147:      toast({
+  src\components\parent\TagManagement.tsx:148:        title: "Error",
+  src\components\parent\TagManagement.tsx:149:        description: "Failed to remove tag from document",
+  src\components\parent\TagManagement.tsx:150:        variant: "destructive"
+> src\components\parent\TagManagement.tsx:161:    } catch (error) {
+  src\components\parent\TagManagement.tsx:162:      console.error('Error deleting tag:', error);
+  src\components\parent\TagManagement.tsx:163:      toast({
+  src\components\parent\TagManagement.tsx:164:        title: "Error",
+  src\components\parent\TagManagement.tsx:165:        description: "Failed to delete tag",
+  src\components\parent\TagManagement.tsx:166:        variant: "destructive"
+> src\components\parent\UnifiedPaperCreator.tsx:288:    } catch (error) {
+  src\components\parent\UnifiedPaperCreator.tsx:289:      console.error('Error loading children:', error);
+  src\components\parent\UnifiedPaperCreator.tsx:290:    }
+  src\components\parent\UnifiedPaperCreator.tsx:291:  };
+  src\components\parent\UnifiedPaperCreator.tsx:292:
+  src\components\parent\UnifiedPaperCreator.tsx:293:  const loadQuestions = async () => {
+> src\components\parent\UnifiedPaperCreator.tsx:327:    } catch (error) {
+  src\components\parent\UnifiedPaperCreator.tsx:328:      console.error('Error loading questions:', error);
+  src\components\parent\UnifiedPaperCreator.tsx:329:      toast({
+  src\components\parent\UnifiedPaperCreator.tsx:330:        title: "Error",
+  src\components\parent\UnifiedPaperCreator.tsx:331:        description: "Failed to load questions",
+  src\components\parent\UnifiedPaperCreator.tsx:332:        variant: "destructive"
+> src\components\parent\UnifiedPaperCreator.tsx:369:    } catch (error) {
+  src\components\parent\UnifiedPaperCreator.tsx:370:      console.error('Error loading selected questions:', error);
+  src\components\parent\UnifiedPaperCreator.tsx:371:    }
+  src\components\parent\UnifiedPaperCreator.tsx:372:  };
+  src\components\parent\UnifiedPaperCreator.tsx:373:
+  src\components\parent\UnifiedPaperCreator.tsx:374:  const loadAvailablePages = async () => {
+> src\components\parent\UnifiedPaperCreator.tsx:388:    } catch (error) {
+  src\components\parent\UnifiedPaperCreator.tsx:389:      console.error('Error loading available pages:', error);
+  src\components\parent\UnifiedPaperCreator.tsx:390:      setAvailablePages([]);
+  src\components\parent\UnifiedPaperCreator.tsx:391:    }
+  src\components\parent\UnifiedPaperCreator.tsx:392:  };
+  src\components\parent\UnifiedPaperCreator.tsx:393:
+> src\components\parent\UnifiedPaperCreator.tsx:567:    } catch (error) {
+  src\components\parent\UnifiedPaperCreator.tsx:568:      console.error('Error saving paper:', error);
+  src\components\parent\UnifiedPaperCreator.tsx:569:      toast({
+  src\components\parent\UnifiedPaperCreator.tsx:570:        title: "Error",
+  src\components\parent\UnifiedPaperCreator.tsx:571:        description: editingPaper ? "Failed to update paper" : "Failed to create paper",
+  src\components\parent\UnifiedPaperCreator.tsx:572:        variant: "destructive"
+> src\components\parent\VersionHistory.tsx:61:    } catch (error) {
+  src\components\parent\VersionHistory.tsx:62:      console.error('Error fetching documents:', error);
+  src\components\parent\VersionHistory.tsx:63:      toast({
+  src\components\parent\VersionHistory.tsx:64:        title: "Error",
+  src\components\parent\VersionHistory.tsx:65:        description: "Failed to load pages",
+  src\components\parent\VersionHistory.tsx:66:        variant: "destructive"
+> src\components\parent\VersionHistory.tsx:120:    } catch (error) {
+  src\components\parent\VersionHistory.tsx:121:      console.error('Error fetching versions:', error);
+  src\components\parent\VersionHistory.tsx:122:      toast({
+  src\components\parent\VersionHistory.tsx:123:        title: "Error",
+  src\components\parent\VersionHistory.tsx:124:        description: "Failed to load version history",
+  src\components\parent\VersionHistory.tsx:125:        variant: "destructive"
+> src\components\parent\VersionHistory.tsx:137:    } catch (error) {
+  src\components\parent\VersionHistory.tsx:138:      console.error('Error restoring version:', error);
+  src\components\parent\VersionHistory.tsx:139:      toast({
+  src\components\parent\VersionHistory.tsx:140:        title: "Error",
+  src\components\parent\VersionHistory.tsx:141:        description: "Failed to restore version",
+  src\components\parent\VersionHistory.tsx:142:        variant: "destructive"
+> src\components\parent\VersionHistory.tsx:154:    } catch (error) {
+  src\components\parent\VersionHistory.tsx:155:      console.error('Error downloading version:', error);
+  src\components\parent\VersionHistory.tsx:156:      toast({
+  src\components\parent\VersionHistory.tsx:157:        title: "Error",
+  src\components\parent\VersionHistory.tsx:158:        description: "Failed to download version",
+  src\components\parent\VersionHistory.tsx:159:        variant: "destructive"
+> src\components\profile\ProfileManagement.tsx:108:    } catch (err) {
+  src\components\profile\ProfileManagement.tsx:109:      console.error('Error loading student academic info:', err);
+  src\components\profile\ProfileManagement.tsx:110:    }
+  src\components\profile\ProfileManagement.tsx:111:  };
+  src\components\profile\ProfileManagement.tsx:112:
+  src\components\profile\ProfileManagement.tsx:113:  const loadChildren = async () => {
+> src\components\profile\ProfileManagement.tsx:134:    } catch (error) {
+  src\components\profile\ProfileManagement.tsx:135:      console.error('Error loading children:', error);
+  src\components\profile\ProfileManagement.tsx:136:    }
+  src\components\profile\ProfileManagement.tsx:137:  };
+  src\components\profile\ProfileManagement.tsx:138:
+  src\components\profile\ProfileManagement.tsx:139:  const handleSaveProfile = async () => {
+> src\components\profile\ProfileManagement.tsx:161:    } catch (error: any) {
+  src\components\profile\ProfileManagement.tsx:162:      toast({
+  src\components\profile\ProfileManagement.tsx:163:        title: 'Error',
+  src\components\profile\ProfileManagement.tsx:164:        description: error.message,
+  src\components\profile\ProfileManagement.tsx:165:        variant: 'destructive',
+  src\components\profile\ProfileManagement.tsx:166:      });
+> src\components\results\ComparativeAnalysis.tsx:133:    } catch (error: any) {
+  src\components\results\ComparativeAnalysis.tsx:134:      toast({
+  src\components\results\ComparativeAnalysis.tsx:135:        title: "Error",
+  src\components\results\ComparativeAnalysis.tsx:136:        description: "Failed to fetch comparison data",
+  src\components\results\ComparativeAnalysis.tsx:137:        variant: "destructive"
+  src\components\results\ComparativeAnalysis.tsx:138:      });
+> src\components\results\ExportManager.tsx:96:    } catch (error: any) {
+  src\components\results\ExportManager.tsx:97:      toast({
+  src\components\results\ExportManager.tsx:98:        title: "Error",
+  src\components\results\ExportManager.tsx:99:        description: "Failed to fetch data",
+  src\components\results\ExportManager.tsx:100:        variant: "destructive"
+  src\components\results\ExportManager.tsx:101:      });
+> src\components\results\ExportManager.tsx:147:    } catch (error: any) {
+  src\components\results\ExportManager.tsx:148:      toast({
+  src\components\results\ExportManager.tsx:149:        title: "Error",
+  src\components\results\ExportManager.tsx:150:        description: "Failed to fetch export data",
+  src\components\results\ExportManager.tsx:151:        variant: "destructive"
+  src\components\results\ExportManager.tsx:152:      });
+> src\components\results\ExportManager.tsx:262:    } catch (error: any) {
+  src\components\results\ExportManager.tsx:263:      toast({
+  src\components\results\ExportManager.tsx:264:        title: "Error",
+  src\components\results\ExportManager.tsx:265:        description: "Failed to generate PDF",
+  src\components\results\ExportManager.tsx:266:        variant: "destructive"
+  src\components\results\ExportManager.tsx:267:      });
+> src\components\results\ExportManager.tsx:329:    } catch (error: any) {
+  src\components\results\ExportManager.tsx:330:      toast({
+  src\components\results\ExportManager.tsx:331:        title: "Error",
+  src\components\results\ExportManager.tsx:332:        description: "Failed to generate Excel file",
+  src\components\results\ExportManager.tsx:333:        variant: "destructive"
+  src\components\results\ExportManager.tsx:334:      });
+> src\components\results\GradeDistribution.tsx:231:    } catch (error) {
+  src\components\results\GradeDistribution.tsx:232:      console.error('Error loading class performance:', error);
+  src\components\results\GradeDistribution.tsx:233:      toast({
+  src\components\results\GradeDistribution.tsx:234:        title: "Error",
+  src\components\results\GradeDistribution.tsx:235:        description: "Failed to load class performance data",
+  src\components\results\GradeDistribution.tsx:236:        variant: "destructive"
+> src\components\results\PerformanceAnalytics.tsx:200:    } catch (error) {
+  src\components\results\PerformanceAnalytics.tsx:201:      console.error('Error loading analytics:', error);
+  src\components\results\PerformanceAnalytics.tsx:202:      toast({
+  src\components\results\PerformanceAnalytics.tsx:203:        title: "Error",
+  src\components\results\PerformanceAnalytics.tsx:204:        description: "Failed to load performance analytics",
+  src\components\results\PerformanceAnalytics.tsx:205:        variant: "destructive"
+> src\components\results\ProgressReport.tsx:170:    } catch (error: any) {
+  src\components\results\ProgressReport.tsx:171:      console.error('Error in fetchProgressData:', error);
+  src\components\results\ProgressReport.tsx:172:      toast({
+  src\components\results\ProgressReport.tsx:173:        title: "Error",
+  src\components\results\ProgressReport.tsx:174:        description: "Failed to fetch progress data",
+  src\components\results\ProgressReport.tsx:175:        variant: "destructive"
+> src\components\results\ResultApproval.tsx:143:    } catch (error) {
+  src\components\results\ResultApproval.tsx:144:      console.error('Error loading results:', error);
+  src\components\results\ResultApproval.tsx:145:      toast({
+  src\components\results\ResultApproval.tsx:146:        title: "Error",
+  src\components\results\ResultApproval.tsx:147:        description: "Failed to load results",
+  src\components\results\ResultApproval.tsx:148:        variant: "destructive"
+> src\components\results\ResultApproval.tsx:197:    } catch (error) {
+  src\components\results\ResultApproval.tsx:198:      console.error('Error updating show results status:', error);
+  src\components\results\ResultApproval.tsx:199:      toast({
+  src\components\results\ResultApproval.tsx:200:        title: "Error",
+  src\components\results\ResultApproval.tsx:201:        description: "Failed to update show results status",
+  src\components\results\ResultApproval.tsx:202:        variant: "destructive"
+> src\components\results\ResultApproval.tsx:275:        } catch (e) {
+  src\components\results\ResultApproval.tsx:276:          console.warn('Failed to parse answers as JSON, using as-is');
+  src\components\results\ResultApproval.tsx:277:        }
+  src\components\results\ResultApproval.tsx:278:      }
+  src\components\results\ResultApproval.tsx:279:
+  src\components\results\ResultApproval.tsx:280:      const userAnswersMap = parsedAnswers.userAnswers || parsedAnswers || {};
+> src\components\results\ResultApproval.tsx:303:    } catch (error) {
+  src\components\results\ResultApproval.tsx:304:      console.error('Error loading question breakdown:', error);
+  src\components\results\ResultApproval.tsx:305:      toast({
+  src\components\results\ResultApproval.tsx:306:        title: "Error",
+  src\components\results\ResultApproval.tsx:307:        description: "Failed to load question details",
+  src\components\results\ResultApproval.tsx:308:        variant: "destructive"
+> src\components\results\TestResults.tsx:136:    } catch (error) {
+  src\components\results\TestResults.tsx:137:      console.error('Error loading test results:', error);
+  src\components\results\TestResults.tsx:138:      toast({
+  src\components\results\TestResults.tsx:139:        title: "Error",
+  src\components\results\TestResults.tsx:140:        description: "Failed to load test results",
+  src\components\results\TestResults.tsx:141:        variant: "destructive"
+> src\components\results\TestResults.tsx:183:        } catch (e) {
+  src\components\results\TestResults.tsx:184:          console.warn('Failed to parse answers as JSON, using as-is');
+  src\components\results\TestResults.tsx:185:        }
+  src\components\results\TestResults.tsx:186:      }
+  src\components\results\TestResults.tsx:187:
+  src\components\results\TestResults.tsx:188:      const userAnswersObj = (parsedAnswers as any)?.userAnswers || parsedAnswers || {};
+> src\components\results\TestResults.tsx:217:    } catch (error) {
+  src\components\results\TestResults.tsx:218:      console.error('Error loading question breakdown:', error);
+  src\components\results\TestResults.tsx:219:      toast({
+  src\components\results\TestResults.tsx:220:        title: "Error",
+  src\components\results\TestResults.tsx:221:        description: "Failed to load question details",
+  src\components\results\TestResults.tsx:222:        variant: "destructive"
+> src\components\student\StudentDashboard.tsx:249:      } catch (error) {
+  src\components\student\StudentDashboard.tsx:250:        console.error('Error in fetchTests:', error);
+  src\components\student\StudentDashboard.tsx:251:        throw error;
+  src\components\student\StudentDashboard.tsx:252:      }
+  src\components\student\StudentDashboard.tsx:253:    });
+  src\components\student\StudentDashboard.tsx:254:  };
+> src\components\student\TestInterface.tsx:385:    } catch (error) {
+  src\components\student\TestInterface.tsx:386:      console.error('Save failed:', error);
+  src\components\student\TestInterface.tsx:387:      
+  src\components\student\TestInterface.tsx:388:      // Enhanced error handling with retry logic
+  src\components\student\TestInterface.tsx:389:      const isNetworkError = error.message?.includes('fetch') || error.message?.includes('network');
+  src\components\student\TestInterface.tsx:390:      const isTimeoutError = error.message?.includes('timeout');
+> src\components\student\TestInterface.tsx:487:          } catch (e) {
+  src\components\student\TestInterface.tsx:488:            console.error('Error parsing answers:', e);
+  src\components\student\TestInterface.tsx:489:          }
+  src\components\student\TestInterface.tsx:490:        }
+  src\components\student\TestInterface.tsx:491:        
+  src\components\student\TestInterface.tsx:492:        toast({
+> src\components\student\TestInterface.tsx:576:            } catch (e) {
+  src\components\student\TestInterface.tsx:577:              console.error('Failed to parse options for question', item.question_id, e);
+  src\components\student\TestInterface.tsx:578:            }
+  src\components\student\TestInterface.tsx:579:          }
+  src\components\student\TestInterface.tsx:580:          return {
+  src\components\student\TestInterface.tsx:581:            id: fullQuestion.id || item.question_id,
+> src\components\student\TestInterface.tsx:593:    } catch (error) {
+  src\components\student\TestInterface.tsx:594:      console.error('Error initializing test:', error);
+  src\components\student\TestInterface.tsx:595:      toast({
+  src\components\student\TestInterface.tsx:596:        title: "Error",
+  src\components\student\TestInterface.tsx:597:        description: "Failed to start test",
+  src\components\student\TestInterface.tsx:598:        variant: "destructive"
+> src\components\student\TestInterface.tsx:651:      } catch (error) {
+  src\components\student\TestInterface.tsx:652:        console.error('Final save failed:', error);
+  src\components\student\TestInterface.tsx:653:        // Continue with submission even if final save fails
+  src\components\student\TestInterface.tsx:654:      }
+  src\components\student\TestInterface.tsx:655:    }
+  src\components\student\TestInterface.tsx:656:
+> src\components\student\TestInterface.tsx:703:    } catch (error) {
+  src\components\student\TestInterface.tsx:704:      console.error('Error submitting test:', error);
+  src\components\student\TestInterface.tsx:705:      toast({
+  src\components\student\TestInterface.tsx:706:        title: "Submission Error",
+  src\components\student\TestInterface.tsx:707:        description: error.message || "Failed to submit test. Your progress has been saved. Please try again or contact support.",
+  src\components\student\TestInterface.tsx:708:        variant: "destructive"
+> src\components\student\TestInterface.tsx:737:    } catch (error) {
+  src\components\student\TestInterface.tsx:738:      console.error('Error pausing test:', error);
+  src\components\student\TestInterface.tsx:739:      toast({
+  src\components\student\TestInterface.tsx:740:        title: "Pause Error",
+  src\components\student\TestInterface.tsx:741:        description: "Failed to save progress while pausing. Please try again.",
+  src\components\student\TestInterface.tsx:742:        variant: "destructive"
+> src\components\student\TestInterface.tsx:758:    } catch (error) {
+  src\components\student\TestInterface.tsx:759:      console.error('Fullscreen request failed:', error);
+  src\components\student\TestInterface.tsx:760:      toast({
+  src\components\student\TestInterface.tsx:761:        title: "Fullscreen Not Available",
+  src\components\student\TestInterface.tsx:762:        description: "Fullscreen mode could not be activated. The test will continue with monitoring.",
+  src\components\student\TestInterface.tsx:763:        variant: "destructive"
+> src\components\ui\custom-subject-input.tsx:97:    } catch (error: any) {
+  src\components\ui\custom-subject-input.tsx:98:      toast({
+  src\components\ui\custom-subject-input.tsx:99:        title: 'Failed to create subject',
+  src\components\ui\custom-subject-input.tsx:100:        description: error.message,
+  src\components\ui\custom-subject-input.tsx:101:        variant: 'destructive',
+  src\components\ui\custom-subject-input.tsx:102:      });
+> src\components\ui\pdf-viewer-modal.tsx:60:      } catch (e: any) {
+  src\components\ui\pdf-viewer-modal.tsx:61:        toast({ title: 'Unable to load PDF', description: e.message, variant: 'destructive' });
+  src\components\ui\pdf-viewer-modal.tsx:62:      } finally {
+  src\components\ui\pdf-viewer-modal.tsx:63:        setLoading(false);
+  src\components\ui\pdf-viewer-modal.tsx:64:      }
+  src\components\ui\pdf-viewer-modal.tsx:65:    };
+

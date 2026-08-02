@@ -230,6 +230,7 @@ export const AIQuestionGenerator = () => {
         throw new Error(data.error || 'Failed to generate questions');
       }
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Generation Failed',
         description: error.message || 'Failed to generate questions. Please try again.',

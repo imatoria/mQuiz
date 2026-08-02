@@ -50,6 +50,7 @@ export const useSubjectsParent = () => {
       const sortedData = (data || []).sort((a: any, b: any) => (a.subject_name || '').localeCompare(b.subject_name || ''));
       setSubjects(sortedData);
     } catch (err: any) {
+      console.error('Silenced Error:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);

@@ -152,6 +152,7 @@ export const ContentModeration = () => {
       setDocuments((documentsData as any) || []);
       setQuestionPapers((questionPapersData as any) || []);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error fetching content",
         description: error.message,
@@ -180,6 +181,7 @@ export const ContentModeration = () => {
         description: `Pages have been ${status}.`,
       });
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Error updating pages status",
         description: error.message,
