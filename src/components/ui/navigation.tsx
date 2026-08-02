@@ -63,12 +63,6 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
       color: 'bg-gradient-success',
       features: ['Create Papers', 'Upload Documents', 'View Results']
     },
-    parent: {
-      icon: Users,
-      label: 'Teacher',
-      color: 'bg-gradient-success',
-      features: ['Create Papers', 'Upload Documents', 'View Results']
-    },
     student: {
       icon: User,
       label: 'Student',

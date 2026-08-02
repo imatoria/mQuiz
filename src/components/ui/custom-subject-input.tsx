@@ -43,7 +43,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       const user = authService.getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Check user permissions (admin or parent only can create subjects)
+      // Check user permissions (admin or teacher only can create subjects)
       const profileData = await dbService.getProvider().query(
         'SELECT role, is_approved FROM profiles WHERE user_id = ? LIMIT 1',
         [user.id]
@@ -53,13 +53,13 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       if (!profile || !['admin', 'teacher'].includes(profile.role) || !profile.is_approved) {
         toast({
           title: 'Permission denied',
-          description: 'Only approved parents can create subjects.',
+          description: 'Only approved teachers can create subjects.',
           variant: 'destructive',
         });
         return;
       }
 
-      // Check if subject already exists for this parent
+      // Check if subject already exists for this teacher
       const existingSubjects = await dbService.getProvider().query(
         'SELECT * FROM subjects WHERE teacher_id = ? AND subject_name = ?',
         [user.id, newSubjectName.trim()]

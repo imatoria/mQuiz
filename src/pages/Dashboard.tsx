@@ -30,7 +30,6 @@ export const Dashboard = () => {
     case 'admin':
       return <AdminDashboard />;
     case 'teacher':
-    case 'parent':
       return <TeacherDashboard />;
     case 'student':
       return <StudentDashboard />;
