@@ -27,7 +27,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         try {
           const parsed = JSON.parse(savedData);
           for (const [table, rows] of Object.entries(parsed)) {
-            if (Array.isArray(rows) && rows.length > (baseDb[table]?.length || 0)) {
+            if (Array.isArray(rows) && rows.length > 0) {
               baseDb[table] = rows;
             }
           }
@@ -177,6 +177,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         const record: Record<string, any> = { id: params[0] || crypto.randomUUID() };
         rows.push(record);
       }
+      this.persist();
       return 1;
     }
 
@@ -190,6 +191,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         const index = rows.findIndex(r => r.id === targetId || r.user_id === targetId || r.child_id === targetId || r.parent_id === targetId);
         if (index !== -1) {
           rows[index] = { ...rows[index], ...params[0] };
+          this.persist();
           return 1;
         }
       } else {
@@ -224,6 +226,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
               }
             });
           }
+          if (updatedCount > 0) this.persist();
           return updatedCount;
         }
       }
@@ -237,6 +240,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       const beforeLen = rows.length;
       rows = rows.filter(r => r.id !== targetId);
       this.db[table] = rows;
+      this.persist();
       return beforeLen - rows.length;
     }
 

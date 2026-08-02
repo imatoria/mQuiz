@@ -32,6 +32,7 @@ export const Dashboard = () => {
     case 'parent':
       return <ParentDashboard />;
     case 'child':
+    case 'student':
       return <StudentDashboard />;
     default:
       return <Navigate to="/" replace />;

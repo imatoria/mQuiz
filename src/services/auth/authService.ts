@@ -74,7 +74,7 @@ class AuthService {
     const emailLower = email.toLowerCase();
     if (emailLower === 'praveen.matoria@gmail.com' || emailLower === 'admin@mquiz.com' || emailLower === 'admin@knowledgebuilder.com') {
       this.currentSession = {
-        id: match?.user_id || match?.id || 'usr-admin-001',
+        id: match?.user_id || match?.id || '4c41ae04-14ba-40e6-8b97-fce8e4045790',
         email: email,
         role: 'admin',
         fullName: match?.full_name || 'Praveen Matoria (Admin)'
@@ -96,10 +96,10 @@ class AuthService {
 
     if (emailLower === 'praveen.matoria+student1@gmail.com') {
       this.currentSession = {
-        id: match?.user_id || match?.id || 'f0fc506c-f970-4351-9db4-ef11f566fd22',
+        id: match?.user_id || match?.id || '94297385-ba2f-42f2-a69c-73a8212889dd',
         email: email,
-        role: 'student',
-        fullName: match?.full_name || 'Praveen Matoria (Student)'
+        role: 'child',
+        fullName: match?.full_name || 'Praveen Student 1'
       };
       this.saveSession();
       return { user: this.currentSession, error: null };

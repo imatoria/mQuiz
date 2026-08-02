@@ -37,7 +37,24 @@ export const useAuth = () => {
       } else if (data) {
         setProfile(data as UserProfile);
       } else {
-        setProfile(null);
+        const sessionUser = authService.getCurrentUser();
+        if (sessionUser && (sessionUser.id === userId || sessionUser.email)) {
+          const fallbackProfile: UserProfile = {
+            id: userId,
+            user_id: userId,
+            full_name: sessionUser.fullName || 'User',
+            email: sessionUser.email,
+            role: sessionUser.role || 'student',
+            is_approved: true,
+            avatar_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          dbService.createProfile(fallbackProfile);
+          setProfile(fallbackProfile);
+        } else {
+          setProfile(null);
+        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
