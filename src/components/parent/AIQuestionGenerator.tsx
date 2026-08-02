@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { PaginatedPageMultiSelect } from '@/components/ui/paginated-page-multi-select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChildSubjects } from '@/hooks/useChildSubjects';
 import { useChildClasses } from '@/hooks/useChildClasses';
 
@@ -262,16 +262,18 @@ export const AIQuestionGenerator = () => {
           </AlertDescription>
         </Alert>
 
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox checked={mode==='book'} onCheckedChange={(v) => setMode(v ? 'book' : 'independent')} />
-            Book based
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox checked={mode==='independent'} onCheckedChange={(v) => setMode(v ? 'independent' : 'book')} />
-            Independent
-          </label>
-        </div>
+        <Tabs value={mode} onValueChange={(val) => setMode(val as 'book' | 'independent')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-xs">
+            <TabsTrigger value="book" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Book Based
+            </TabsTrigger>
+            <TabsTrigger value="independent" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Independent
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {mode === 'independent' && (

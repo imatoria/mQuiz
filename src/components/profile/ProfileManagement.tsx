@@ -49,9 +49,9 @@ export const ProfileManagement = () => {
         full_name: profile.full_name || '',
         email: profile.email || '',
       });
-      
+
       if (profile.role === 'parent') {
-        loadChildren();
+        loadChildren(profile.user_id);
       } else if (profile.role === 'student' || profile.role === 'child') {
         loadStudentAcademicInfo();
       }
@@ -110,26 +110,27 @@ export const ProfileManagement = () => {
     }
   };
 
-  const loadChildren = async () => {
-    if (!user) return;
+  const loadChildren = async (userId: string) => {
+    if (!userId) return;
 
     try {
       // First get the child relationships
-      const relationships = await dbService.getProvider().query(
+      const { data: relationships } = await dbService.getProvider().query(
         'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
-        [user.id]
+        [userId]
       );
 
       if (relationships && relationships.length > 0) {
-        const childIds = relationships.map((rel: any) => rel.child_id);
-        
+        const childIds = new Set(relationships.map((rel: any) => rel.child_id));
+
         // Then get the profiles for those child IDs
-        const childProfiles = await dbService.getProvider().query(
-          `SELECT id, user_id, full_name, email, created_at FROM profiles WHERE user_id IN (${childIds.map(() => '?').join(',')})`,
-          childIds
+        // Note: fetching all profiles and filtering in JS, as the custom SQL parser
+        // does not reliably handle dynamic IN clauses with multiple params
+        const { data: allProfiles } = await dbService.getProvider().query(
+          'SELECT id, user_id, full_name, email, created_at FROM profiles'
         );
 
-        setChildren(childProfiles || []);
+        setChildren((allProfiles || []).filter((p: any) => childIds.has(p.user_id)));
       }
     } catch (error) {
       console.error('Error loading children:', error);

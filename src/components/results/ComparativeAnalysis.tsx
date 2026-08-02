@@ -1,49 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bar, Line, Radar } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
   BarElement,
   Title,
   Tooltip,
   Legend,
-  RadialLinearScale,
 } from 'chart.js';
 import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  Users, 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  Users,
+  TrendingUp,
+  TrendingDown,
   BarChart3,
-  PieChart,
   Target,
   Award,
   BookOpen,
-  Clock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  RadialLinearScale
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface ComparisonData {
   student_id: string;
@@ -69,7 +53,7 @@ export const ComparativeAnalysis = () => {
   const [comparisonData, setComparisonData] = useState<ComparisonData[]>([]);
   const [classComparisons, setClassComparisons] = useState<ClassComparison[]>([]);
   const [selectedComparison, setSelectedComparison] = useState<'students' | 'classes' | 'subjects'>('students');
-  const [timeframe, setTimeframe] = useState<string>('30');
+  const [timeframe, setTimeframe] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -81,61 +65,62 @@ export const ComparativeAnalysis = () => {
   const fetchComparisonData = async () => {
     try {
       setLoading(true);
-      
-      const attemptsData = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
-      const papersData = await dbService.getProvider().query('SELECT * FROM question_papers');
-      const subjectsData = await dbService.getProvider().query('SELECT * FROM subjects');
-      const classesData = await dbService.getProvider().query('SELECT * FROM classes');
+      const { data: attemptsData } = await dbService.getProvider().query('SELECT * FROM paper_attempts');
+      const { data: papersData } = await dbService.getProvider().query('SELECT * FROM question_papers');
+      const { data: subjectsData } = await dbService.getProvider().query('SELECT * FROM subjects');
+      const { data: classesData } = await dbService.getProvider().query('SELECT * FROM classes');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
       const classMap = new Map((classesData || []).map((c: any) => [c.id, c.class_name]));
 
-      const attempts = (attemptsData || []).map((attempt: any) => {
-        const paper = paperMap.get(attempt.paper_id) || {};
-        const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
-        const className = paper.class_id ? classMap.get(paper.class_id) || 'Class 10' : 'Class 10';
+      const days = parseInt(timeframe, 10);
+      const dateThreshold = isNaN(days) ? null : new Date();
+      if (dateThreshold) dateThreshold.setDate(dateThreshold.getDate() - days);
 
-        return {
-          ...attempt,
-          question_papers: {
-            title: paper.title || 'Question Paper',
-            user_id: paper.user_id || '',
-            class_id: paper.class_id || '',
-            subjects: { subject_name: subjName },
-            classes: { class_name: className }
-          }
-        };
-      });
+      const attempts = (attemptsData || [])
+        .filter((a: any) => {
+          if (!a.user_id) return false;
+          if (!dateThreshold) return true;
+          const d = new Date(a.completed_at || a.started_at || a.created_at || Date.now());
+          return d >= dateThreshold;
+        })
+        .map((attempt: any) => {
+          const paper = paperMap.get(attempt.paper_id) || {};
+          const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
+          const className = paper.class_id ? classMap.get(paper.class_id) || 'Unknown' : 'Unknown';
+          return {
+            ...attempt,
+            question_papers: {
+              title: paper.title || 'Question Paper',
+              user_id: paper.user_id || '',
+              class_id: paper.class_id || '',
+              subjects: { subject_name: subjName },
+              classes: { class_name: className },
+            },
+          };
+        });
 
-      // Get user profiles separately
-      const userIds = [...new Set(attempts?.map(attempt => attempt.user_id) || [])];
-      let profiles: any[] = [];
-      if (userIds.length > 0) {
-        profiles = await dbService.getProvider().query(
-          `SELECT user_id, full_name FROM profiles WHERE user_id IN (${userIds.map(() => '?').join(',')})`,
-          userIds
-        );
-      }
-
-      const profileMap = profiles?.reduce((acc, profile) => {
-        acc[profile.user_id] = profile;
+      // Fetch ALL profiles then build map in JS to avoid IN-clause issues in SqliteWasmProvider
+      const { data: allProfiles } = await dbService.getProvider().query('SELECT * FROM profiles');
+      const profileMap = (allProfiles || []).reduce((acc: Record<string, any>, p: any) => {
+        acc[p.user_id] = p;
         return acc;
-      }, {} as Record<string, any>) || {};
+      }, {});
 
       if (selectedComparison === 'students') {
-        processStudentComparisons(attempts || [], profileMap);
+        processStudentComparisons(attempts, profileMap);
       } else if (selectedComparison === 'classes') {
-        processClassComparisons(attempts || [], profileMap);
+        processClassComparisons(attempts, profileMap);
       }
 
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('Error in fetchComparisonData:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch comparison data",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to fetch comparison data',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -149,7 +134,7 @@ export const ComparativeAnalysis = () => {
       const studentId = attempt.user_id;
       const studentName = profileMap[studentId]?.full_name || 'Unknown Student';
       const subject = attempt.question_papers.subjects?.subject_name || 'Unknown';
-      
+
       if (!studentMap.has(studentId)) {
         studentMap.set(studentId, {
           student_id: studentId,
@@ -159,72 +144,54 @@ export const ComparativeAnalysis = () => {
           completion_rate: 0,
           improvement_trend: 0,
           subject_scores: {},
-          time_efficiency: 0
+          time_efficiency: 0,
         });
       }
 
       const student = studentMap.get(studentId)!;
       student.total_tests++;
-      
+
       if (attempt.completed_at) {
         const score = attempt.score || 0;
         const totalQuestions = attempt.total_questions || 1;
         const percentage = (score / totalQuestions) * 100;
-        
+
         // Update subject scores
-        if (!student.subject_scores[subject]) {
-          student.subject_scores[subject] = 0;
-        }
-        student.subject_scores[subject] = 
-          (student.subject_scores[subject] + percentage) / 2; // Simple average
-        
+        if (!student.subject_scores[subject]) student.subject_scores[subject] = 0;
+        student.subject_scores[subject] = (student.subject_scores[subject] + percentage) / 2; // Simple average
+
         // Calculate time efficiency (questions per minute)
         if (attempt.started_at && attempt.completed_at) {
-          const timeInMinutes = (new Date(attempt.completed_at).getTime() - 
-                               new Date(attempt.started_at).getTime()) / 60000;
-          student.time_efficiency += totalQuestions / timeInMinutes;
+          const timeInMinutes =
+            (new Date(attempt.completed_at).getTime() - new Date(attempt.started_at).getTime()) / 60000;
+          if (timeInMinutes > 0) student.time_efficiency += totalQuestions / timeInMinutes;
         }
       }
     });
 
     // Calculate final averages
     const studentsArray = Array.from(studentMap.values()).map(student => {
-      const completedTests = attempts.filter(a => 
-        a.user_id === student.student_id && a.completed_at
-      );
-      
-      student.completion_rate = student.total_tests > 0 
-        ? (completedTests.length / student.total_tests) * 100 
+      const completedTests = attempts.filter(a => a.user_id === student.student_id && a.completed_at);
+
+      student.completion_rate = student.total_tests > 0
+        ? (completedTests.length / student.total_tests) * 100
         : 0;
-      
-      student.average_score = completedTests.length > 0 
-        ? completedTests.reduce((sum, attempt) => {
-            const score = attempt.score || 0;
-            const total = attempt.total_questions || 1;
-            return sum + (score / total) * 100;
-          }, 0) / completedTests.length
+
+      student.average_score = completedTests.length > 0
+        ? completedTests.reduce((sum, a) => sum + ((a.score || 0) / (a.total_questions || 1)) * 100, 0) / completedTests.length
         : 0;
-      
-      student.time_efficiency = completedTests.length > 0 
-        ? student.time_efficiency / completedTests.length 
+
+      student.time_efficiency = completedTests.length > 0
+        ? student.time_efficiency / completedTests.length
         : 0;
 
       // Calculate improvement trend (last 3 vs first 3 tests)
       if (completedTests.length >= 6) {
-        const sortedTests = completedTests.sort((a, b) => 
-          new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
+        const sorted = [...completedTests].sort(
+          (a, b) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
         );
-        const firstThree = sortedTests.slice(0, 3);
-        const lastThree = sortedTests.slice(-3);
-        
-        const firstAvg = firstThree.reduce((sum, test) => 
-          sum + ((test.score || 0) / (test.total_questions || 1)) * 100, 0
-        ) / 3;
-        
-        const lastAvg = lastThree.reduce((sum, test) => 
-          sum + ((test.score || 0) / (test.total_questions || 1)) * 100, 0
-        ) / 3;
-        
+        const firstAvg = sorted.slice(0, 3).reduce((s, t) => s + ((t.score || 0) / (t.total_questions || 1)) * 100, 0) / 3;
+        const lastAvg = sorted.slice(-3).reduce((s, t) => s + ((t.score || 0) / (t.total_questions || 1)) * 100, 0) / 3;
         student.improvement_trend = lastAvg - firstAvg;
       }
 
@@ -236,11 +203,10 @@ export const ComparativeAnalysis = () => {
 
   const processClassComparisons = (attempts: any[], profileMap: Record<string, any>) => {
     const classMap = new Map<string, ClassComparison>();
-    
+
     attempts.forEach((attempt: any) => {
       const classLevel = attempt.question_papers.classes?.class_name || 'Unknown';
-      const subject = attempt.question_papers.subjects?.subject_name || 'Unknown';
-      
+
       if (!classMap.has(classLevel)) {
         classMap.set(classLevel, {
           class_level: classLevel,
@@ -248,7 +214,7 @@ export const ComparativeAnalysis = () => {
           total_students: 0,
           completion_rate: 0,
           top_subjects: [],
-          weak_subjects: []
+          weak_subjects: [],
         });
       }
     });
@@ -258,7 +224,7 @@ export const ComparativeAnalysis = () => {
   };
 
   const getStudentComparisonChart = () => {
-    const topStudents = comparisonData
+    const topStudents = [...comparisonData]
       .sort((a, b) => b.average_score - a.average_score)
       .slice(0, 10);
 
@@ -267,60 +233,49 @@ export const ComparativeAnalysis = () => {
       datasets: [
         {
           label: 'Average Score (%)',
-          data: topStudents.map(s => s.average_score),
+          data: topStudents.map(s => Math.round(s.average_score)),
           backgroundColor: 'hsl(var(--primary) / 0.8)',
           borderColor: 'hsl(var(--primary))',
           borderWidth: 1,
         },
         {
           label: 'Completion Rate (%)',
-          data: topStudents.map(s => s.completion_rate),
-          backgroundColor: 'hsl(var(--success) / 0.8)',
-          borderColor: 'hsl(var(--success))',
+          data: topStudents.map(s => Math.round(s.completion_rate)),
+          backgroundColor: 'hsl(142 71% 45% / 0.8)',
+          borderColor: 'hsl(142 71% 45%)',
           borderWidth: 1,
-        }
-      ]
+        },
+      ],
     };
   };
 
   const getPerformanceTrendChart = () => {
-    const studentsWithTrend = comparisonData
+    const studentsWithTrend = [...comparisonData]
       .filter(s => s.improvement_trend !== 0)
       .sort((a, b) => b.improvement_trend - a.improvement_trend);
 
     return {
       labels: studentsWithTrend.map(s => s.student_name.split(' ')[0]),
-      datasets: [{
-        label: 'Improvement Trend (%)',
-        data: studentsWithTrend.map(s => s.improvement_trend),
-        backgroundColor: studentsWithTrend.map(s => 
-          s.improvement_trend > 0 
-            ? 'hsl(var(--success) / 0.8)' 
-            : 'hsl(var(--destructive) / 0.8)'
-        ),
-        borderColor: studentsWithTrend.map(s => 
-          s.improvement_trend > 0 
-            ? 'hsl(var(--success))' 
-            : 'hsl(var(--destructive))'
-        ),
-        borderWidth: 1,
-      }]
+      datasets: [
+        {
+          label: 'Improvement Trend (%)',
+          data: studentsWithTrend.map(s => Math.round(s.improvement_trend)),
+          backgroundColor: studentsWithTrend.map(s =>
+            s.improvement_trend > 0 ? 'hsl(142 71% 45% / 0.8)' : 'hsl(var(--destructive) / 0.8)'
+          ),
+          borderColor: studentsWithTrend.map(s =>
+            s.improvement_trend > 0 ? 'hsl(142 71% 45%)' : 'hsl(var(--destructive))'
+          ),
+          borderWidth: 1,
+        },
+      ],
     };
   };
 
   const chartOptions = {
     responsive: true,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 100,
-      },
-    },
+    plugins: { legend: { position: 'top' as const } },
+    scales: { y: { beginAtZero: true, max: 100 } },
   };
 
   if (loading) {
@@ -361,6 +316,7 @@ export const ComparativeAnalysis = () => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
             <SelectItem value="7">Last 7 days</SelectItem>
             <SelectItem value="30">Last 30 days</SelectItem>
             <SelectItem value="90">Last 3 months</SelectItem>
@@ -378,7 +334,6 @@ export const ComparativeAnalysis = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -386,16 +341,15 @@ export const ComparativeAnalysis = () => {
                   <Award className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  {comparisonData.length > 0 && (
-                    <div>
-                      <div className="text-lg font-bold">
-                        {comparisonData.sort((a, b) => b.average_score - a.average_score)[0]?.student_name}
+                  {comparisonData.length > 0 && (() => {
+                    const top = [...comparisonData].sort((a, b) => b.average_score - a.average_score)[0];
+                    return (
+                      <div>
+                        <div className="text-lg font-bold">{top.student_name}</div>
+                        <p className="text-xs text-muted-foreground">{Math.round(top.average_score)}% avg</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {Math.round(comparisonData.sort((a, b) => b.average_score - a.average_score)[0]?.average_score || 0)}% avg
-                      </p>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
@@ -405,16 +359,15 @@ export const ComparativeAnalysis = () => {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  {comparisonData.length > 0 && (
-                    <div>
-                      <div className="text-lg font-bold">
-                        {comparisonData.sort((a, b) => b.improvement_trend - a.improvement_trend)[0]?.student_name}
+                  {comparisonData.length > 0 && (() => {
+                    const top = [...comparisonData].sort((a, b) => b.improvement_trend - a.improvement_trend)[0];
+                    return (
+                      <div>
+                        <div className="text-lg font-bold">{top.student_name}</div>
+                        <p className="text-xs text-muted-foreground">+{Math.round(top.improvement_trend)}% trend</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        +{Math.round(comparisonData.sort((a, b) => b.improvement_trend - a.improvement_trend)[0]?.improvement_trend || 0)}% trend
-                      </p>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
@@ -425,13 +378,11 @@ export const ComparativeAnalysis = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {comparisonData.length > 0 
-                      ? Math.round(comparisonData.reduce((sum, s) => sum + s.average_score, 0) / comparisonData.length)
+                    {comparisonData.length > 0
+                      ? Math.round(comparisonData.reduce((s, d) => s + d.average_score, 0) / comparisonData.length)
                       : 0}%
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {comparisonData.length} students
-                  </p>
+                  <p className="text-xs text-muted-foreground">{comparisonData.length} students</p>
                 </CardContent>
               </Card>
 
@@ -442,24 +393,19 @@ export const ComparativeAnalysis = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {comparisonData.length > 0 
-                      ? Math.round(comparisonData.reduce((sum, s) => sum + s.completion_rate, 0) / comparisonData.length)
+                    {comparisonData.length > 0
+                      ? Math.round(comparisonData.reduce((s, d) => s + d.completion_rate, 0) / comparisonData.length)
                       : 0}%
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Average completion
-                  </p>
+                  <p className="text-xs text-muted-foreground">Average completion</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Student Comparison Chart */}
             <Card>
               <CardHeader>
                 <CardTitle>Student Performance Comparison</CardTitle>
-                <CardDescription>
-                  Top performing students by average score and completion rate
-                </CardDescription>
+                <CardDescription>Top performing students by average score and completion rate</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
@@ -470,16 +416,13 @@ export const ComparativeAnalysis = () => {
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-6">
-            {/* Individual Student Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {comparisonData.map((student, index) => (
                 <Card key={student.student_id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{student.student_name}</CardTitle>
-                      <Badge variant={index < 3 ? "default" : "secondary"}>
-                        #{index + 1}
-                      </Badge>
+                      <Badge variant={index < 3 ? 'default' : 'secondary'}>#{index + 1}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -490,7 +433,6 @@ export const ComparativeAnalysis = () => {
                       </div>
                       <Progress value={student.average_score} />
                     </div>
-
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Completion Rate</span>
@@ -498,24 +440,19 @@ export const ComparativeAnalysis = () => {
                       </div>
                       <Progress value={student.completion_rate} />
                     </div>
-
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Tests Taken</span>
                       <Badge variant="outline">{student.total_tests}</Badge>
                     </div>
-
                     {student.improvement_trend !== 0 && (
                       <div className="flex items-center gap-2">
                         {student.improvement_trend > 0 ? (
-                          <TrendingUp className="w-4 h-4 text-success" />
+                          <TrendingUp className="w-4 h-4 text-green-500" />
                         ) : (
                           <TrendingDown className="w-4 h-4 text-destructive" />
                         )}
-                        <span className={`text-sm ${
-                          student.improvement_trend > 0 ? 'text-success' : 'text-destructive'
-                        }`}>
-                          {student.improvement_trend > 0 ? '+' : ''}
-                          {Math.round(student.improvement_trend)}% trend
+                        <span className={`text-sm ${student.improvement_trend > 0 ? 'text-green-500' : 'text-destructive'}`}>
+                          {student.improvement_trend > 0 ? '+' : ''}{Math.round(student.improvement_trend)}% trend
                         </span>
                       </div>
                     )}
@@ -529,9 +466,7 @@ export const ComparativeAnalysis = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Improvement Trends</CardTitle>
-                <CardDescription>
-                  Student improvement over time (comparing recent vs earlier performance)
-                </CardDescription>
+                <CardDescription>Student improvement over time (comparing recent vs earlier performance)</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
