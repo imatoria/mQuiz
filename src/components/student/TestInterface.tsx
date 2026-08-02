@@ -562,29 +562,39 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         });
       }
 
-      // Load questions
-      const { data: questionsData, error: questionsError } = await supabase
+      // Load question relationships
+      const paperId = test.question_paper_id || test.id;
+      const { data: qpqData, error: qpqError } = await supabase
         .from('question_paper_questions')
-        .select(`
-          question_order,
-          questions (
-            id,
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d
-          )
-        `)
-        .eq('question_paper_id', test.question_paper_id)
+        .select('*')
+        .eq('question_paper_id', paperId)
         .order('question_order');
+
+      if (qpqError) throw qpqError;
+
+      // Load questions details from questions table
+      const { data: allQuestionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('*');
 
       if (questionsError) throw questionsError;
 
-      const formattedQuestions: Question[] = questionsData.map((item: any) => ({
-        ...item.questions,
-        question_order: item.question_order
-      }));
+      const questionsMap = new Map((allQuestionsData || []).map((q: any) => [q.id, q]));
+
+      const formattedQuestions: Question[] = (qpqData || [])
+        .map((item: any) => {
+          const fullQuestion = questionsMap.get(item.question_id) || item.questions || {};
+          return {
+            id: fullQuestion.id || item.question_id,
+            question_text: fullQuestion.question_text || '',
+            option_a: fullQuestion.option_a || '',
+            option_b: fullQuestion.option_b || '',
+            option_c: fullQuestion.option_c || '',
+            option_d: fullQuestion.option_d || '',
+            question_order: item.question_order
+          };
+        })
+        .filter(q => q.question_text);
 
       setQuestions(formattedQuestions);
     } catch (error) {
