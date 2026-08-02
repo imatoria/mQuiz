@@ -56,7 +56,7 @@ export const DocumentLibrary = () => {
 
       // Fetch subjects
       const { data: subjectsData, error: subjectsError } = await dbService.getProvider().query(
-        'SELECT * FROM subjects WHERE parent_id = ? AND is_active = ? ORDER BY subject_name',
+        'SELECT * FROM subjects WHERE teacher_id = ? AND is_active = ? ORDER BY subject_name',
         [user.id, true]
       );
 

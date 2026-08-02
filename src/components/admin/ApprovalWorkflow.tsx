@@ -123,7 +123,7 @@ export const ApprovalWorkflow = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin': return <Crown className="h-4 w-4" />;
-      case 'parent': return <Users className="h-4 w-4" />;
+      case 'teacher': return <Users className="h-4 w-4" />;
       case 'student': return <Baby className="h-4 w-4" />;
       default: return <User className="h-4 w-4" />;
     }
@@ -132,7 +132,7 @@ export const ApprovalWorkflow = () => {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'parent': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'teacher': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'student': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -141,7 +141,7 @@ export const ApprovalWorkflow = () => {
   const getRoleDescription = (role: string) => {
     switch (role) {
       case 'admin': return 'Full system access and user management';
-      case 'parent': return 'Create question papers and manage children';
+      case 'teacher': return 'Create question papers and manage students';
       case 'student': return 'Take tests and view results';
       default: return 'Standard user access';
     }

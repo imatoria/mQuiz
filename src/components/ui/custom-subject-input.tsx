@@ -50,7 +50,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       );
       const profile = profileData[0];
 
-      if (!profile || !['admin', 'parent'].includes(profile.role) || !profile.is_approved) {
+      if (!profile || !['admin', 'teacher'].includes(profile.role) || !profile.is_approved) {
         toast({
           title: 'Permission denied',
           description: 'Only approved parents can create subjects.',
@@ -61,7 +61,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
 
       // Check if subject already exists for this parent
       const existingSubjects = await dbService.getProvider().query(
-        'SELECT * FROM subjects WHERE parent_id = ? AND subject_name = ?',
+        'SELECT * FROM subjects WHERE teacher_id = ? AND subject_name = ?',
         [user.id, newSubjectName.trim()]
       );
 
@@ -75,12 +75,12 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       }
 
       await dbService.getProvider().execute(
-        'INSERT INTO subjects (parent_id, subject_name) VALUES (?, ?)',
+        'INSERT INTO subjects (teacher_id, subject_name) VALUES (?, ?)',
         [user.id, newSubjectName.trim()]
       );
       
       const newSubjectData = await dbService.getProvider().query(
-        'SELECT * FROM subjects WHERE parent_id = ? AND subject_name = ? LIMIT 1',
+        'SELECT * FROM subjects WHERE teacher_id = ? AND subject_name = ? LIMIT 1',
         [user.id, newSubjectName.trim()]
       );
       const newSubject = newSubjectData[0];

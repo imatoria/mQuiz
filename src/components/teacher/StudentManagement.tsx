@@ -39,10 +39,9 @@ interface Student {
 
 interface StudentManagementProps {
   onStudentsUpdate?: () => void;
-  onChildrenUpdate?: () => void;
 }
 
-export const StudentManagement = ({ onStudentsUpdate, onChildrenUpdate }: StudentManagementProps) => {
+export const StudentManagement = ({ onStudentsUpdate }: StudentManagementProps) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingStudent, setIsAddingStudent] = useState(false);
@@ -76,13 +75,13 @@ export const StudentManagement = ({ onStudentsUpdate, onChildrenUpdate }: Studen
 
       if (relError) throw relError;
 
-      let studentIds = (relationships || []).map((rel: any) => rel.student_id || rel.child_id);
+      let studentIds = (relationships || []).map((rel: any) => rel.student_id || rel.student_id);
 
       // Fallback: If logged in as admin or demo teacher without explicit relationship rows, show assigned students
       if (studentIds.length === 0) {
         const { data: allRels } = await dbService.getProvider().query('SELECT * FROM teacher_student_relationships');
         if (allRels && allRels.length > 0) {
-          studentIds = allRels.map((r: any) => r.student_id || r.child_id);
+          studentIds = allRels.map((r: any) => r.student_id || r.student_id);
         }
       }
 
@@ -180,7 +179,7 @@ export const StudentManagement = ({ onStudentsUpdate, onChildrenUpdate }: Studen
       setIsDialogOpen(false);
       fetchStudents();
       onStudentsUpdate?.();
-      onChildrenUpdate?.();
+      onStudentsUpdate?.();
 
     } catch (error: any) {
       console.error('Error:', error);
@@ -217,7 +216,7 @@ export const StudentManagement = ({ onStudentsUpdate, onChildrenUpdate }: Studen
 
       fetchStudents();
       onStudentsUpdate?.();
-      onChildrenUpdate?.();
+      onStudentsUpdate?.();
 
     } catch (error: any) {
       console.error('Error:', error);
@@ -265,7 +264,7 @@ export const StudentManagement = ({ onStudentsUpdate, onChildrenUpdate }: Studen
           <p className="text-muted-foreground">Manage student profiles, assign classes and subjects</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger asStudent>
             <Button className="w-full sm:w-auto">
               <UserPlus className="w-4 h-4 mr-2" />
               Add Student
@@ -433,4 +432,3 @@ export const StudentManagement = ({ onStudentsUpdate, onChildrenUpdate }: Studen
   );
 };
 
-export const ChildrenManagement = StudentManagement;

@@ -1,1 +1,0 @@
-export { StudentSubjectAssignment, ChildSubjectAssignment } from '../teacher/StudentSubjectAssignment';

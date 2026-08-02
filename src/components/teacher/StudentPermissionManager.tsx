@@ -63,7 +63,7 @@ export const StudentPermissionManager = () => {
 
       if (relError) throw relError;
 
-      const studentIds = (relationships || []).map((rel: any) => rel.student_id || rel.child_id);
+      const studentIds = (relationships || []).map((rel: any) => rel.student_id || rel.student_id);
 
       if (studentIds.length > 0) {
         const placeholders = studentIds.map(() => '?').join(',');
@@ -148,7 +148,7 @@ export const StudentPermissionManager = () => {
                   </div>
                 </div>
                 <Dialog>
-                  <DialogTrigger asChild>
+                  <DialogTrigger asStudent>
                     <Button variant="outline" size="sm" onClick={() => setSelectedStudent(student.user_id)}>
                       <Settings className="w-3.5 h-3.5 mr-1" />
                       Configure
@@ -206,4 +206,3 @@ export const StudentPermissionManager = () => {
   );
 };
 
-export const ChildPermissionManager = StudentPermissionManager;

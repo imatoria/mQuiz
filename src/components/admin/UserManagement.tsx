@@ -134,7 +134,7 @@ export const UserManagement = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin': return <Crown className="w-4 h-4" />;
-      case 'parent': return <User className="w-4 h-4" />;
+      case 'teacher': return <User className="w-4 h-4" />;
       case 'student': return <Baby className="w-4 h-4" />;
       default: return <User className="w-4 h-4" />;
     }
@@ -143,7 +143,7 @@ export const UserManagement = () => {
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'admin': return 'destructive';
-      case 'parent': return 'default';
+      case 'teacher': return 'default';
       case 'student': return 'secondary';
       default: return 'outline';
     }
@@ -213,7 +213,7 @@ export const UserManagement = () => {
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="parent">Parent</SelectItem>
+              <SelectItem value="teacher">Teacher</SelectItem>
               <SelectItem value="student">Student</SelectItem>
             </SelectContent>
           </Select>
@@ -415,10 +415,10 @@ export const UserManagement = () => {
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                          onClick={() => updateUserRole(user.id, user.role === 'admin' ? 'parent' : 'admin')}
+                          onClick={() => updateUserRole(user.id, user.role === 'admin' ? 'teacher' : 'admin')}
                         >
                           <Edit className="mr-2 h-4 w-4" />
-                          Change to {user.role === 'admin' ? 'Parent' : 'Admin'}
+                          Change to {user.role === 'admin' ? 'Teacher' : 'Admin'}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

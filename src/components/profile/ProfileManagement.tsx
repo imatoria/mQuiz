@@ -22,7 +22,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-interface ChildProfile {
+interface StudentProfile {
   id: string;
   user_id: string;
   full_name: string | null;
@@ -34,10 +34,10 @@ export const ProfileManagement = () => {
   const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [children, setChildren] = useState<ChildProfile[]>([]);
+  const [students, setStudents] = useState<StudentProfile[]>([]);
   const [studentClass, setStudentClass] = useState<string | null>(null);
   const [studentSubjects, setStudentSubjects] = useState<string[]>([]);
-  const [parentGuardian, setParentGuardian] = useState<{ full_name: string; email: string } | null>(null);
+  const [teacherAssigned, setTeacherAssigned] = useState<{ full_name: string; email: string } | null>(null);
   const [profileData, setProfileData] = useState({
     full_name: profile?.full_name || '',
     email: profile?.email || '',
@@ -50,8 +50,8 @@ export const ProfileManagement = () => {
         email: profile.email || '',
       });
 
-      if (profile.role === 'parent') {
-        loadChildren(profile.user_id);
+      if (profile.role === 'teacher') {
+        loadStudents(profile.user_id);
       } else if (profile.role === 'student') {
         loadStudentAcademicInfo();
       }
@@ -63,7 +63,7 @@ export const ProfileManagement = () => {
     try {
       // Load current class assignment
       const classAssignData = await dbService.getProvider().query(
-        'SELECT * FROM child_class_assignments WHERE child_id = ? AND is_current = true LIMIT 1',
+        'SELECT * FROM student_class_assignments WHERE student_id = ? AND is_current = true LIMIT 1',
         [user.id]
       );
       const classAssign = classAssignData[0];
@@ -78,7 +78,7 @@ export const ProfileManagement = () => {
 
       // Load subject assignments
       const subjAssigns = await dbService.getProvider().query(
-        'SELECT * FROM child_subject_assignments WHERE child_id = ? AND is_current = true',
+        'SELECT * FROM student_subject_assignments WHERE student_id = ? AND is_current = true',
         [user.id]
       );
 
@@ -91,49 +91,49 @@ export const ProfileManagement = () => {
         setStudentSubjects((subjs || []).map((s: any) => s.subject_name));
       }
 
-      // Load parent guardian relationship
+      // Load teacher relationship
       const relData = await dbService.getProvider().query(
-        'SELECT parent_id FROM parent_child_relationships WHERE child_id = ? LIMIT 1',
+        'SELECT teacher_id FROM teacher_student_relationships WHERE student_id = ? LIMIT 1',
         [user.id]
       );
       const rel = relData[0];
 
-      if (rel?.parent_id) {
-        const parentProfData = await dbService.getProvider().query(
+      if (rel?.teacher_id) {
+        const teacherProfData = await dbService.getProvider().query(
           'SELECT full_name, email FROM profiles WHERE user_id = ? LIMIT 1',
-          [rel.parent_id]
+          [rel.teacher_id]
         );
-        if (parentProfData[0]) setParentGuardian({ full_name: parentProfData[0].full_name, email: parentProfData[0].email });
+        if (teacherProfData[0]) setTeacherAssigned({ full_name: teacherProfData[0].full_name, email: teacherProfData[0].email });
       }
     } catch (err) {
       console.error('Error loading student academic info:', err);
     }
   };
 
-  const loadChildren = async (userId: string) => {
+  const loadStudents = async (userId: string) => {
     if (!userId) return;
 
     try {
-      // First get the child relationships
+      // First get the student relationships
       const { data: relationships } = await dbService.getProvider().query(
-        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+        'SELECT student_id FROM teacher_student_relationships WHERE teacher_id = ?',
         [userId]
       );
 
       if (relationships && relationships.length > 0) {
-        const childIds = new Set(relationships.map((rel: any) => rel.child_id));
+        const studentIds = new Set(relationships.map((rel: any) => rel.student_id));
 
-        // Then get the profiles for those child IDs
+        // Then get the profiles for those student IDs
         // Note: fetching all profiles and filtering in JS, as the custom SQL parser
         // does not reliably handle dynamic IN clauses with multiple params
         const { data: allProfiles } = await dbService.getProvider().query(
           'SELECT id, user_id, full_name, email, created_at FROM profiles'
         );
 
-        setChildren((allProfiles || []).filter((p: any) => childIds.has(p.user_id)));
+        setStudents((allProfiles || []).filter((p: any) => childIds.has(p.user_id)));
       }
     } catch (error) {
-      console.error('Error loading children:', error);
+      console.error('Error loading students:', error);
     }
   };
 
@@ -174,7 +174,7 @@ export const ProfileManagement = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin': return <Crown className="h-5 w-5" />;
-      case 'parent': return <Users className="h-5 w-5" />;
+      case 'teacher': return <Users className="h-5 w-5" />;
       case 'student': return <Baby className="h-5 w-5" />;
       default: return <User className="h-5 w-5" />;
     }
@@ -183,7 +183,7 @@ export const ProfileManagement = () => {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'parent': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'teacher': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'student': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -335,35 +335,35 @@ export const ProfileManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Children (for parents) */}
-      {profile.role === 'parent' && (
+      {/* Students (for teachers) */}
+      {profile.role === 'teacher' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Baby className="h-5 w-5" />
-              My Children
+              My Students
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {children.length === 0 ? (
+            {students.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Baby className="h-12 w-12 mx-auto mb-4" />
-                <p>No children added yet</p>
-                <p className="text-sm">Children can be added by creating accounts with their information</p>
+                <p>No students added yet</p>
+                <p className="text-sm">Students can be added by creating accounts with their information</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {children.map((child) => (
-                  <div key={child.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                {students.map((student) => (
+                  <div key={student.id} className="flex items-center gap-3 p-3 border rounded-lg">
                     <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
                       <Baby className="h-5 w-5 text-green-600" />
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium">{child.full_name || 'Unknown'}</div>
-                      <div className="text-sm text-muted-foreground">{child.email}</div>
+                      <div className="font-medium">{student.full_name || 'Unknown'}</div>
+                      <div className="text-sm text-muted-foreground">{student.email}</div>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Added {new Date(child.created_at).toLocaleDateString()}
+                      Added {new Date(student.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 ))}
@@ -388,9 +388,9 @@ export const ProfileManagement = () => {
                 <p className="text-base font-semibold">{studentClass || 'Not assigned yet'}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-muted-foreground">Parent / Guardian:</span>
+                <span className="text-sm font-medium text-muted-foreground">Assigned Teacher:</span>
                 <p className="text-base font-semibold">
-                  {parentGuardian ? `${parentGuardian.full_name} (${parentGuardian.email})` : 'Not linked yet'}
+                  {teacherAssigned ? `${teacherAssigned.full_name} (${teacherAssigned.email})` : 'Not linked yet'}
                 </p>
               </div>
             </div>

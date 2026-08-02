@@ -230,7 +230,7 @@ export const AdminAIProviderConfig = () => {
                 AI Provider Configuration
               </CardTitle>
               <CardDescription>
-                Manage available AI providers for the system. Parents will configure their own API keys for these providers.
+                Manage available AI providers for the system. Teachers will configure their own API keys for these providers.
               </CardDescription>
             </div>
             <Button onClick={handleAddProvider}>
@@ -342,7 +342,7 @@ export const AdminAIProviderConfig = () => {
             <DialogDescription>
               {editingProvider 
                 ? 'Update the AI provider configuration'
-                : 'Configure a new AI provider for the system. Parents will set their own API keys for this provider.'
+                : 'Configure a new AI provider for the system. Teachers will set their own API keys for this provider.'
               }
             </DialogDescription>
           </DialogHeader>

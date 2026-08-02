@@ -152,7 +152,7 @@ export const ScheduleManager = () => {
                           </div>
                           <div className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
-                            <span>{test.assign_to_all ? 'All children' : 'Selected children'}</span>
+                            <span>{test.assign_to_all ? 'All students' : 'Selected students'}</span>
                           </div>
                           <span>Max: {test.max_attempts} attempts</span>
                         </div>
@@ -176,7 +176,7 @@ export const ScheduleManager = () => {
                     </Button>
                     
                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
+                      <AlertDialogTrigger asStudent>
                         <Button
                           variant="outline"
                           size="sm"

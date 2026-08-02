@@ -59,7 +59,7 @@ export const GradeDistribution = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (profile?.role === 'parent') {
+    if (profile?.role === 'teacher') {
       loadClassPerformance();
     }
   }, [profile, selectedTest]);
@@ -80,29 +80,29 @@ export const GradeDistribution = () => {
     try {
       setLoading(true);
 
-      // Get children of the current parent
-      const childrenRelations = await dbService.getProvider().query(
-        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+      // Get students of the current teacher
+      const studentsRelations = await dbService.getProvider().query(
+        'SELECT student_id FROM teacher_student_relationships WHERE teacher_id = ?',
         [user?.id]
       );
 
-      const children = [];
-      for (const rel of childrenRelations) {
+      const students = [];
+      for (const rel of studentsRelations) {
         const profData = await dbService.getProvider().query(
           'SELECT user_id, full_name, email FROM profiles WHERE user_id = ? LIMIT 1',
-          [rel.child_id]
+          [rel.student_id]
         );
         if (profData[0]) {
-          children.push({
-            child_id: rel.child_id,
+          students.push({
+            student_id: rel.student_id,
             profiles: profData[0]
           });
         }
       }
 
-      const childIds = children?.map(c => c.child_id) || [];
+      const studentIds = students?.map(c => c.student_id) || [];
 
-      if (childIds.length === 0) {
+      if (studentIds.length === 0) {
         setStudentPerformance([]);
         setGradeDistribution([]);
         setTestStats([]);
@@ -110,7 +110,7 @@ export const GradeDistribution = () => {
         return;
       }
 
-      // Get test attempts for all children
+      // Get test attempts for all students
       const attemptsData = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
       const papersData = await dbService.getProvider().query('SELECT * FROM question_papers');
@@ -135,10 +135,10 @@ export const GradeDistribution = () => {
         tests: number;
       }>();
 
-      children?.forEach(child => {
-        if (child.profiles && child.profiles !== null && typeof child.profiles === 'object' && !Array.isArray(child.profiles) && 'full_name' in child.profiles) {
-          const profile = child.profiles as any;
-          studentMap.set(child.child_id, {
+      students?.forEach(student => {
+        if (student.profiles && student.profiles !== null && typeof student.profiles === 'object' && !Array.isArray(student.profiles) && 'full_name' in student.profiles) {
+          const profile = student.profiles as any;
+          studentMap.set(student.student_id, {
             name: profile.full_name || 'Unknown',
             email: profile.email || '',
             scores: [],
@@ -221,7 +221,7 @@ export const GradeDistribution = () => {
             average_score: scores.length > 0 ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length) : 0,
             highest_score: scores.length > 0 ? Math.max(...scores) : 0,
             lowest_score: scores.length > 0 ? Math.min(...scores) : 0,
-            completion_rate: childIds.length > 0 ? Math.round((uniqueStudents / childIds.length) * 100) : 0
+            completion_rate: studentIds.length > 0 ? Math.round((uniqueStudents / studentIds.length) * 100) : 0
           });
         }
       }
@@ -240,12 +240,12 @@ export const GradeDistribution = () => {
     }
   };
 
-  if (profile?.role !== 'parent') {
+  if (profile?.role !== 'teacher') {
     return (
       <Card>
         <CardContent className="pt-6 text-center">
           <p className="text-muted-foreground">
-            Grade distribution is only available for parents/teachers.
+            Grade distribution is only available for teachers.
           </p>
         </CardContent>
       </Card>

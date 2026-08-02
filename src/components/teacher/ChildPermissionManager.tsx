@@ -1,1 +1,0 @@
-export { StudentPermissionManager, ChildPermissionManager } from '../teacher/StudentPermissionManager';

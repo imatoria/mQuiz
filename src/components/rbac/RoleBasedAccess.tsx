@@ -79,7 +79,7 @@ export const RoleBasedAccess = ({
     return null;
   }
 
-  // All checks passed, render children
+  // All checks passed, render content
   return <>{children}</>;
 };
 
@@ -96,8 +96,6 @@ export const TeacherOnly = ({ children, ...props }: Omit<RoleBasedAccessProps, '
   </RoleBasedAccess>
 );
 
-export const ParentOnly = TeacherOnly;
-
 export const StudentOnly = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
   <RoleBasedAccess allowedRoles={['student']} requireApproval={false} {...props}>
     {children}
@@ -109,8 +107,6 @@ export const TeacherOrAdmin = ({ children, ...props }: Omit<RoleBasedAccessProps
     {children}
   </RoleBasedAccess>
 );
-
-export const ParentOrAdmin = TeacherOrAdmin;
 
 export const ApprovedUsers = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
   <RoleBasedAccess allowedRoles={['admin', 'teacher', 'student']} {...props}>

@@ -32,12 +32,12 @@ export const PapersManager: React.FC = () => {
   // Redirect to default subtab if not set
   useEffect(() => {
     if (tab === 'papers' && !subtab) {
-      navigate('/parent/papers/prepare', { replace: true });
+      navigate('/teacher/papers/prepare', { replace: true });
     }
   }, [tab, subtab, navigate]);
 
   const handleSubTabChange = (value: string) => {
-    navigate(`/parent/papers/${value}`);
+    navigate(`/teacher/papers/${value}`);
   };
 
   React.useEffect(() => {
@@ -95,18 +95,18 @@ export const PapersManager: React.FC = () => {
 
   const handleEdit = (paper: any) => {
     setEditingPaper(paper);
-    navigate('/parent/papers/edit');
+    navigate('/teacher/papers/edit');
   };
 
   const handleBackToPrevious = () => {
     setEditingPaper(null);
-    navigate('/parent/papers/previous');
+    navigate('/teacher/papers/previous');
     handleRefresh();
   };
 
   const handlePaperCreated = () => {
     setEditingPaper(null);
-    navigate('/parent/papers/previous');
+    navigate('/teacher/papers/previous');
     handleRefresh();
   };
 
@@ -420,7 +420,7 @@ export const PapersManager: React.FC = () => {
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Users className="h-4 w-4" />
-                              <span>{paper.assign_to_all ? 'All children' : 'Selected children'}</span>
+                              <span>{paper.assign_to_all ? 'All students' : 'Selected students'}</span>
                             </div>
                             <span>{paper.show_results ? 'Auto-approve results' : 'Manual approval required'}</span>
                           </div>
@@ -460,7 +460,7 @@ export const PapersManager: React.FC = () => {
                       </Button>
                       
                       <AlertDialog>
-                        <AlertDialogTrigger asChild>
+                        <AlertDialogTrigger asStudent>
                           <Button
                             variant="outline"
                             size="sm"

@@ -58,7 +58,7 @@ export const useStudentSubjects = () => {
         const subj = subjMap.get(assignment.subject_id) || {};
         return {
           subject_id: assignment.subject_id,
-          student_id: assignment.student_id || assignment.child_id,
+          student_id: assignment.student_id ,
           subjects: {
             id: subj.id || assignment.subject_id,
             subject_name: subj.subject_name || 'General'
@@ -101,15 +101,11 @@ export const useStudentSubjects = () => {
 
   return {
     studentSubjects,
-    childSubjects: studentSubjects,
     isLoading,
     error,
     getUniqueSubjects,
     getSubjectsForStudent,
-    getSubjectsForChild: getSubjectsForStudent,
     getSubjectIds,
     refetch: fetchStudentSubjects
   };
 };
-
-export const useChildSubjects = useStudentSubjects;

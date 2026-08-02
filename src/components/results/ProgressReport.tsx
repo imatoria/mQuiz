@@ -106,14 +106,14 @@ export const ProgressReport = () => {
         return acc;
       }, {});
 
-      // If parent, restrict attempts to their linked children only
+      // If teacher, restrict attempts to their linked students only
       let allowedUserIds: Set<string> | null = null;
-      if (profile?.role === 'parent') {
+      if (profile?.role === 'teacher') {
         const { data: relationships } = await dbService.getProvider().query(
-          'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+          'SELECT student_id FROM teacher_student_relationships WHERE teacher_id = ?',
           [profile.user_id]
         );
-        allowedUserIds = new Set((relationships || []).map((r: any) => r.child_id));
+        allowedUserIds = new Set((relationships || []).map((r: any) => r.student_id));
       }
 
       // Process data into progress reports
@@ -186,39 +186,39 @@ export const ProgressReport = () => {
   };
 
   const getStudentList = async () => {
-    if (profile?.role !== 'parent') return [];
+    if (profile?.role !== 'teacher') return [];
     
-    // Get children relationships
+    // Get students relationships
     const { data: relationships, error: relError } = await dbService.getProvider().query(
-      'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+      'SELECT student_id FROM teacher_student_relationships WHERE teacher_id = ?',
       [profile.user_id]
     );
 
     if (relError || !relationships) return [];
 
-    const childIds = relationships.map((rel: any) => rel.child_id);
+    const studentIds = relationships.map((rel: any) => rel.student_id);
     
-    let children: any[] = [];
-    if (childIds.length > 0) {
-      const { data: childrenData, error: childError } = await dbService.getProvider().query(
-        `SELECT user_id, full_name FROM profiles WHERE user_id IN (${childIds.map(() => '?').join(',')})`,
-        childIds
+    let students: any[] = [];
+    if (studentIds.length > 0) {
+      const { data: studentsData, error: studentError } = await dbService.getProvider().query(
+        `SELECT user_id, full_name FROM profiles WHERE user_id IN (${studentIds.map(() => '?').join(',')})`,
+        studentIds
       );
-      if (!childError && childrenData) {
-        children = childrenData;
+      if (!studentError && studentsData) {
+        students = studentsData;
       }
     }
 
-    return children.map(child => ({
-      child_id: child.user_id,
-      profiles: child
+    return students.map(student => ({
+      student_id: student.user_id,
+      profiles: student
     }));
   };
 
   const [studentList, setStudentList] = useState<any[]>([]);
 
   useEffect(() => {
-    if (profile?.role === 'parent') {
+    if (profile?.role === 'teacher') {
       getStudentList().then(setStudentList);
     }
   }, [profile]);
@@ -321,16 +321,16 @@ export const ProgressReport = () => {
           </SelectContent>
         </Select>
 
-        {profile?.role === 'parent' && (
+        {profile?.role === 'teacher' && (
           <Select value={selectedStudent} onValueChange={setSelectedStudent}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Select student" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Students</SelectItem>
-              {studentList.map((child) => (
-                <SelectItem key={child.child_id} value={child.child_id}>
-                  {child.profiles?.full_name || 'Unknown'}
+              {studentList.map((student) => (
+                <SelectItem key={student.student_id} value={student.student_id}>
+                  {student.profiles?.full_name || 'Unknown'}
                 </SelectItem>
               ))}
             </SelectContent>

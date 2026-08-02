@@ -10,8 +10,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { dbService } from '@/services/db';
 import { authService } from '@/services/auth/authService';
 import { PaginatedPageMultiSelect } from '@/components/ui/paginated-page-multi-select';
-import { useChildSubjects } from '@/hooks/useChildSubjects';
-import { useChildClasses } from '@/hooks/useChildClasses';
+import { useStudentSubjects } from '@/hooks/useStudentSubjects';
+import { useStudentClasses } from '@/hooks/useStudentClasses';
 // @ts-ignore - Vite worker import provides a Worker constructor
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?worker';
 // pdf.js core
@@ -42,9 +42,9 @@ export const DocumentUpload = ({
   const [usedPages, setUsedPages] = useState<number[]>([]);
   const [fetchingUsedPages, setFetchingUsedPages] = useState(false);
   
-  // Use child assignments hooks
-  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
-  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
+  // Use student assignments hooks
+  const { uniqueSubjects, isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useStudentClasses();
 
   // Fetch already used pages for the selected subject and class
   React.useEffect(() => {
@@ -345,7 +345,7 @@ export const DocumentUpload = ({
               {loadingSubjects ? (
                 <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
               ) : uniqueSubjects.length === 0 ? (
-                <SelectItem value="_no_subjects" disabled>No subjects assigned to children</SelectItem>
+                <SelectItem value="_no_subjects" disabled>No subjects assigned to students</SelectItem>
               ) : (
                 uniqueSubjects.map((subj) => (
                   <SelectItem key={subj.id} value={subj.id}>
@@ -367,7 +367,7 @@ export const DocumentUpload = ({
               {loadingClasses ? (
                 <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
               ) : uniqueClasses.length === 0 ? (
-                <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
+                <SelectItem value="_no_classes" disabled>No classes assigned to students</SelectItem>
               ) : (
                 uniqueClasses.map((cls) => (
                   <SelectItem key={cls.id} value={cls.id}>

@@ -16,7 +16,7 @@ const Index = () => {
     if (!loading && isAuthenticated && canAccess && profile?.role) {
       if (profile.role === 'admin' && !profile.is_approved) return;
       
-      const roleRoute = profile.role === 'admin' ? '/admin' : profile.role === 'parent' ? '/parent' : '/student';
+      const roleRoute = profile.role === 'admin' ? '/admin' : profile.role === 'teacher' ? '/teacher' : '/student';
       navigate(roleRoute);
     }
   }, [loading, isAuthenticated, canAccess, profile, navigate]);

@@ -246,7 +246,7 @@ export const SystemAPIKeys = ({ key }: SystemAPIKeysProps) => {
             <strong>Note:</strong> For this demo, API keys need to be configured manually. 
             To enable page processing, either:
             <br />
-            1. Users can configure their own API keys in the Parent Dashboard → AI Settings
+            1. Users can configure their own API keys in the Teacher Dashboard → AI Settings
             <br />
             2. Or configure system fallback keys here (requires backend implementation)
           </AlertDescription>

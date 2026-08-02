@@ -17,7 +17,7 @@ interface Announcement {
   creator_id: string;
   title: string;
   content: string;
-  target_audience: 'all' | 'parents' | 'children' | 'specific_users';
+  target_audience: 'all' | 'teachers' | 'students' | 'specific_users';
   priority: 'low' | 'normal' | 'high' | 'urgent';
   is_active: boolean;
   expires_at?: string;
@@ -62,7 +62,7 @@ export const AnnouncementSystem = () => {
     expires_at: '',
   });
 
-  const canCreateAnnouncements = profile?.role === 'admin' || profile?.role === 'parent';
+  const canCreateAnnouncements = profile?.role === 'admin' || profile?.role === 'teacher';
 
   useEffect(() => {
     if (user) {
@@ -199,8 +199,8 @@ export const AnnouncementSystem = () => {
       if (targetAudience === 'all') {
         const { data } = await dbService.getProvider().query('SELECT user_id FROM profiles WHERE user_id != ?', [user!.id]);
         targetUsers = data?.map((p: any) => p.user_id) || [];
-      } else if (targetAudience === 'parents' || targetAudience === 'children') {
-        const role = targetAudience === 'parents' ? 'parent' : 'student';
+      } else if (targetAudience === 'teachers' || targetAudience === 'students') {
+        const role = targetAudience === 'teachers' ? 'teacher' : 'student';
         const { data } = await dbService.getProvider().query('SELECT user_id FROM profiles WHERE role = ? AND user_id != ?', [role, user!.id]);
         targetUsers = data?.map((p: any) => p.user_id) || [];
       }
@@ -317,8 +317,8 @@ export const AnnouncementSystem = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Everyone</SelectItem>
-                        <SelectItem value="parents">Parents Only</SelectItem>
-                        <SelectItem value="children">Students Only</SelectItem>
+                        <SelectItem value="teachers">Teachers Only</SelectItem>
+                        <SelectItem value="students">Students Only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -398,7 +398,7 @@ export const AnnouncementSystem = () => {
                       <Badge variant="outline" className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         {announcement.target_audience === 'all' ? 'Everyone' : 
-                         announcement.target_audience === 'parents' ? 'Parents' : 'Students'}
+                         announcement.target_audience === 'teachers' ? 'Teachers' : 'Students'}
                       </Badge>
                       {announcement.expires_at && (
                         <Badge variant="outline" className="flex items-center gap-1">

@@ -10,8 +10,8 @@ import { useToast } from '@/components/ui/use-toast';
 import PageMultiSelect from '@/components/ui/page-multi-select';
 import { dbService } from '@/services/db';
 import { authService } from '@/services/auth/authService';
-import { useChildSubjects } from '@/hooks/useChildSubjects';
-import { useChildClasses } from '@/hooks/useChildClasses';
+import { useStudentSubjects } from '@/hooks/useStudentSubjects';
+import { useStudentClasses } from '@/hooks/useStudentClasses';
 
 interface QuestionPaperGeneratorProps {
   onPaperGenerated: () => void;
@@ -32,9 +32,9 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const { toast } = useToast();
 
-  // Use child assignments hooks
-  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
-  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
+  // Use student assignments hooks
+  const { uniqueSubjects, isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useStudentClasses();
 
   useEffect(() => {
     if (subject && classLevel && difficulties.length > 0) {
@@ -245,7 +245,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
                 {loadingSubjects ? (
                   <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
                 ) : uniqueSubjects.length === 0 ? (
-                  <SelectItem value="_no_subjects" disabled>No subjects assigned to children</SelectItem>
+                  <SelectItem value="_no_subjects" disabled>No subjects assigned to students</SelectItem>
                 ) : (
                   uniqueSubjects.map((subj) => (
                     <SelectItem key={subj.id} value={subj.id}>
@@ -267,7 +267,7 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
                 {loadingClasses ? (
                   <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
                 ) : uniqueClasses.length === 0 ? (
-                  <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
+                  <SelectItem value="_no_classes" disabled>No classes assigned to students</SelectItem>
                 ) : (
                   uniqueClasses.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id || cls.class_key || cls.class_name || 'cls'}>

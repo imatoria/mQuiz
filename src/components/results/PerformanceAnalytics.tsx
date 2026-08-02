@@ -266,10 +266,10 @@ export const PerformanceAnalytics = () => {
             <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
             <div>
               <p className="font-medium text-yellow-900 dark:text-yellow-100">
-                {pendingApprovalCount} test result{pendingApprovalCount > 1 ? 's' : ''} pending parent approval
+                {pendingApprovalCount} test result{pendingApprovalCount > 1 ? 's' : ''} pending teacher approval
               </p>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                These results will appear in your analytics once approved by your parent.
+                These results will appear in your analytics once approved by your teacher.
               </p>
             </div>
           </CardContent>
@@ -382,7 +382,7 @@ export const PerformanceAnalytics = () => {
                     {totalTests > 0 ? (
                       <>
                         <p>You've completed {totalTests} test{totalTests > 1 ? 's' : ''}!</p>
-                        <p className="text-sm mt-2">Results will appear here once approved by your parent.</p>
+                        <p className="text-sm mt-2">Results will appear here once approved by your teacher.</p>
                       </>
                     ) : (
                       <>
@@ -423,7 +423,7 @@ export const PerformanceAnalytics = () => {
                       {totalTests > 0 ? (
                         <>
                           <p>Subject performance will appear here</p>
-                          <p className="text-sm mt-2">once your test results are approved by your parent.</p>
+                          <p className="text-sm mt-2">once your test results are approved by your teacher.</p>
                         </>
                       ) : (
                         <>
@@ -513,7 +513,7 @@ export const PerformanceAnalytics = () => {
                     {totalTests > 0 ? (
                       <>
                         <p>Timeline data will appear here</p>
-                        <p className="text-sm mt-2">once your test results are approved by your parent.</p>
+                        <p className="text-sm mt-2">once your test results are approved by your teacher.</p>
                       </>
                     ) : (
                       <>

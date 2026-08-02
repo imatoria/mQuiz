@@ -50,12 +50,12 @@ const TeacherDashboardContent = () => {
   ];
 
   // Read tab from URL or default to 'students'
-  const activeTab = tab === 'children' ? 'students' : (tab || 'students');
+  const activeTab = tab === 'students' ? 'students' : (tab || 'students');
   const activeItem = menuItems.find((i) => i.value === activeTab);
 
   // Redirect to default tab if not set, and clear subtab if navigating to non-subtab sections
   useEffect(() => {
-    if (!tab || tab === 'children') {
+    if (!tab || tab === 'students') {
       navigate('/teacher/students', { replace: true });
     } else if (subtab && !['content', 'papers', 'reports', 'communications'].includes(tab)) {
       navigate(`/teacher/${tab}`, { replace: true });
@@ -72,7 +72,7 @@ const TeacherDashboardContent = () => {
   return (
     <ErrorBoundary>
       <Navigation 
-        currentRole={profile?.role === 'teacher' ? 'teacher' : (profile?.role === 'parent' ? 'teacher' : null)} 
+        currentRole={profile?.role === 'teacher' ? 'teacher' : (profile?.role === 'teacher' ? 'teacher' : null)} 
         onRoleChange={() => signOut()}
       />
       <div className="flex w-full pt-[57px] md:pt-[65px]">
@@ -200,4 +200,3 @@ export const TeacherDashboard = () => {
   );
 };
 
-export const ParentDashboard = TeacherDashboard;

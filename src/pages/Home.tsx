@@ -59,7 +59,7 @@ const Home = () => {
     "Secure online testing environment",
     "Detailed performance reports and analytics",
     "Multi-subject and multi-class support",
-    "Parent-student collaboration tools"
+    "Teacher-student collaboration tools"
   ];
 
   return (

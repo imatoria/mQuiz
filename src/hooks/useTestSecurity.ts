@@ -368,7 +368,7 @@ export const useTestSecurity = ({
   // Simplified fullscreen enable - just return true, don't force fullscreen
   const enableFullscreen = useCallback(async () => {
     // Don't force fullscreen, just return success
-    // Parent component will handle fullscreen prompt
+    // Wrapping component will handle fullscreen prompt
     return true;
   }, []);
 

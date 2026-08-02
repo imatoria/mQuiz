@@ -59,7 +59,7 @@ export const useStudentClasses = () => {
         const cls = classMap.get(assignment.class_id) || {};
         return {
           class_id: assignment.class_id,
-          student_id: assignment.student_id || assignment.child_id,
+          student_id: assignment.student_id ,
           classes: {
             id: cls.id || assignment.class_id,
             class_name: cls.class_name || 'Class 10',
@@ -101,14 +101,10 @@ export const useStudentClasses = () => {
 
   return {
     studentClasses,
-    childClasses: studentClasses,
     isLoading,
     error,
     getUniqueClasses,
     getClassesForStudent,
-    getClassesForChild: getClassesForStudent,
     refetch: fetchStudentClasses
   };
 };
-
-export const useChildClasses = useStudentClasses;

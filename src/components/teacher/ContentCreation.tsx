@@ -9,7 +9,7 @@ import { DocumentProcessingStatus } from './DocumentProcessingStatus';
 import { QuestionPaperGenerator } from './QuestionPaperGenerator';
 import { BookManager } from './BookManager';
 
-import { ChildrenManagement } from './ChildrenManagement';
+import { StudentrenManagement } from './StudentrenManagement';
 import { AIProviderSettings } from './AIProviderSettings';
 import { AIQuestionGenerator } from './AIQuestionGenerator';
 import QuestionBank from './QuestionBank';
@@ -28,12 +28,12 @@ export const ContentCreation = () => {
   // Redirect to default subtab if not set
   useEffect(() => {
     if (tab === 'content' && !subtab) {
-      navigate('/parent/content/upload', { replace: true });
+      navigate('/teacher/content/upload', { replace: true });
     }
   }, [tab, subtab, navigate]);
 
   const handleSubTabChange = (value: string) => {
-    navigate(`/parent/content/${value}`);
+    navigate(`/teacher/content/${value}`);
   };
 
   const handleRefresh = () => {
@@ -45,7 +45,7 @@ export const ContentCreation = () => {
       <div>
         <h2 className="text-2xl font-bold text-foreground">Content Creation</h2>
         <p className="text-muted-foreground">
-          Upload pages, generate question papers, and schedule tests for your children.
+          Upload pages, generate question papers, and schedule tests for your studentren.
         </p>
       </div>
 

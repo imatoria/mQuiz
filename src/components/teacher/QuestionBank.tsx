@@ -20,8 +20,8 @@ import { dbService } from "@/services/db";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationInfo, PaginationFirst, PaginationLast } from "@/components/ui/pagination";
-import { useChildSubjects } from '@/hooks/useChildSubjects';
-import { useChildClasses } from '@/hooks/useChildClasses';
+import { useStudentSubjects } from '@/hooks/useStudentSubjects';
+import { useStudentClasses } from '@/hooks/useStudentClasses';
 
 interface Question {
   id: string;
@@ -73,9 +73,9 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
 
-  // Use child assignments hooks
-  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
-  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
+  // Use student assignments hooks
+  const { uniqueSubjects, isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useStudentClasses();
 
   const difficulties = ['easy', 'medium', 'difficult'];
 
@@ -341,7 +341,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
             <div className="space-y-2">
               <Label>Date Range</Label>
               <Popover>
-                <PopoverTrigger asChild>
+                <PopoverTrigger asStudent>
                   <Button
                     id="date"
                     variant="outline"

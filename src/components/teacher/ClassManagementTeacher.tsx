@@ -163,4 +163,3 @@ export const ClassManagementTeacher = () => {
   );
 };
 
-export const ClassManagementParent = ClassManagementTeacher;

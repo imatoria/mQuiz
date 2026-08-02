@@ -16,8 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { dbService } from '@/services/db';
 import { useAuth } from '@/hooks/useAuth';
 import { usePagination } from '@/hooks/usePagination';
-import { useChildSubjects } from '@/hooks/useChildSubjects';
-import { useChildClasses } from '@/hooks/useChildClasses';
+import { useStudentSubjects } from '@/hooks/useStudentSubjects';
+import { useStudentClasses } from '@/hooks/useStudentClasses';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { 
@@ -43,10 +43,10 @@ interface ClassLevel {
   id: string;
   class_name: string;
   class_key: string;
-  parent_id: string;
+  teacher_id: string;
 }
 
-interface Child {
+interface Student {
   id: string;
   user_id: string;
   full_name: string;
@@ -80,7 +80,7 @@ interface PaperFormData {
   show_results: boolean;
   difficulty_filter?: string[];
   difficulty?: string;
-  selected_children?: string[];
+  selected_students?: string[];
   selected_questions?: string[];
 }
 
@@ -102,11 +102,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     show_results: false,
     difficulty_filter: [], // Empty by default for single-select
     difficulty: '',
-    selected_children: [],
+    selected_students: [],
     selected_questions: []
   });
   
-  const [children, setChildren] = useState<Child[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -129,11 +129,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Use child assignments hooks (same as Upload tab)
-  const { uniqueSubjects, isLoading: loadingSubjects } = useChildSubjects();
-  const { uniqueClasses, isLoading: loadingClasses } = useChildClasses();
+  // Use student assignments hooks (same as Upload tab)
+  const { uniqueSubjects, isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses, isLoading: loadingClasses } = useStudentClasses();
   
-  // When editing, ensure the paper's subject/class are available even if not currently assigned to children
+  // When editing, ensure the paper's subject/class are available even if not currently assigned to students
   const subjects = React.useMemo(() => {
     const subjectsList = uniqueSubjects.map(s => ({ id: s.id, name: s.subject_name }));
     
@@ -171,7 +171,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
   React.useEffect(() => {
     if (user?.id) {
-      loadChildren();
+      loadStudents();
     }
   }, [user?.id]);
 
@@ -253,40 +253,40 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     applyQuestionFilters();
   }, [questions, questionFilters, formData.selected_questions]);
 
-  const loadChildren = async () => {
+  const loadStudents = async () => {
     if (!user?.id) {
-      console.log('No user ID available, skipping children load');
+      console.log('No user ID available, skipping students load');
       return;
     }
     
     try {
-      console.log('Loading children for user:', user.id);
-      // Get child IDs first
+      console.log('Loading students for user:', user.id);
+      // Get student IDs first
       const { data: relationships, error: relError } = await dbService.getProvider().query(
-        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+        'SELECT student_id FROM teacher_student_relationships WHERE teacher_id = ?',
         [user.id]
       );
       
       if (relError) throw relError;
       
       if (!relationships || relationships.length === 0) {
-        setChildren([]);
+        setStudents([]);
         return;
       }
       
-      // Get children profiles
-      const childIds = relationships.map((r: any) => r.child_id);
+      // Get students profiles
+      const studentIds = relationships.map((r: any) => r.student_id);
       
-      const { data: childProfiles, error: profileError } = await dbService.getProvider().query(
-        `SELECT id, user_id, full_name, email FROM profiles WHERE user_id IN (${childIds.map(() => '?').join(',')})`,
-        childIds
+      const { data: studentProfiles, error: profileError } = await dbService.getProvider().query(
+        `SELECT id, user_id, full_name, email FROM profiles WHERE user_id IN (${studentIds.map(() => '?').join(',')})`,
+        studentIds
       );
       
       if (profileError) throw profileError;
       
-      setChildren(childProfiles || []);
+      setStudents(studentProfiles || []);
     } catch (error) {
-      console.error('Error loading children:', error);
+      console.error('Error loading students:', error);
     }
   };
 
@@ -526,12 +526,12 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
         }
       }
 
-      // If not assigning to all children, create individual assignments
-      if (!formData.assign_to_all && formData.selected_children && formData.selected_children.length > 0) {
-        for (const childId of formData.selected_children) {
+      // If not assigning to all students, create individual assignments
+      if (!formData.assign_to_all && formData.selected_students && formData.selected_students.length > 0) {
+        for (const studentId of formData.selected_students) {
           const { error: assignmentError } = await dbService.getProvider().execute(
             'INSERT INTO paper_assignments (id, paper_id, assigned_to_user_id) VALUES (?, ?, ?)',
-            [crypto.randomUUID(), paperId, childId]
+            [crypto.randomUUID(), paperId, studentId]
           );
 
           if (assignmentError) throw assignmentError;
@@ -556,7 +556,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
           assign_to_all: true,
           show_results: false,
           difficulty_filter: [], // Empty by default for single-select
-          selected_children: [],
+          selected_students: [],
           selected_questions: []
         });
       }
@@ -745,7 +745,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                     {loadingSubjects ? (
                       <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
                     ) : subjects.length === 0 ? (
-                      <SelectItem value="_no_subjects" disabled>No subjects assigned to children</SelectItem>
+                      <SelectItem value="_no_subjects" disabled>No subjects assigned to students</SelectItem>
                     ) : (
                       subjects.map((subject) => (
                         <SelectItem key={subject.id} value={subject.id}>
@@ -779,7 +779,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                     {loadingClasses ? (
                       <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
                     ) : classes.length === 0 ? (
-                      <SelectItem value="_no_classes" disabled>No classes assigned to children</SelectItem>
+                      <SelectItem value="_no_classes" disabled>No classes assigned to students</SelectItem>
                     ) : (
                       classes.map((classItem) => (
                         <SelectItem key={classItem.id} value={classItem.id}>
@@ -866,7 +866,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                 <div className="space-y-2">
                   <Label>Start Time</Label>
                   <Popover>
-                    <PopoverTrigger asChild>
+                    <PopoverTrigger asStudent>
                       <Button variant="outline" className="w-full justify-start">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {formData.start_time ? format(formData.start_time, "PPP") : "Pick date"}
@@ -894,7 +894,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                 <div className="space-y-2">
                   <Label>End Time</Label>
                   <Popover>
-                    <PopoverTrigger asChild>
+                    <PopoverTrigger asStudent>
                       <Button variant="outline" className="w-full justify-start">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {formData.end_time ? format(formData.end_time, "PPP") : "Pick date"}
@@ -931,43 +931,43 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                     onCheckedChange={(checked) => setFormData(prev => ({ 
                       ...prev, 
                       assign_to_all: checked,
-                      selected_children: checked ? [] : prev.selected_children
+                      selected_students: checked ? [] : prev.selected_students
                     }))}
                   />
-                  <Label>Assign to All Children</Label>
+                  <Label>Assign to All Students</Label>
                 </div>
                 
                 {!formData.assign_to_all && (
                   <div className="space-y-3">
                     <Label className="flex items-center">
                       <Users className="w-4 h-4 mr-2" />
-                      Select Children to Assign
+                      Select Students to Assign
                     </Label>
-                    {children.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No children found. Add children to your account first.</p>
+                    {students.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No students found. Add students to your account first.</p>
                     ) : (
                       <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                        {children.map((child) => (
-                          <div key={child.id} className="flex items-center space-x-2 p-2 border rounded">
+                        {students.map((student) => (
+                          <div key={student.id} className="flex items-center space-x-2 p-2 border rounded">
                             <Checkbox
-                              id={child.id}
-                              checked={formData.selected_children?.includes(child.user_id) || false}
+                              id={student.id}
+                              checked={formData.selected_students?.includes(student.user_id) || false}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   setFormData(prev => ({
                                     ...prev,
-                                    selected_children: [...(prev.selected_children || []), child.user_id]
+                                    selected_students: [...(prev.selected_students || []), student.user_id]
                                   }));
                                 } else {
                                   setFormData(prev => ({
                                     ...prev,
-                                    selected_children: prev.selected_children?.filter(id => id !== child.user_id) || []
+                                    selected_students: prev.selected_students?.filter(id => id !== student.user_id) || []
                                   }));
                                 }
                               }}
                             />
-                            <Label htmlFor={child.id} className="text-sm">
-                              {child.full_name || child.email}
+                            <Label htmlFor={student.id} className="text-sm">
+                              {student.full_name || student.email}
                             </Label>
                           </div>
                         ))}
@@ -1025,7 +1025,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                           {selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''} selected
                         </p>
                         <AlertDialog>
-                          <AlertDialogTrigger asChild>
+                          <AlertDialogTrigger asStudent>
                             <Button
                               type="button"
                               variant="outline"
@@ -1173,7 +1173,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                       <div className="space-y-2">
                         <Label>Date Range</Label>
                         <Popover>
-                          <PopoverTrigger asChild>
+                          <PopoverTrigger asStudent>
                             <Button
                               variant="outline"
                               className={cn(

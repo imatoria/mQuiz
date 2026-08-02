@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { dbService } from '@/services/db';
 import { authService } from '@/services/auth/authService';
-import { useClassesParent } from '@/hooks/useClassesParent';
-import { useSubjectsParent } from '@/hooks/useSubjectsParent';
+import { useClassesTeacher } from '@/hooks/useClassesTeacher';
+import { useSubjectsTeacher } from '@/hooks/useSubjectsTeacher';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -40,8 +40,8 @@ interface GroupedBooks {
 }
 
 export function BookManager() {
-  const { classes, isLoading: classesLoading } = useClassesParent();
-  const { subjects, isLoading: subjectsLoading } = useSubjectsParent();
+  const { classes, isLoading: classesLoading } = useClassesTeacher();
+  const { subjects, isLoading: subjectsLoading } = useSubjectsTeacher();
   const [groupedBooks, setGroupedBooks] = useState<GroupedBooks>({});
   const [isLoadingPages, setIsLoadingPages] = useState(true);
   const [editingPage, setEditingPage] = useState<DocumentPage | null>(null);

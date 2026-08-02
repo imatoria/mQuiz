@@ -55,32 +55,32 @@ export const ExportManager = () => {
   const fetchData = async () => {
     try {
       // Fetch students
-      if (profile?.role === 'parent') {
-        const childrenRelations = await dbService.getProvider().query(
-          'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+      if (profile?.role === 'teacher') {
+        const studentsRelations = await dbService.getProvider().query(
+          'SELECT student_id FROM teacher_student_relationships WHERE teacher_id = ?',
           [profile.user_id]
         );
         
-        const children = [];
-        for (const rel of childrenRelations) {
+        const students = [];
+        for (const rel of studentsRelations) {
           const profData = await dbService.getProvider().query(
             'SELECT full_name, user_id FROM profiles WHERE user_id = ? LIMIT 1',
-            [rel.child_id]
+            [rel.student_id]
           );
           if (profData[0]) {
-            children.push({
-              child_id: rel.child_id,
+            students.push({
+              student_id: rel.student_id,
               profiles: profData[0]
             });
           }
         }
         
-        setStudentList(children || []);
+        setStudentList(students || []);
       }
 
       // Fetch tests
       let tests = [];
-      if (profile?.role === 'parent') {
+      if (profile?.role === 'teacher') {
         tests = await dbService.getProvider().query(
           'SELECT id, title, user_id FROM question_papers WHERE user_id = ?',
           [profile.user_id]
@@ -433,24 +433,24 @@ export const ExportManager = () => {
           </div>
 
           {/* Student Selection */}
-          {profile?.role === 'parent' && studentList.length > 0 && (
+          {profile?.role === 'teacher' && studentList.length > 0 && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Students</label>
               <div className="space-y-2">
                 {studentList.map((student) => (
-                  <div key={student.child_id} className="flex items-center space-x-2">
+                  <div key={student.student_id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={student.child_id}
-                      checked={selectedStudents.includes(student.child_id)}
+                      id={student.student_id}
+                      checked={selectedStudents.includes(student.student_id)}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedStudents([...selectedStudents, student.child_id]);
+                          setSelectedStudents([...selectedStudents, student.student_id]);
                         } else {
-                          setSelectedStudents(selectedStudents.filter(id => id !== student.child_id));
+                          setSelectedStudents(selectedStudents.filter(id => id !== student.student_id));
                         }
                       }}
                     />
-                    <label htmlFor={student.child_id} className="text-sm">
+                    <label htmlFor={student.student_id} className="text-sm">
                       {student.profiles?.full_name || 'Unknown Student'}
                     </label>
                   </div>

@@ -25,13 +25,13 @@ export const ReportingDashboard = () => {
   // Redirect to default subtab if not set
   useEffect(() => {
     if (tab === 'reports' && !subtab) {
-      navigate('/parent/reports/progress', { replace: true });
+      navigate('/teacher/reports/progress', { replace: true });
     }
   }, [tab, subtab, navigate]);
 
   // Update URL when changing report tabs
   const handleReportTabChange = (value: string) => {
-    navigate(`/parent/reports/${value}`);
+    navigate(`/teacher/reports/${value}`);
   };
 
   return (

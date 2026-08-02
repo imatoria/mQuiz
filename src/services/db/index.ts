@@ -60,7 +60,7 @@ class DatabaseService {
   async createClass(classData: any) {
     const record = {
       id: classData.id || crypto.randomUUID(),
-      teacher_id: classData.teacher_id || classData.parent_id || 'system',
+      teacher_id: classData.teacher_id  || 'system',
       class_name: classData.class_name,
       class_key: classData.class_key || classData.class_name.toLowerCase().replace(/\s+/g, '_'),
       display_order: classData.display_order || 0,
@@ -78,7 +78,7 @@ class DatabaseService {
   async createSubject(subjectData: any) {
     const record = {
       id: subjectData.id || crypto.randomUUID(),
-      teacher_id: subjectData.teacher_id || subjectData.parent_id || 'system',
+      teacher_id: subjectData.teacher_id  || 'system',
       subject_name: subjectData.subject_name,
       subject_code: subjectData.subject_code || subjectData.subject_name.substring(0, 4).toUpperCase(),
       icon_name: subjectData.icon_name || 'book',

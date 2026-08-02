@@ -75,7 +75,7 @@ export const ContentSharing = () => {
 
       // Fetch subjects
       const { data: subjectsData, error: subjectsError } = await dbService.getProvider().query(
-        'SELECT * FROM subjects WHERE parent_id = ? AND is_active = ? ORDER BY subject_name',
+        'SELECT * FROM subjects WHERE teacher_id = ? AND is_active = ? ORDER BY subject_name',
         [user.id, true]
       );
 
@@ -225,7 +225,7 @@ export const ContentSharing = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Content Sharing</h2>
         <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger asStudent>
             <Button>
               <Share2 className="h-4 w-4 mr-2" />
               Share Pages

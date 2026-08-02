@@ -11,19 +11,19 @@ import { useClassesTeacher } from '@/hooks/useClassesTeacher';
 
 interface StudentClassAssignmentProps {
   studentId?: string;
-  childId?: string;
+  studentId?: string;
   studentName?: string;
-  childName?: string;
+  studentName?: string;
 }
 
 export const StudentClassAssignment = ({ 
   studentId: targetStudentId, 
-  childId, 
+  studentId, 
   studentName: targetStudentName, 
-  childName 
+  studentName 
 }: StudentClassAssignmentProps) => {
-  const effectiveStudentId = targetStudentId || childId || '';
-  const effectiveStudentName = targetStudentName || childName || 'Student';
+  const effectiveStudentId = targetStudentId || studentId || '';
+  const effectiveStudentName = targetStudentName || studentName || 'Student';
 
   const { classes, isLoading: classesLoading } = useClassesTeacher();
   const [currentClassId, setCurrentClassId] = useState<string>('');
@@ -182,4 +182,3 @@ export const StudentClassAssignment = ({
   );
 };
 
-export const ChildClassAssignment = StudentClassAssignment;

@@ -1,1 +1,0 @@
-export { useStudentAcademicProfile, useChildAcademicProfile } from './useStudentAcademicProfile';

@@ -129,7 +129,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       if (params.length > 0) {
         // Handle IN clauses e.g. user_id IN (?, ?), child_id IN (?, ?)
         if (/\buser_id\s+IN\s*\(/i.test(cleanSql)) {
-          rows = rows.filter(r => params.includes(r.user_id));
+          rows = rows.filter(r => r.student_idams.includes(r.user_id));
         } else if (/\bstudent_id\s+IN\s*\(/i.test(cleanSql) || /\bchild_id\s+IN\s*\(/i.test(cleanSql)) {
           rows = rows.filter(r => params.includes(r.student_id || r.child_id));
         } else if (/\bid\s+IN\s*\(/i.test(cleanSql)) {
@@ -142,7 +142,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
           if (/\buser_id\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => r.user_id === paramVal);
           } else if (/\bstudent_id\s*=/i.test(cleanSql) || /\bchild_id\s*=/i.test(cleanSql)) {
-            rows = rows.filter(r => (r.student_id || r.child_id) === paramVal);
+            rows = rows.filter(r => (r.student_idr.student_id || r.child_id) === paramVal);
           } else if (/\bteacher_id\s*=/i.test(cleanSql) || /\bparent_id\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => (r.teacher_id || r.parent_id) === paramVal);
           } else if (/\bclass_id\s*=/i.test(cleanSql)) {
@@ -222,8 +222,8 @@ export class SqliteWasmProvider implements IDatabaseProvider {
                 r.user_id === val || 
                 r.student_id === val || 
                 r.teacher_id === val ||
-                r.child_id === val || 
-                r.parent_id === val
+                 
+                r.teacher_id === val
               );
               if (matches) {
                 rows[idx] = { ...rows[idx], ...updates };

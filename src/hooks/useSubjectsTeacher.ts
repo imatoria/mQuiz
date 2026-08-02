@@ -110,5 +110,3 @@ export const useSubjectsTeacher = () => {
     refetch: fetchSubjects
   };
 };
-
-export const useSubjectsParent = useSubjectsTeacher;

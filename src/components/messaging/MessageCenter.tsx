@@ -126,19 +126,19 @@ export const MessageCenter = () => {
     try {
       let data: any = [];
       let error: any = null;
-      if (profile.role === 'parent') {
-        const res = await dbService.getProvider().query('SELECT child_id FROM parent_child_relationships WHERE parent_id = ?', [user.id]);
-        const childIds = res.data?.map((rel: any) => rel.child_id) || [];
-        if (childIds.length > 0) {
-          const profilesRes = await dbService.getProvider().query(`SELECT * FROM profiles WHERE user_id IN (${childIds.map(()=>'?').join(',')})`, childIds);
+      if (profile.role === 'teacher') {
+        const res = await dbService.getProvider().query('SELECT student_id FROM teacher_student_relationships WHERE teacher_id = ?', [user.id]);
+        const studentIds = res.data?.map((rel: any) => rel.student_id) || [];
+        if (studentIds.length > 0) {
+          const profilesRes = await dbService.getProvider().query(`SELECT * FROM profiles WHERE user_id IN (${studentIds.map(()=>'?').join(',')})`, studentIds);
           data = profilesRes.data;
           error = profilesRes.error;
         }
       } else if (profile.role === 'student') {
-        const res = await dbService.getProvider().query('SELECT parent_id FROM parent_child_relationships WHERE child_id = ?', [user.id]);
-        const parentIds = res.data?.map((rel: any) => rel.parent_id) || [];
-        if (parentIds.length > 0) {
-          const profilesRes = await dbService.getProvider().query(`SELECT * FROM profiles WHERE user_id IN (${parentIds.map(()=>'?').join(',')})`, parentIds);
+        const res = await dbService.getProvider().query('SELECT teacher_id FROM teacher_student_relationships WHERE student_id = ?', [user.id]);
+        const teacherIds = res.data?.map((rel: any) => rel.teacher_id) || [];
+        if (teacherIds.length > 0) {
+          const profilesRes = await dbService.getProvider().query(`SELECT * FROM profiles WHERE user_id IN (${teacherIds.map(()=>'?').join(',')})`, teacherIds);
           data = profilesRes.data;
           error = profilesRes.error;
         }

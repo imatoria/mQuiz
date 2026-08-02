@@ -73,33 +73,33 @@ export const ResultApproval = () => {
     try {
       setLoading(true);
 
-      // Get children of the current parent
-      const { data: children, error: childrenError } = await dbService.getProvider().query(
-        'SELECT child_id FROM parent_child_relationships WHERE parent_id = ?',
+      // Get students of the current teacher
+      const { data: students, error: studentsError } = await dbService.getProvider().query(
+        'SELECT student_id FROM teacher_student_relationships WHERE teacher_id = ?',
         [user?.id]
       );
 
-      if (childrenError) throw childrenError;
+      if (studentsError) throw studentsError;
 
-      const childIds = children?.map(c => c.child_id) || [];
+      const studentIds = students?.map(c => c.student_id) || [];
 
-      if (childIds.length === 0) {
+      if (studentIds.length === 0) {
         setResults([]);
         setLoading(false);
         return;
       }
 
-      // Get all tests created by this parent
-      const { data: parentTests, error: testsError } = await dbService.getProvider().query(
+      // Get all tests created by this teacher
+      const { data: teacherTests, error: testsError } = await dbService.getProvider().query(
         'SELECT id FROM question_papers WHERE user_id = ?',
         [user?.id]
       );
 
       if (testsError) throw testsError;
 
-      const testIds = parentTests?.map(t => t.id) || [];
+      const testIds = teacherTests?.map(t => t.id) || [];
 
-      // Get test attempts for all children
+      // Get test attempts for all students
       const { data: attemptsData, error: attemptsError } = await dbService.getProvider().query('SELECT * FROM paper_attempts');
 
       if (attemptsError) throw attemptsError;
@@ -325,14 +325,14 @@ export const ResultApproval = () => {
   }
 
   // Only check access after loading is complete
-  if (profile?.role !== 'parent') {
+  if (profile?.role !== 'teacher') {
     return (
       <Card>
         <CardContent className="pt-6 text-center">
           <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
           <p className="text-muted-foreground">
-            Result approval is only available for parents/teachers.
+            Result approval is only available for teachers.
           </p>
         </CardContent>
       </Card>

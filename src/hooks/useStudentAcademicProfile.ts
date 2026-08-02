@@ -102,5 +102,3 @@ export const useStudentAcademicProfile = (studentId?: string) => {
     refetch
   };
 };
-
-export const useChildAcademicProfile = useStudentAcademicProfile;

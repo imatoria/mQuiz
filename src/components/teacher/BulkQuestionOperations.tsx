@@ -302,9 +302,9 @@ export default function BulkQuestionOperations() {
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
-    document.body.appendChild(link);
+    document.body.appendStudent(link);
     link.click();
-    document.body.removeChild(link);
+    document.body.removeStudent(link);
     URL.revokeObjectURL(url);
   };
 

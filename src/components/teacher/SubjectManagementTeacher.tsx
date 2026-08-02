@@ -189,4 +189,3 @@ export const SubjectManagementTeacher = () => {
   );
 };
 
-export const SubjectManagementParent = SubjectManagementTeacher;

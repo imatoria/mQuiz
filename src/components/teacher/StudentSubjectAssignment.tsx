@@ -11,19 +11,19 @@ import { useSubjectsTeacher } from '@/hooks/useSubjectsTeacher';
 
 interface StudentSubjectAssignmentProps {
   studentId?: string;
-  childId?: string;
+  studentId?: string;
   studentName?: string;
-  childName?: string;
+  studentName?: string;
 }
 
 export const StudentSubjectAssignment = ({ 
   studentId: targetStudentId, 
-  childId, 
+  studentId, 
   studentName: targetStudentName, 
-  childName 
+  studentName 
 }: StudentSubjectAssignmentProps) => {
-  const effectiveStudentId = targetStudentId || childId || '';
-  const effectiveStudentName = targetStudentName || childName || 'Student';
+  const effectiveStudentId = targetStudentId || studentId || '';
+  const effectiveStudentName = targetStudentName || studentName || 'Student';
 
   const { subjects: allSubjects, isLoading: subjectsLoading } = useSubjectsTeacher();
   const [currentSubjects, setCurrentSubjects] = useState<string[]>([]);
@@ -182,4 +182,3 @@ export const StudentSubjectAssignment = ({
   );
 };
 
-export const ChildSubjectAssignment = StudentSubjectAssignment;

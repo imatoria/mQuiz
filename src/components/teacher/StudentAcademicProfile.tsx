@@ -17,9 +17,9 @@ interface StudentAcademicProfileProps {
   isOpen?: boolean;
   onClose?: () => void;
   studentId?: string;
-  childId?: string;
+  studentId?: string;
   studentName?: string;
-  childName?: string;
+  studentName?: string;
   onUpdate?: () => void;
   onProfileUpdate?: () => void;
 }
@@ -28,14 +28,14 @@ export const StudentAcademicProfile = ({
   isOpen = true, 
   onClose, 
   studentId: targetStudentId, 
-  childId,
+  studentId,
   studentName: targetStudentName,
-  childName,
+  studentName,
   onUpdate,
   onProfileUpdate
 }: StudentAcademicProfileProps) => {
-  const effectiveStudentId = targetStudentId || childId || '';
-  const effectiveStudentName = targetStudentName || childName || 'Student';
+  const effectiveStudentId = targetStudentId || studentId || '';
+  const effectiveStudentName = targetStudentName || studentName || 'Student';
 
   const { classes, isLoading: classesLoading } = useClassesTeacher();
   const { subjects: allSubjects, isLoading: subjectsLoading } = useSubjectsTeacher();
@@ -211,4 +211,3 @@ export const StudentAcademicProfile = ({
   );
 };
 
-export const ChildAcademicProfile = StudentAcademicProfile;

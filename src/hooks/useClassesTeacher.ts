@@ -113,5 +113,3 @@ export const useClassesTeacher = () => {
     refetch: fetchClasses
   };
 };
-
-export const useClassesParent = useClassesTeacher;
