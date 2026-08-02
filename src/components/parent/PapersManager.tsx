@@ -10,9 +10,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Edit, Trash2, Users, Clock, Calendar, FileText, FilePlus, ArrowLeft, Undo2, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+import { useAuth } from '@/hooks/useAuth';
+
 type ViewState = 'prepare' | 'previous' | 'edit';
 
 export const PapersManager: React.FC = () => {
+  const { user } = useAuth();
   const { tab, subtab } = useParams();
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = React.useState(0);
@@ -39,7 +42,7 @@ export const PapersManager: React.FC = () => {
 
   React.useEffect(() => {
     fetchPapers();
-  }, [refreshKey]);
+  }, [user, refreshKey]);
 
   const fetchPapers = async () => {
     if (!user) return;
