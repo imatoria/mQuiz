@@ -58,8 +58,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       .from('documents')
       .select('id, total_pages')
       .eq('user_id', user.user.id)
-      .eq('subject_parent_id', subject)
-      .eq('class_parent_id', classLevel);
+      .eq('subject_id', subject)
+      .eq('class_id', classLevel);
     
     // Get all page numbers from all documents
     const allPages: number[] = [];
@@ -82,8 +82,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       .from('questions')
       .select('*', { count: 'exact', head: true })
       .in('difficulty', difficulties)
-      .eq('subject_parent_id', subject)
-      .eq('class_parent_id', classLevel)
+      .eq('subject_id', subject)
+      .eq('class_id', classLevel)
       .eq('is_deleted', false);
 
     if (selectedPages.length > 0) {
@@ -148,8 +148,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
         .insert({
           user_id: user.user.id,
           title,
-          subject_parent_id: subject,
-          class_parent_id: classLevel,
+          subject_id: subject,
+          class_id: classLevel,
           total_questions: questionsNeeded,
           time_limit_minutes: 0,
           difficulty_filter: difficulties
@@ -164,8 +164,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
         .from('questions')
         .select('*')
         .eq('user_id', user.user.id)
-        .eq('subject_parent_id', subject)
-        .eq('class_parent_id', classLevel)
+        .eq('subject_id', subject)
+        .eq('class_id', classLevel)
         .eq('is_deleted', false)
         .in('difficulty', difficulties);
 

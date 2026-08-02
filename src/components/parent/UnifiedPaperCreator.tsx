@@ -69,8 +69,8 @@ interface Question {
 
 interface PaperFormData {
   title: string;
-  subject_parent_id: string;
-  class_parent_id: string;
+  subject_id: string;
+  class_id: string;
   total_questions: number;
   time_limit_minutes: number;
   start_time?: Date;
@@ -93,8 +93,8 @@ interface UnifiedPaperCreatorProps {
 export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefresh, editingPaper, onPaperCreated }) => {
   const [formData, setFormData] = useState<PaperFormData>({
     title: '',
-    subject_parent_id: '',
-    class_parent_id: '',
+    subject_id: '',
+    class_id: '',
     total_questions: 10,
     time_limit_minutes: 60,
     max_attempts: 1,
@@ -138,36 +138,36 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     const subjectsList = uniqueSubjects.map(s => ({ id: s.id, name: s.subject_name }));
     
     // If editing and the paper's subject isn't in the list, add it
-    if (editingPaper?.subject_parent_id && editingPaper?.subjects_parent) {
-      const paperSubjectExists = subjectsList.some(s => s.id === editingPaper.subject_parent_id);
+    if (editingPaper?.subject_id && editingPaper?.subjects) {
+      const paperSubjectExists = subjectsList.some(s => s.id === editingPaper.subject_id);
       if (!paperSubjectExists) {
         subjectsList.unshift({
-          id: editingPaper.subject_parent_id,
-          name: editingPaper.subjects_parent.subject_name
+          id: editingPaper.subject_id,
+          name: editingPaper.subjects.subject_name
         });
       }
     }
     
     return subjectsList;
-  }, [uniqueSubjects, editingPaper?.subject_parent_id, editingPaper?.subjects_parent]);
+  }, [uniqueSubjects, editingPaper?.subject_id, editingPaper?.subjects]);
   
   const classes = React.useMemo(() => {
     const classesList = [...uniqueClasses];
     
     // If editing and the paper's class isn't in the list, add it
-    if (editingPaper?.class_parent_id && editingPaper?.classes_parent) {
-      const paperClassExists = classesList.some(c => c.id === editingPaper.class_parent_id);
+    if (editingPaper?.class_id && editingPaper?.classes) {
+      const paperClassExists = classesList.some(c => c.id === editingPaper.class_id);
       if (!paperClassExists) {
         classesList.unshift({
-          id: editingPaper.class_parent_id,
-          class_name: editingPaper.classes_parent.class_name,
-          class_key: editingPaper.classes_parent.class_key || ''
+          id: editingPaper.class_id,
+          class_name: editingPaper.classes.class_name,
+          class_key: editingPaper.classes.class_key || ''
         });
       }
     }
     
     return classesList;
-  }, [uniqueClasses, editingPaper?.class_parent_id, editingPaper?.classes_parent]);
+  }, [uniqueClasses, editingPaper?.class_id, editingPaper?.classes]);
 
   React.useEffect(() => {
     if (user?.id) {
@@ -181,8 +181,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       setFormData(prev => ({
         ...prev,
         title: editingPaper.title || '',
-        subject_parent_id: editingPaper.subject_parent_id || '',
-        class_parent_id: editingPaper.class_parent_id || '',
+        subject_id: editingPaper.subject_id || '',
+        class_id: editingPaper.class_id || '',
         total_questions: editingPaper.total_questions || 10,
         time_limit_minutes: editingPaper.time_limit_minutes || 60,
         start_time: editingPaper.start_time ? new Date(editingPaper.start_time) : undefined,
@@ -209,28 +209,28 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   }, [editingPaper]);
 
   React.useEffect(() => {
-    if (formData.subject_parent_id && formData.class_parent_id) {
+    if (formData.subject_id && formData.class_id) {
       loadAvailablePages();
     } else {
       setAvailablePages([]);
     }
-  }, [formData.subject_parent_id, formData.class_parent_id]);
+  }, [formData.subject_id, formData.class_id]);
 
   // Auto-set difficulty filter when form difficulty is selected (removed as no longer needed)
 
   React.useEffect(() => {
-    if (formData.subject_parent_id && formData.class_parent_id) {
+    if (formData.subject_id && formData.class_id) {
       loadQuestions();
       loadAvailablePages();
     } else {
       setQuestions([]);
       setFilteredQuestions([]);
     }
-  }, [formData.subject_parent_id, formData.class_parent_id, formData.difficulty_filter]);
+  }, [formData.subject_id, formData.class_id, formData.difficulty_filter]);
 
   // Effect to handle criteria changes and update selected questions visibility
   React.useEffect(() => {
-    if (selectedQuestions.length > 0 && formData.subject_parent_id && formData.class_parent_id) {
+    if (selectedQuestions.length > 0 && formData.subject_id && formData.class_id) {
       // Filter out questions that no longer meet the current criteria
       const validQuestions = selectedQuestions.filter(question => {
         const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(question.difficulty);
@@ -293,18 +293,18 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     setIsLoadingQuestions(true);
     try {
       // Get all subjects and classes from database to resolve matching names across duplicate IDs
-      const { data: allSubjectsData } = await supabase.from('subjects_parent').select('*');
-      const { data: allClassesData } = await supabase.from('classes_parent').select('*');
+      const { data: allSubjectsData } = await supabase.from('subjects').select('*');
+      const { data: allClassesData } = await supabase.from('classes').select('*');
 
-      const selectedSubjectObj = (allSubjectsData || []).find((s: any) => s.id === formData.subject_parent_id);
+      const selectedSubjectObj = (allSubjectsData || []).find((s: any) => s.id === formData.subject_id);
       const matchingSubjectIds = selectedSubjectObj
         ? (allSubjectsData || []).filter((s: any) => s.subject_name?.toLowerCase() === selectedSubjectObj.subject_name?.toLowerCase()).map((s: any) => s.id)
-        : (formData.subject_parent_id ? [formData.subject_parent_id] : []);
+        : (formData.subject_id ? [formData.subject_id] : []);
 
-      const selectedClassObj = (allClassesData || []).find((c: any) => c.id === formData.class_parent_id);
+      const selectedClassObj = (allClassesData || []).find((c: any) => c.id === formData.class_id);
       const matchingClassIds = selectedClassObj
         ? (allClassesData || []).filter((c: any) => c.class_name?.toLowerCase() === selectedClassObj.class_name?.toLowerCase()).map((c: any) => c.id)
-        : (formData.class_parent_id ? [formData.class_parent_id] : []);
+        : (formData.class_id ? [formData.class_id] : []);
 
       const { data: rawQuestions, error } = await supabase
         .from('questions')
@@ -316,9 +316,9 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
       const filtered = (rawQuestions || []).filter((q: any) => {
         // Match subject if selected
-        const matchesSubject = matchingSubjectIds.length === 0 || matchingSubjectIds.includes(q.subject_parent_id) || !q.subject_parent_id;
+        const matchesSubject = matchingSubjectIds.length === 0 || matchingSubjectIds.includes(q.subject_id) || !q.subject_id;
         // Match class if selected
-        const matchesClass = matchingClassIds.length === 0 || matchingClassIds.includes(q.class_parent_id) || !q.class_parent_id;
+        const matchesClass = matchingClassIds.length === 0 || matchingClassIds.includes(q.class_id) || !q.class_id;
         // Match difficulty if specified
         const matchesDifficulty = !formData.difficulty_filter || formData.difficulty_filter.length === 0 || formData.difficulty_filter.includes('all') || formData.difficulty_filter.includes(q.difficulty);
         return matchesSubject && matchesClass && matchesDifficulty;
@@ -373,15 +373,15 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   };
 
   const loadAvailablePages = async () => {
-    if (!formData.subject_parent_id || !formData.class_parent_id) return;
+    if (!formData.subject_id || !formData.class_id) return;
     
     try {
       // Get unique page numbers for the selected subject and class level
       const { data, error } = await supabase
         .from('questions')
         .select('page_number')
-        .eq('subject_parent_id', formData.subject_parent_id)
-        .eq('class_parent_id', formData.class_parent_id)
+        .eq('subject_id', formData.subject_id)
+        .eq('class_id', formData.class_id)
         .eq('is_deleted', false)
         .not('page_number', 'is', null)
         .order('page_number');
@@ -436,8 +436,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     const newErrors: Record<string, string> = {};
     
     if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.subject_parent_id) newErrors.subject_parent_id = 'Subject is required';
-    if (!formData.class_parent_id) newErrors.class_parent_id = 'Class level is required';
+    if (!formData.subject_id) newErrors.subject_id = 'Subject is required';
+    if (!formData.class_id) newErrors.class_id = 'Class level is required';
     
     if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
       newErrors.end_time = 'End time must be after start time';
@@ -457,8 +457,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     try {
       const paperData = {
         title: formData.title,
-        subject_parent_id: formData.subject_parent_id,
-        class_parent_id: formData.class_parent_id,
+        subject_id: formData.subject_id,
+        class_id: formData.class_id,
         total_questions: formData.total_questions,
         time_limit_minutes: formData.time_limit_minutes,
         user_id: user?.id,
@@ -549,8 +549,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       if (!editingPaper) {
         setFormData({
           title: '',
-          subject_parent_id: '',
-          class_parent_id: '',
+          subject_id: '',
+          class_id: '',
           total_questions: 10,
           time_limit_minutes: 60,
           max_attempts: 1,
@@ -729,14 +729,14 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
               <Label>Subject *</Label>
               {editingPaper ? (
                 <Input
-                  value={editingPaper.subjects_parent?.subject_name || 'Unknown Subject'}
+                  value={editingPaper.subjects?.subject_name || 'Unknown Subject'}
                   disabled
                   readOnly
                 />
               ) : (
                 <Select 
-                  value={formData.subject_parent_id} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, subject_parent_id: value }))}
+                  value={formData.subject_id} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, subject_id: value }))}
                   disabled={loadingSubjects}
                 >
                   <SelectTrigger>
@@ -763,14 +763,14 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
               <Label>Class Level *</Label>
               {editingPaper ? (
                 <Input
-                  value={editingPaper.classes_parent?.class_name || 'Unknown Class'}
+                  value={editingPaper.classes?.class_name || 'Unknown Class'}
                   disabled
                   readOnly
                 />
               ) : (
                 <Select 
-                  value={formData.class_parent_id} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, class_parent_id: value }))}
+                  value={formData.class_id} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, class_id: value }))}
                   disabled={loadingClasses}
                 >
                   <SelectTrigger>
@@ -1137,7 +1137,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
                 <TabsContent value="unselected" className="space-y-4">
                   {/* Requirement Notice (Informative tip when filters not selected) */}
-                  {(!formData.subject_parent_id || !formData.class_parent_id) && (
+                  {(!formData.subject_id || !formData.class_id) && (
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-blue-600" />

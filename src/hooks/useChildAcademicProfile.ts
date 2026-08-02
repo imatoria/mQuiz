@@ -34,11 +34,11 @@ export const useChildAcademicProfile = (childId?: string) => {
         .maybeSingle();
 
       let className: string | undefined = undefined;
-      if (classData?.class_parent_id) {
+      if (classData?.class_id) {
         const { data: classInfo } = await supabase
-          .from('classes_parent')
+          .from('classes')
           .select('*')
-          .eq('id', classData.class_parent_id)
+          .eq('id', classData.class_id)
           .maybeSingle();
         className = classInfo?.class_name;
       }
@@ -49,12 +49,12 @@ export const useChildAcademicProfile = (childId?: string) => {
         .select('*')
         .eq('child_id', childId);
 
-      const subjectIds = (subjectsData || []).map((s: any) => s.subject_parent_id);
+      const subjectIds = (subjectsData || []).map((s: any) => s.subject_id);
 
       let subjectNames: string[] = [];
       if (subjectIds.length > 0) {
         const { data: subjectsInfo } = await supabase
-          .from('subjects_parent')
+          .from('subjects')
           .select('*')
           .in('id', subjectIds);
         subjectNames = (subjectsInfo || []).map((s: any) => s.subject_name).filter(Boolean);

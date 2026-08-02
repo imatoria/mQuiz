@@ -334,7 +334,7 @@ export const supabase = {
     if (fnName === 'get_question_analytics') {
       const questionsRes = await provider.query('SELECT * FROM questions WHERE is_deleted = 0');
       const questions = questionsRes.data || [];
-      const subjectsRes = await provider.query('SELECT * FROM subjects_parent');
+      const subjectsRes = await provider.query('SELECT * FROM subjects');
       const subjects = subjectsRes.data || [];
       const subjMap = new Map(subjects.map((s: any) => [s.id, s.subject_name]));
 
@@ -365,7 +365,7 @@ export const supabase = {
         return {
           question_id: q.id,
           question_text: q.question_text,
-          subject_name: subjMap.get(q.subject_parent_id) || 'General',
+          subject_name: subjMap.get(q.subject_id) || 'General',
           difficulty: q.difficulty_level || 'medium',
           total_attempts: totalAttempts,
           correct_attempts: correctAttempts,

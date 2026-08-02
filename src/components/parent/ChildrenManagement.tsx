@@ -92,8 +92,8 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
 
         if (childrenError) throw childrenError;
 
-        const { data: allClasses } = await supabase.from('classes_parent').select('*');
-        const { data: allSubjects } = await supabase.from('subjects_parent').select('*');
+        const { data: allClasses } = await supabase.from('classes').select('*');
+        const { data: allSubjects } = await supabase.from('subjects').select('*');
         const classMap = new Map((allClasses || []).map((c: any) => [c.id, c.class_name]));
         const subjMap = new Map((allSubjects || []).map((s: any) => [s.id, s.subject_name]));
 
@@ -113,8 +113,8 @@ export const ChildrenManagement = ({ onChildrenUpdate }: ChildrenManagementProps
               .select('*')
               .eq('child_id', child.user_id);
 
-            const className = classData?.class_parent_id ? classMap.get(classData.class_parent_id) : undefined;
-            const subjectNames = (subjectsData || []).map((s: any) => subjMap.get(s.subject_parent_id)).filter(Boolean) as string[];
+            const className = classData?.class_id ? classMap.get(classData.class_id) : undefined;
+            const subjectNames = (subjectsData || []).map((s: any) => subjMap.get(s.subject_id)).filter(Boolean) as string[];
 
             return {
               ...child,

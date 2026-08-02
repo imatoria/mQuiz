@@ -49,19 +49,19 @@ export const PapersManager: React.FC = () => {
       .select('*')
       .eq('is_deleted', false);
 
-    const { data: allClasses } = await supabase.from('classes_parent').select('*');
-    const { data: allSubjects } = await supabase.from('subjects_parent').select('*');
+    const { data: allClasses } = await supabase.from('classes').select('*');
+    const { data: allSubjects } = await supabase.from('subjects').select('*');
 
     const classMap = new Map((allClasses || []).map((c: any) => [c.id, c.class_name]));
     const subjMap = new Map((allSubjects || []).map((s: any) => [s.id, s.subject_name]));
 
     const formattedPapers = (papersData || []).map((paper: any) => {
-      const className = paper.class_parent_id ? classMap.get(paper.class_parent_id) || 'Class 10' : 'Class 10';
-      const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+      const className = paper.class_id ? classMap.get(paper.class_id) || 'Class 10' : 'Class 10';
+      const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
       return {
         ...paper,
-        subjects_parent: { subject_name: subjName },
-        classes_parent: { class_name: className }
+        subjects: { subject_name: subjName },
+        classes: { class_name: className }
       };
     });
 
@@ -78,12 +78,12 @@ export const PapersManager: React.FC = () => {
       .eq('is_deleted', true);
 
     const formattedDeleted = (deletedData || []).map((paper: any) => {
-      const className = paper.class_parent_id ? classMap.get(paper.class_parent_id) || 'Class 10' : 'Class 10';
-      const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+      const className = paper.class_id ? classMap.get(paper.class_id) || 'Class 10' : 'Class 10';
+      const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
       return {
         ...paper,
-        subjects_parent: { subject_name: subjName },
-        classes_parent: { class_name: className }
+        subjects: { subject_name: subjName },
+        classes: { class_name: className }
       };
     });
 
@@ -263,7 +263,7 @@ export const PapersManager: React.FC = () => {
         <body>
           <div class="header">
             <div class="title">${paper.title}</div>
-            <div class="info">Subject: ${paper.subjects_parent?.subject_name || 'N/A'} | Class: ${paper.classes_parent?.class_name || 'N/A'}</div>
+            <div class="info">Subject: ${paper.subjects?.subject_name || 'N/A'} | Class: ${paper.classes?.class_name || 'N/A'}</div>
             <div class="info">Total Questions: ${paper.total_questions} | Duration: ${paper.time_limit_minutes} minutes</div>
           </div>
           
@@ -370,7 +370,7 @@ export const PapersManager: React.FC = () => {
                       <div>
                         <h4 className="font-medium text-sm text-amber-900">{paper.title}</h4>
                         <p className="text-xs text-amber-700">
-                          {paper.subjects_parent?.subject_name || 'Unknown'} - {paper.classes_parent?.class_name || 'Unknown'} • Deleted {formatDateTime(paper.deleted_at)}
+                          {paper.subjects?.subject_name || 'Unknown'} - {paper.classes?.class_name || 'Unknown'} • Deleted {formatDateTime(paper.deleted_at)}
                         </p>
                       </div>
                       <Button
@@ -409,8 +409,8 @@ export const PapersManager: React.FC = () => {
                         <div>
                           <h4 className="font-semibold text-base mb-2 truncate">{paper.title}</h4>
                           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
-                            <span className="font-medium">{paper.subjects_parent?.subject_name || 'Unknown'}</span>
-                            <span>{paper.classes_parent?.class_name || 'Unknown'}</span>
+                            <span className="font-medium">{paper.subjects?.subject_name || 'Unknown'}</span>
+                            <span>{paper.classes?.class_name || 'Unknown'}</span>
                             <span>{paper.total_questions} questions</span>
                             <span>{paper.time_limit_minutes || 60}m duration</span>
                             <span>Max {paper.max_attempts} attempts</span>

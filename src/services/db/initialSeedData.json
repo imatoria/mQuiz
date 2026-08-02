@@ -22,7 +22,7 @@
   "announcements": [],
   "announcement_recipients": [],
   "audit_logs": [],
-  "classes_parent": [
+  "classes": [
     {
       "id": "class-10-id",
       "parent_id": "system-admin-id",
@@ -44,7 +44,7 @@
       "updated_at": "2026-07-31T00:00:00.000Z"
     }
   ],
-  "subjects_parent": [
+  "subjects": [
     {
       "id": "subj-math-id",
       "parent_id": "system-admin-id",

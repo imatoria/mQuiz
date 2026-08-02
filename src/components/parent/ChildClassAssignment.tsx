@@ -33,7 +33,7 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
 
       const { data, error } = await supabase
         .from('child_class_assignments')
-        .select('class_parent_id')
+        .select('class_id')
         .eq('child_id', childId)
         .eq('parent_id', user.user.id)
         .eq('is_current', true)
@@ -41,7 +41,7 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
 
       if (error) throw error;
 
-      const classId = data?.class_parent_id || '';
+      const classId = data?.class_id || '';
       setCurrentClassId(classId);
       setSelectedClassId(classId);
     } catch (error: any) {
@@ -79,7 +79,7 @@ export const ChildClassAssignment = ({ childId, childName }: ChildClassAssignmen
         .insert({
           child_id: childId,
           parent_id: user.user.id,
-          class_parent_id: selectedClassId,
+          class_id: selectedClassId,
           is_current: true,
         });
 

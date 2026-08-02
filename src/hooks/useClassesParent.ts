@@ -41,7 +41,7 @@ export const useClassesParent = () => {
 
       // Fetch classes attached strictly to this parent
       const { data, error } = await supabase
-        .from('classes_parent')
+        .from('classes')
         .select('*')
         .eq('parent_id', parentId)
         .eq('is_active', true)
@@ -67,7 +67,7 @@ export const useClassesParent = () => {
     const maxOrder = Math.max(...classes.map(c => c.display_order), 0);
 
     const { error } = await supabase
-      .from('classes_parent')
+      .from('classes')
       .insert({
         parent_id: user.user.id,
         class_name: className,
@@ -81,7 +81,7 @@ export const useClassesParent = () => {
 
   const updateClass = async (id: string, updates: Partial<ClassParent>) => {
     const { error } = await supabase
-      .from('classes_parent')
+      .from('classes')
       .update(updates)
       .eq('id', id);
 
@@ -91,7 +91,7 @@ export const useClassesParent = () => {
 
   const deleteClass = async (id: string) => {
     const { error } = await supabase
-      .from('classes_parent')
+      .from('classes')
       .update({ is_active: false })
       .eq('id', id);
 

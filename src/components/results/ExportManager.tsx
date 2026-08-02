@@ -103,8 +103,8 @@ export const ExportManager = () => {
 
       const { data: papersData } = await supabase.from('question_papers').select('*');
       const { data: profilesData } = await supabase.from('profiles').select('*');
-      const { data: classesData } = await supabase.from('classes_parent').select('*');
-      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+      const { data: classesData } = await supabase.from('classes').select('*');
+      const { data: subjectsData } = await supabase.from('subjects').select('*');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const profileMap = new Map((profilesData || []).map((pr: any) => [pr.user_id || pr.id, pr]));
@@ -114,8 +114,8 @@ export const ExportManager = () => {
       const exportData: ExportData[] = (attemptsData || []).map((attempt: any) => {
         const paper = paperMap.get(attempt.paper_id) || {};
         const prof = profileMap.get(attempt.user_id) || {};
-        const className = paper.class_parent_id ? classMap.get(paper.class_parent_id) || 'Class 10' : 'Class 10';
-        const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+        const className = paper.class_id ? classMap.get(paper.class_id) || 'Class 10' : 'Class 10';
+        const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
 
         return {
           student_name: prof.full_name || 'Unknown Student',

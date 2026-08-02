@@ -34,7 +34,7 @@ interface TestAttempt {
   question_papers?: {
     id: string;
     title: string;
-    subjects_parent?: { subject_name: string };
+    subjects?: { subject_name: string };
   };
 }
 
@@ -80,14 +80,14 @@ export const TestResults = () => {
       if (error) throw error;
 
       const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+      const { data: subjectsData } = await supabase.from('subjects').select('*');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
 
       const formattedAttempts: TestAttempt[] = (attemptsData || []).map((attempt: any) => {
         const paper = paperMap.get(attempt.paper_id);
-        const subjName = paper ? (subjMap.get(paper.subject_parent_id) || 'General') : 'General';
+        const subjName = paper ? (subjMap.get(paper.subject_id) || 'General') : 'General';
         
         let parsedAnswers = attempt.answers || {};
         if (typeof attempt.answers === 'string') {
@@ -108,7 +108,7 @@ export const TestResults = () => {
           question_papers: {
             id: paper?.id || attempt.paper_id,
             title: paper?.title || 'Question Paper',
-            subjects_parent: {
+            subjects: {
               subject_name: subjName
             }
           }
@@ -356,7 +356,7 @@ export const TestResults = () => {
                       <div className="space-y-1">
                         <h4 className="font-semibold">{attempt.question_papers?.title || 'Question Paper'}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {attempt.question_papers?.subjects_parent?.subject_name || 'General'}
+                          {attempt.question_papers?.subjects?.subject_name || 'General'}
                         </p>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Clock className="w-3 h-3 mr-1" />

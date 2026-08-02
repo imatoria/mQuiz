@@ -54,7 +54,7 @@ class DatabaseService {
 
   // --- Classes & Subjects ---
   async getClasses() {
-    return this.provider.query('SELECT * FROM classes_parent WHERE is_active = 1 ORDER BY display_order ASC');
+    return this.provider.query('SELECT * FROM classes WHERE is_active = 1 ORDER BY display_order ASC');
   }
 
   async createClass(classData: any) {
@@ -68,11 +68,11 @@ class DatabaseService {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO classes_parent (id, parent_id, class_name, class_key, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO classes (id, parent_id, class_name, class_key, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   async getSubjects() {
-    return this.provider.query('SELECT * FROM subjects_parent WHERE is_active = 1 ORDER BY display_order ASC');
+    return this.provider.query('SELECT * FROM subjects WHERE is_active = 1 ORDER BY display_order ASC');
   }
 
   async createSubject(subjectData: any) {
@@ -88,7 +88,7 @@ class DatabaseService {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO subjects_parent (id, parent_id, subject_name, subject_code, icon_name, color, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO subjects (id, parent_id, subject_name, subject_code, icon_name, color, display_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   // --- Documents & Pages ---
@@ -104,13 +104,13 @@ class DatabaseService {
       id: doc.id || crypto.randomUUID(),
       user_id: doc.user_id,
       title: doc.title,
-      class_parent_id: doc.class_parent_id || null,
-      subject_parent_id: doc.subject_parent_id || null,
+      class_id: doc.class_id || null,
+      subject_id: doc.subject_id || null,
       total_pages: doc.total_pages || 0,
       processing_status: doc.processing_status || 'completed',
       created_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO documents (id, user_id, title, class_parent_id, subject_parent_id, total_pages, processing_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO documents (id, user_id, title, class_id, subject_id, total_pages, processing_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   // --- Questions ---
@@ -118,11 +118,11 @@ class DatabaseService {
     let sql = 'SELECT * FROM questions WHERE is_deleted = 0';
     const params: any[] = [];
     if (filters?.classId) {
-      sql += ' AND class_parent_id = ?';
+      sql += ' AND class_id = ?';
       params.push(filters.classId);
     }
     if (filters?.subjectId) {
-      sql += ' AND subject_parent_id = ?';
+      sql += ' AND subject_id = ?';
       params.push(filters.subjectId);
     }
     sql += ' ORDER BY created_at DESC';
@@ -133,8 +133,8 @@ class DatabaseService {
     const record = {
       id: question.id || crypto.randomUUID(),
       user_id: question.user_id,
-      class_parent_id: question.class_parent_id || null,
-      subject_parent_id: question.subject_parent_id || null,
+      class_id: question.class_id || null,
+      subject_id: question.subject_id || null,
       document_id: question.document_id || null,
       page_number: question.page_number || null,
       question_text: question.question_text,
@@ -149,7 +149,7 @@ class DatabaseService {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO questions (id, user_id, class_parent_id, subject_parent_id, document_id, page_number, question_text, question_type, options, correct_answer, explanation, marks, difficulty_level, tags, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO questions (id, user_id, class_id, subject_id, document_id, page_number, question_text, question_type, options, correct_answer, explanation, marks, difficulty_level, tags, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   // --- Question Papers & Attempts ---
@@ -162,8 +162,8 @@ class DatabaseService {
       id: paper.id || crypto.randomUUID(),
       user_id: paper.user_id,
       title: paper.title,
-      class_parent_id: paper.class_parent_id || null,
-      subject_parent_id: paper.subject_parent_id || null,
+      class_id: paper.class_id || null,
+      subject_id: paper.subject_id || null,
       total_questions: paper.total_questions || 0,
       time_limit_minutes: paper.time_limit_minutes || 60,
       difficulty_filter: typeof paper.difficulty_filter === 'string' ? paper.difficulty_filter : JSON.stringify(paper.difficulty_filter || []),
@@ -177,7 +177,7 @@ class DatabaseService {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO question_papers (id, user_id, title, class_parent_id, subject_parent_id, total_questions, time_limit_minutes, difficulty_filter, assign_to_all, start_time, end_time, max_attempts, show_results, is_deleted, deleted_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO question_papers (id, user_id, title, class_id, subject_id, total_questions, time_limit_minutes, difficulty_filter, assign_to_all, start_time, end_time, max_attempts, show_results, is_deleted, deleted_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   async getPaperAttempts(userId?: string) {

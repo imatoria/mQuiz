@@ -54,7 +54,7 @@ interface TestInterfaceProps {
       title: string;
       total_questions: number;
       time_limit_minutes: number;
-      subjects_parent: { subject_name: string };
+      subjects: { subject_name: string };
     };
     test_attempts: Array<{ attempt_number: number; completed_at: string | null }>;
   };
@@ -868,7 +868,7 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
                       </Badge>
                     )}
                   </div>
-                  <CardDescription>{test.question_papers.subjects_parent.subject_name}</CardDescription>
+                  <CardDescription>{test.question_papers.subjects.subject_name}</CardDescription>
                </div>
                
                <div className="flex flex-wrap items-center gap-3">

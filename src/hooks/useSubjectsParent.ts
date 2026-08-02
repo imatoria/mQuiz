@@ -41,7 +41,7 @@ export const useSubjectsParent = () => {
 
       // Fetch subjects attached strictly to this parent
       const { data, error } = await supabase
-        .from('subjects_parent')
+        .from('subjects')
         .select('*')
         .eq('parent_id', parentId)
         .eq('is_active', true)
@@ -65,7 +65,7 @@ export const useSubjectsParent = () => {
     if (!user.user) throw new Error('Not authenticated');
 
     const { error } = await supabase
-      .from('subjects_parent')
+      .from('subjects')
       .insert({
         parent_id: user.user.id,
         subject_name: subjectName,
@@ -78,7 +78,7 @@ export const useSubjectsParent = () => {
 
   const updateSubject = async (id: string, updates: Partial<SubjectParent>) => {
     const { error } = await supabase
-      .from('subjects_parent')
+      .from('subjects')
       .update(updates)
       .eq('id', id);
 
@@ -88,7 +88,7 @@ export const useSubjectsParent = () => {
 
   const deleteSubject = async (id: string) => {
     const { error } = await supabase
-      .from('subjects_parent')
+      .from('subjects')
       .update({ is_active: false })
       .eq('id', id);
 

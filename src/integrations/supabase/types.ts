@@ -158,7 +158,7 @@ export type Database = {
         Row: {
           academic_year: string
           child_id: string
-          class_parent_id: string | null
+          class_id: string | null
           created_at: string | null
           id: string
           is_current: boolean | null
@@ -168,7 +168,7 @@ export type Database = {
         Insert: {
           academic_year?: string
           child_id: string
-          class_parent_id?: string | null
+          class_id?: string | null
           created_at?: string | null
           id?: string
           is_current?: boolean | null
@@ -178,7 +178,7 @@ export type Database = {
         Update: {
           academic_year?: string
           child_id?: string
-          class_parent_id?: string | null
+          class_id?: string | null
           created_at?: string | null
           id?: string
           is_current?: boolean | null
@@ -187,10 +187,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "child_class_assignments_class_parent_id_fkey"
-            columns: ["class_parent_id"]
+            foreignKeyName: "child_class_assignments_class_id_fkey"
+            columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "classes_parent"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]
@@ -203,7 +203,7 @@ export type Database = {
           id: string
           is_current: boolean | null
           parent_id: string
-          subject_parent_id: string | null
+          subject_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -213,7 +213,7 @@ export type Database = {
           id?: string
           is_current?: boolean | null
           parent_id: string
-          subject_parent_id?: string | null
+          subject_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -223,20 +223,20 @@ export type Database = {
           id?: string
           is_current?: boolean | null
           parent_id?: string
-          subject_parent_id?: string | null
+          subject_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "child_subject_assignments_subject_parent_id_fkey"
-            columns: ["subject_parent_id"]
+            foreignKeyName: "child_subject_assignments_subject_id_fkey"
+            columns: ["subject_id"]
             isOneToOne: false
-            referencedRelation: "subjects_parent"
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
       }
-      classes_parent: {
+      classes: {
         Row: {
           class_key: string
           class_name: string
@@ -306,48 +306,48 @@ export type Database = {
       }
       documents: {
         Row: {
-          class_parent_id: string | null
+          class_id: string | null
           created_at: string
           id: string
           processing_status: string | null
-          subject_parent_id: string | null
+          subject_id: string | null
           title: string
           total_pages: number | null
           user_id: string
         }
         Insert: {
-          class_parent_id?: string | null
+          class_id?: string | null
           created_at?: string
           id?: string
           processing_status?: string | null
-          subject_parent_id?: string | null
+          subject_id?: string | null
           title: string
           total_pages?: number | null
           user_id: string
         }
         Update: {
-          class_parent_id?: string | null
+          class_id?: string | null
           created_at?: string
           id?: string
           processing_status?: string | null
-          subject_parent_id?: string | null
+          subject_id?: string | null
           title?: string
           total_pages?: number | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "documents_class_parent_id_fkey"
-            columns: ["class_parent_id"]
+            foreignKeyName: "documents_class_id_fkey"
+            columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "classes_parent"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "documents_subject_parent_id_fkey"
-            columns: ["subject_parent_id"]
+            foreignKeyName: "documents_subject_id_fkey"
+            columns: ["subject_id"]
             isOneToOne: false
-            referencedRelation: "subjects_parent"
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -758,7 +758,7 @@ export type Database = {
       question_papers: {
         Row: {
           assign_to_all: boolean | null
-          class_parent_id: string | null
+          class_id: string | null
           created_at: string
           deleted_at: string | null
           difficulty_filter:
@@ -770,7 +770,7 @@ export type Database = {
           max_attempts: number | null
           show_results: boolean | null
           start_time: string | null
-          subject_parent_id: string | null
+          subject_id: string | null
           time_limit_minutes: number
           title: string
           total_questions: number
@@ -779,7 +779,7 @@ export type Database = {
         }
         Insert: {
           assign_to_all?: boolean | null
-          class_parent_id?: string | null
+          class_id?: string | null
           created_at?: string
           deleted_at?: string | null
           difficulty_filter?:
@@ -791,7 +791,7 @@ export type Database = {
           max_attempts?: number | null
           show_results?: boolean | null
           start_time?: string | null
-          subject_parent_id?: string | null
+          subject_id?: string | null
           time_limit_minutes: number
           title: string
           total_questions: number
@@ -800,7 +800,7 @@ export type Database = {
         }
         Update: {
           assign_to_all?: boolean | null
-          class_parent_id?: string | null
+          class_id?: string | null
           created_at?: string
           deleted_at?: string | null
           difficulty_filter?:
@@ -812,7 +812,7 @@ export type Database = {
           max_attempts?: number | null
           show_results?: boolean | null
           start_time?: string | null
-          subject_parent_id?: string | null
+          subject_id?: string | null
           time_limit_minutes?: number
           title?: string
           total_questions?: number
@@ -821,24 +821,24 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "question_papers_class_parent_id_fkey"
-            columns: ["class_parent_id"]
+            foreignKeyName: "question_papers_class_id_fkey"
+            columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "classes_parent"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "question_papers_subject_parent_id_fkey"
-            columns: ["subject_parent_id"]
+            foreignKeyName: "question_papers_subject_id_fkey"
+            columns: ["subject_id"]
             isOneToOne: false
-            referencedRelation: "subjects_parent"
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
       }
       questions: {
         Row: {
-          class_parent_id: string | null
+          class_id: string | null
           correct_answer: string
           created_at: string
           deleted_at: string | null
@@ -851,12 +851,12 @@ export type Database = {
           option_d: string
           page_number: number | null
           question_text: string
-          subject_parent_id: string | null
+          subject_id: string | null
           topic: string | null
           user_id: string | null
         }
         Insert: {
-          class_parent_id?: string | null
+          class_id?: string | null
           correct_answer: string
           created_at?: string
           deleted_at?: string | null
@@ -869,12 +869,12 @@ export type Database = {
           option_d: string
           page_number?: number | null
           question_text: string
-          subject_parent_id?: string | null
+          subject_id?: string | null
           topic?: string | null
           user_id?: string | null
         }
         Update: {
-          class_parent_id?: string | null
+          class_id?: string | null
           correct_answer?: string
           created_at?: string
           deleted_at?: string | null
@@ -887,23 +887,23 @@ export type Database = {
           option_d?: string
           page_number?: number | null
           question_text?: string
-          subject_parent_id?: string | null
+          subject_id?: string | null
           topic?: string | null
           user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "questions_class_parent_id_fkey"
-            columns: ["class_parent_id"]
+            foreignKeyName: "questions_class_id_fkey"
+            columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "classes_parent"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "questions_subject_parent_id_fkey"
-            columns: ["subject_parent_id"]
+            foreignKeyName: "questions_subject_id_fkey"
+            columns: ["subject_id"]
             isOneToOne: false
-            referencedRelation: "subjects_parent"
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -938,7 +938,7 @@ export type Database = {
         }
         Relationships: []
       }
-      subjects_parent: {
+      subjects: {
         Row: {
           created_at: string
           description: string | null
@@ -1092,11 +1092,11 @@ export type Database = {
         }
         Returns: string
       }
-      seed_default_classes_parent: {
+      seed_default_classes: {
         Args: { p_parent_id: string }
         Returns: undefined
       }
-      seed_default_subjects_parent: {
+      seed_default_subjects: {
         Args: { p_parent_id: string }
         Returns: undefined
       }

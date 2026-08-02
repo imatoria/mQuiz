@@ -106,7 +106,7 @@ export const PerformanceAnalytics = () => {
       });
 
       const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+      const { data: subjectsData } = await supabase.from('subjects').select('*');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
@@ -128,7 +128,7 @@ export const PerformanceAnalytics = () => {
       // Format performance data
       const formatted: PerformanceData[] = (attemptsData || []).map((attempt: any) => {
         const paper = paperMap.get(attempt.paper_id);
-        const subjName = paper ? (subjMap.get(paper.subject_parent_id) || 'General') : 'General';
+        const subjName = paper ? (subjMap.get(paper.subject_id) || 'General') : 'General';
 
         return {
           test_name: paper?.title || 'Test',

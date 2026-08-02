@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS classes_parent (
+CREATE TABLE IF NOT EXISTS classes (
   id TEXT PRIMARY KEY,
   parent_id TEXT NOT NULL,
   class_name TEXT NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS classes_parent (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS subjects_parent (
+CREATE TABLE IF NOT EXISTS subjects (
   id TEXT PRIMARY KEY,
   parent_id TEXT NOT NULL,
   subject_name TEXT NOT NULL,
@@ -40,37 +40,37 @@ CREATE TABLE IF NOT EXISTS child_class_assignments (
   id TEXT PRIMARY KEY,
   parent_id TEXT NOT NULL,
   child_id TEXT NOT NULL,
-  class_parent_id TEXT,
+  class_id TEXT,
   academic_year TEXT NOT NULL DEFAULT '2025-2026',
   is_current INTEGER DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
-  FOREIGN KEY (class_parent_id) REFERENCES classes_parent(id) ON DELETE SET NULL
+  FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS child_subject_assignments (
   id TEXT PRIMARY KEY,
   parent_id TEXT NOT NULL,
   child_id TEXT NOT NULL,
-  subject_parent_id TEXT,
+  subject_id TEXT,
   academic_year TEXT NOT NULL DEFAULT '2025-2026',
   is_current INTEGER DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
-  FOREIGN KEY (subject_parent_id) REFERENCES subjects_parent(id) ON DELETE SET NULL
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   title TEXT NOT NULL,
-  class_parent_id TEXT,
-  subject_parent_id TEXT,
+  class_id TEXT,
+  subject_id TEXT,
   total_pages INTEGER DEFAULT 0,
   processing_status TEXT DEFAULT 'pending',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (class_parent_id) REFERENCES classes_parent(id) ON DELETE SET NULL,
-  FOREIGN KEY (subject_parent_id) REFERENCES subjects_parent(id) ON DELETE SET NULL
+  FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE SET NULL,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS document_pages (
@@ -86,8 +86,8 @@ CREATE TABLE IF NOT EXISTS document_pages (
 CREATE TABLE IF NOT EXISTS questions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  class_parent_id TEXT,
-  subject_parent_id TEXT,
+  class_id TEXT,
+  subject_id TEXT,
   document_id TEXT,
   page_number INTEGER,
   question_text TEXT NOT NULL,
@@ -101,8 +101,8 @@ CREATE TABLE IF NOT EXISTS questions (
   is_deleted INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (class_parent_id) REFERENCES classes_parent(id) ON DELETE SET NULL,
-  FOREIGN KEY (subject_parent_id) REFERENCES subjects_parent(id) ON DELETE SET NULL,
+  FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE SET NULL,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL,
   FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE SET NULL
 );
 
@@ -110,8 +110,8 @@ CREATE TABLE IF NOT EXISTS question_papers (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   title TEXT NOT NULL,
-  class_parent_id TEXT,
-  subject_parent_id TEXT,
+  class_id TEXT,
+  subject_id TEXT,
   total_questions INTEGER NOT NULL DEFAULT 0,
   time_limit_minutes INTEGER NOT NULL DEFAULT 60,
   difficulty_filter TEXT, -- JSON Array
@@ -124,8 +124,8 @@ CREATE TABLE IF NOT EXISTS question_papers (
   deleted_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (class_parent_id) REFERENCES classes_parent(id) ON DELETE SET NULL,
-  FOREIGN KEY (subject_parent_id) REFERENCES subjects_parent(id) ON DELETE SET NULL
+  FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE SET NULL,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS question_paper_questions (

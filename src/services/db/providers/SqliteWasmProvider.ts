@@ -44,7 +44,7 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         (window as any).getSqliteDb = () => this.db;
         (window as any).querySqlite = async (sql: string) => this.query(sql);
       }
-      console.log(`[SqliteWasmProvider] In-Browser Database initialized successfully with ${this.db.questions?.length || 0} questions and ${this.db.classes_parent?.length || 0} classes.`);
+      console.log(`[SqliteWasmProvider] In-Browser Database initialized successfully with ${this.db.questions?.length || 0} questions and ${this.db.classes?.length || 0} classes.`);
     } catch (err) {
       console.error('[SqliteWasmProvider] Initialization failed:', err);
       this.db = { ...(importedData as any) };
@@ -142,10 +142,10 @@ export class SqliteWasmProvider implements IDatabaseProvider {
             rows = rows.filter(r => r.child_id === paramVal);
           } else if (/\bparent_id\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => r.parent_id === paramVal);
-          } else if (/\bclass_parent_id\s*=/i.test(cleanSql)) {
-            rows = rows.filter(r => r.class_parent_id === paramVal);
-          } else if (/\bsubject_parent_id\s*=/i.test(cleanSql)) {
-            rows = rows.filter(r => r.subject_parent_id === paramVal);
+          } else if (/\bclass_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.class_id === paramVal);
+          } else if (/\bsubject_id\s*=/i.test(cleanSql)) {
+            rows = rows.filter(r => r.subject_id === paramVal);
           } else if (/\bis_deleted\s*=/i.test(cleanSql)) {
             const target = Boolean(paramVal);
             rows = rows.filter(r => Boolean(r.is_deleted) === target);

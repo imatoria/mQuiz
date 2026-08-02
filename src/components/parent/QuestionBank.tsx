@@ -33,8 +33,8 @@ interface Question {
   correct_answer: string;
   difficulty: 'easy' | 'medium' | 'difficult';
   page_number?: number;
-  subject_parent_id: string;
-  class_parent_id: string;
+  subject_id: string;
+  class_id: string;
   created_at: string;
 }
 
@@ -110,9 +110,9 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
 
   const filteredQuestions = questions.filter(question => {
     const matchesSearch = question.question_text.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = selectedSubject === 'all' || question.subject_parent_id === selectedSubject;
+    const matchesSubject = selectedSubject === 'all' || question.subject_id === selectedSubject;
     const matchesDifficulty = selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
-    const matchesClass = selectedClass === 'all' || question.class_parent_id === selectedClass;
+    const matchesClass = selectedClass === 'all' || question.class_id === selectedClass;
     
     // Date range filtering
     const questionDate = new Date(question.created_at);
@@ -439,7 +439,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {uniqueSubjects.find(s => s.id === question.subject_parent_id)?.subject_name || '-'}
+                        {uniqueSubjects.find(s => s.id === question.subject_id)?.subject_name || '-'}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
@@ -447,7 +447,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {uniqueClasses.find(c => c.id === question.class_parent_id)?.class_name || '-'}
+                        {uniqueClasses.find(c => c.id === question.class_id)?.class_name || '-'}
                       </TableCell>
                       <TableCell>
                         {question.page_number || '-'}

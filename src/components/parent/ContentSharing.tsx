@@ -13,8 +13,8 @@ import { Share2, Users, Eye, Edit, Trash2, Calendar, UserPlus, Link } from "luci
 interface Document {
   id: string;
   title: string;
-  subject_parent_id: string;
-  class_parent_id: string;
+  subject_id: string;
+  class_id: string;
 }
 
 interface Subject {
@@ -76,7 +76,7 @@ export const ContentSharing = () => {
 
       // Fetch subjects
       const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subjects_parent')
+        .from('subjects')
         .select('*')
         .eq('parent_id', user.user.id)
         .eq('is_active', true)

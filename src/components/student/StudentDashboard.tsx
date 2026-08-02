@@ -43,7 +43,7 @@ interface ScheduledPaper {
   max_attempts: number;
   time_limit_minutes: number;
   total_questions: number;
-  subjects_parent: { subject_name: string };
+  subjects: { subject_name: string };
   paper_attempts: PaperAttempt[];
 }
 
@@ -176,7 +176,7 @@ const StudentDashboardContent = () => {
         
         if (error) throw error;
 
-        const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+        const { data: subjectsData } = await supabase.from('subjects').select('*');
         const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
         // Load assignments for current student
         const { data: assignmentsData } = await supabase
@@ -214,7 +214,7 @@ const StudentDashboardContent = () => {
           max_attempts: p.max_attempts || 1,
           time_limit_minutes: p.time_limit_minutes || 60,
           total_questions: p.total_questions || 0,
-          subjects_parent: { subject_name: p.subject_parent_id ? subjMap.get(p.subject_parent_id) || 'General' : 'General' },
+          subjects: { subject_name: p.subject_id ? subjMap.get(p.subject_id) || 'General' : 'General' },
           paper_attempts: (attemptsMap[p.id] || []).map(a => ({
             id: a.id,
             attempt_number: a.attempt_number,
@@ -359,7 +359,7 @@ const StudentDashboardContent = () => {
         title: currentTest.title,
         total_questions: currentTest.total_questions,
         time_limit_minutes: currentTest.time_limit_minutes,
-        subjects_parent: currentTest.subjects_parent
+        subjects: currentTest.subjects
       },
       test_attempts: currentTest.paper_attempts?.map(attempt => ({
         id: attempt.id,
@@ -532,7 +532,7 @@ const StudentDashboardContent = () => {
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-quiz mb-1">{test.title}</h4>
                                 <p className="text-sm text-muted-foreground mb-2">
-                                  {test.subjects_parent?.subject_name} • {test.total_questions} total questions
+                                  {test.subjects?.subject_name} • {test.total_questions} total questions
                                 </p>
                               </div>
                               
@@ -615,7 +615,7 @@ const StudentDashboardContent = () => {
                            <div className="flex-1 min-w-0">
                              <h4 className="font-medium truncate pr-2">{test.title}</h4>
                                 <p className="text-sm text-muted-foreground truncate">
-                                  {test.subjects_parent?.subject_name || 'No subject'} • {test.total_questions} questions • {test.time_limit_minutes}m
+                                  {test.subjects?.subject_name || 'No subject'} • {test.total_questions} questions • {test.time_limit_minutes}m
                                 </p>
                              <div className="flex flex-wrap items-center mt-2 gap-2">
                                <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
@@ -710,7 +710,7 @@ const StudentDashboardContent = () => {
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium truncate pr-2">{test.title}</h4>
                             <p className="text-sm text-muted-foreground truncate mb-2">
-                              {test.subjects_parent?.subject_name || 'No subject'} • Completed {new Date(bestAttempt.completed_at).toLocaleDateString()}
+                              {test.subjects?.subject_name || 'No subject'} • Completed {new Date(bestAttempt.completed_at).toLocaleDateString()}
                             </p>
                             
                             <div className="flex flex-wrap items-center gap-4 text-sm mt-1">
@@ -795,7 +795,7 @@ const StudentDashboardContent = () => {
               question_papers: {
                 total_questions: selectedTest.total_questions,
                 time_limit_minutes: selectedTest.time_limit_minutes,
-                subjects_parent: selectedTest.subjects_parent
+                subjects: selectedTest.subjects
               } as any
             }}
           />

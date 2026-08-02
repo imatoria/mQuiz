@@ -68,8 +68,8 @@ export const DocumentUpload = ({
           .from('documents')
           .select('id')
           .eq('user_id', user.user.id)
-          .eq('subject_parent_id', subject)
-          .eq('class_parent_id', classLevel);
+          .eq('subject_id', subject)
+          .eq('class_id', classLevel);
 
         if (docsError) throw docsError;
         if (!documents || documents.length === 0) {
@@ -241,8 +241,8 @@ export const DocumentUpload = ({
       } = await supabase.from('documents').insert({
         user_id: user.user.id,
         title,
-        subject_parent_id: subject,
-        class_parent_id: classLevel,
+        subject_id: subject,
+        class_id: classLevel,
         processing_status: 'completed',
         total_pages: selectedPages.length > 0 ? selectedPages.length : doc.numPages
       }).select().single();

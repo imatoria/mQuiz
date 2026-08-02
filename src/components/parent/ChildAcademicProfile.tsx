@@ -52,7 +52,7 @@ export const ChildAcademicProfile = ({
         .eq('child_id', childId)
         .maybeSingle();
 
-      const classId = classData?.class_parent_id || '';
+      const classId = classData?.class_id || '';
       setCurrentClassId(classId);
       setSelectedClassId(classId);
 
@@ -62,7 +62,7 @@ export const ChildAcademicProfile = ({
         .select('*')
         .eq('child_id', childId);
 
-      const subjectIds = (subjectsData || []).map((s: any) => s.subject_parent_id);
+      const subjectIds = (subjectsData || []).map((s: any) => s.subject_id);
       setCurrentSubjects(subjectIds);
       setSelectedSubjects(subjectIds);
     } catch (error: any) {
@@ -117,7 +117,7 @@ export const ChildAcademicProfile = ({
         .insert({
           child_id: childId,
           parent_id: user.user.id,
-          class_parent_id: selectedClassId,
+          class_id: selectedClassId,
           is_current: true,
           academic_year: currentYear,
         });
@@ -137,7 +137,7 @@ export const ChildAcademicProfile = ({
         const assignments = selectedSubjects.map(subjectParentId => ({
           child_id: childId,
           parent_id: user.user.id,
-          subject_parent_id: subjectParentId,
+          subject_id: subjectParentId,
           is_current: true,
           academic_year: currentYear,
         }));

@@ -60,7 +60,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
 
       // Check if subject already exists for this parent
       const { data: existingSubjects } = await supabase
-        .from('subjects_parent')
+        .from('subjects')
         .select('*')
         .eq('parent_id', user.user.id)
         .eq('subject_name', newSubjectName.trim());
@@ -75,7 +75,7 @@ export const CustomSubjectInput: React.FC<CustomSubjectInputProps> = ({
       }
 
       const { data: newSubject, error } = await supabase
-        .from('subjects_parent')
+        .from('subjects')
         .insert({
           parent_id: user.user.id,
           subject_name: newSubjectName.trim(),

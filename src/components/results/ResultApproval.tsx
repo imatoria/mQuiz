@@ -107,7 +107,7 @@ export const ResultApproval = () => {
       if (attemptsError) throw attemptsError;
 
       const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
+      const { data: subjectsData } = await supabase.from('subjects').select('*');
       const { data: profilesData } = await supabase.from('profiles').select('*');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
@@ -116,7 +116,7 @@ export const ResultApproval = () => {
 
       const formatted: TestResult[] = (attemptsData || []).map((attempt: any) => {
         const paper = paperMap.get(attempt.paper_id) || {};
-        const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
+        const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
         const prof = profileMap.get(attempt.user_id) || {};
 
         return {

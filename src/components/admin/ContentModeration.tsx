@@ -33,17 +33,17 @@ interface Document {
   created_at: string;
   user_id: string;
   total_pages: number | null;
-  class_parent_id: string | null;
-  subject_parent_id: string | null;
+  class_id: string | null;
+  subject_id: string | null;
   updated_at: string;
   profiles?: {
     full_name: string | null;
     email: string;
   } | null;
-  classes_parent?: {
+  classes?: {
     class_name: string;
   } | null;
-  subjects_parent?: {
+  subjects?: {
     subject_name: string;
   } | null;
 }
@@ -54,8 +54,8 @@ interface QuestionPaper {
   total_questions: number;
   created_at: string;
   user_id: string;
-  subject_parent_id: string | null;
-  class_parent_id: string | null;
+  subject_id: string | null;
+  class_id: string | null;
   time_limit_minutes: number;
   difficulty_filter: string[] | null;
   updated_at: string;
@@ -63,10 +63,10 @@ interface QuestionPaper {
     full_name: string | null;
     email: string;
   } | null;
-  classes_parent?: {
+  classes?: {
     class_name: string;
   } | null;
-  subjects_parent?: {
+  subjects?: {
     subject_name: string;
   } | null;
 }
@@ -111,8 +111,8 @@ export const ContentModeration = () => {
         .select(`
           *,
           profiles(full_name, email),
-          classes_parent(class_name),
-          subjects_parent(subject_name)
+          classes(class_name),
+          subjects(subject_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -124,8 +124,8 @@ export const ContentModeration = () => {
         .select(`
           *,
           profiles(full_name, email),
-          classes_parent(class_name),
-          subjects_parent(subject_name)
+          classes(class_name),
+          subjects(subject_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -289,7 +289,7 @@ export const ContentModeration = () => {
                             <div>
                               <div className="font-medium">{document.title}</div>
                               <div className="text-sm text-muted-foreground">
-                                {document.total_pages} pages • {document.classes_parent?.class_name || 'No class'}
+                                {document.total_pages} pages • {document.classes?.class_name || 'No class'}
                               </div>
                             </div>
                           </div>
@@ -331,8 +331,8 @@ export const ContentModeration = () => {
                                     <div className="text-sm space-y-1">
                                       <p><strong>Title:</strong> {document.title}</p>
                                       <p><strong>Pages:</strong> {document.total_pages}</p>
-                                      <p><strong>Class:</strong> {document.classes_parent?.class_name || 'No class'}</p>
-                                      <p><strong>Subject:</strong> {document.subjects_parent?.subject_name || 'No subject'}</p>
+                                      <p><strong>Class:</strong> {document.classes?.class_name || 'No class'}</p>
+                                      <p><strong>Subject:</strong> {document.subjects?.subject_name || 'No subject'}</p>
                                       <p><strong>Creator:</strong> {document.profiles?.full_name} ({document.profiles?.email})</p>
                                     </div>
                                   </div>

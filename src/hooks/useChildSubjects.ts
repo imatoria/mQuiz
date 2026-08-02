@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SubjectAssignment {
-  subject_parent_id: string;
+  subject_id: string;
   child_id: string;
-  subjects_parent?: {
+  subjects?: {
     id: string;
     subject_name: string;
   };
@@ -52,16 +52,16 @@ export const useChildSubjects = () => {
 
       if (assignmentsError) throw assignmentsError;
 
-      const { data: allSubjects } = await supabase.from('subjects_parent').select('*');
+      const { data: allSubjects } = await supabase.from('subjects').select('*');
       const subjMap = new Map((allSubjects || []).map((s: any) => [s.id, s]));
 
       const enriched: SubjectAssignment[] = (assignments || []).map((assignment: any) => {
-        const subj = subjMap.get(assignment.subject_parent_id) || {};
+        const subj = subjMap.get(assignment.subject_id) || {};
         return {
-          subject_parent_id: assignment.subject_parent_id,
+          subject_id: assignment.subject_id,
           child_id: assignment.child_id,
-          subjects_parent: {
-            id: subj.id || assignment.subject_parent_id,
+          subjects: {
+            id: subj.id || assignment.subject_id,
             subject_name: subj.subject_name || 'General'
           }
         };
@@ -77,12 +77,12 @@ export const useChildSubjects = () => {
   };
 
   const getUniqueSubjects = () => {
-    const uniqueSubjectIds = [...new Set(childSubjects.map(cs => cs.subject_parent_id))];
+    const uniqueSubjectIds = [...new Set(childSubjects.map(cs => cs.subject_id))];
     return uniqueSubjectIds.map(subjectId => {
-      const assignment = childSubjects.find(cs => cs.subject_parent_id === subjectId);
+      const assignment = childSubjects.find(cs => cs.subject_id === subjectId);
       return {
         id: subjectId,
-        subject_name: assignment?.subjects_parent?.subject_name || 'General'
+        subject_name: assignment?.subjects?.subject_name || 'General'
       };
     });
   };
@@ -91,19 +91,19 @@ export const useChildSubjects = () => {
     return childSubjects
       .filter(cs => cs.child_id === childId)
       .map(cs => ({
-        id: cs.subject_parent_id,
-        name: cs.subjects_parent?.subject_name || 'General'
+        id: cs.subject_id,
+        name: cs.subjects?.subject_name || 'General'
       }));
   };
 
   const getSubjectIds = () => {
-    return [...new Set(childSubjects.map(cs => cs.subject_parent_id))];
+    return [...new Set(childSubjects.map(cs => cs.subject_id))];
   };
 
   const getSubjectIdsForChild = (childId: string) => {
     return childSubjects
       .filter(cs => cs.child_id === childId)
-      .map(cs => cs.subject_parent_id);
+      .map(cs => cs.subject_id);
   };
 
   const refetch = () => {

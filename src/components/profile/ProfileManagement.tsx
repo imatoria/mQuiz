@@ -69,11 +69,11 @@ export const ProfileManagement = () => {
         .eq('is_current', true)
         .maybeSingle();
 
-      if (classAssign?.class_parent_id) {
+      if (classAssign?.class_id) {
         const { data: classObj } = await supabase
-          .from('classes_parent')
+          .from('classes')
           .select('class_name')
-          .eq('id', classAssign.class_parent_id)
+          .eq('id', classAssign.class_id)
           .maybeSingle();
         if (classObj) setStudentClass(classObj.class_name);
       }
@@ -86,9 +86,9 @@ export const ProfileManagement = () => {
         .eq('is_current', true);
 
       if (subjAssigns && subjAssigns.length > 0) {
-        const sIds = subjAssigns.map((s: any) => s.subject_parent_id);
+        const sIds = subjAssigns.map((s: any) => s.subject_id);
         const { data: subjs } = await supabase
-          .from('subjects_parent')
+          .from('subjects')
           .select('subject_name')
           .in('id', sIds);
         setStudentSubjects((subjs || []).map((s: any) => s.subject_name));

@@ -75,7 +75,7 @@ export function BookManager() {
       // Fetch all documents with their pages
       const { data: documents, error: docsError } = await supabase
         .from('documents')
-        .select('id, class_parent_id, subject_parent_id')
+        .select('id, class_id, subject_id')
         .eq('user_id', user.user.id);
 
       if (docsError) throw docsError;
@@ -103,7 +103,7 @@ export function BookManager() {
 
       subjects.forEach(subject => {
         // Find all documents for this subject
-        const subjectDocs = documents?.filter(d => d.subject_parent_id === subject.id) || [];
+        const subjectDocs = documents?.filter(d => d.subject_id === subject.id) || [];
         const subjectDocIds = subjectDocs.map(d => d.id);
         
         // Find all pages for these documents
@@ -111,7 +111,7 @@ export function BookManager() {
 
         if (subjectPages.length > 0) {
           // Get the class for this subject (from first document)
-          const classId = subjectDocs[0]?.class_parent_id;
+          const classId = subjectDocs[0]?.class_id;
           if (classId && grouped[classId]) {
             grouped[classId].subjects.push({
               subjectId: subject.id,

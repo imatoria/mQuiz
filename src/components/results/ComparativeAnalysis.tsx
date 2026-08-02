@@ -89,8 +89,8 @@ export const ComparativeAnalysis = () => {
       if (error) throw error;
 
       const { data: papersData } = await supabase.from('question_papers').select('*');
-      const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
-      const { data: classesData } = await supabase.from('classes_parent').select('*');
+      const { data: subjectsData } = await supabase.from('subjects').select('*');
+      const { data: classesData } = await supabase.from('classes').select('*');
 
       const paperMap = new Map((papersData || []).map((p: any) => [p.id, p]));
       const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
@@ -98,17 +98,17 @@ export const ComparativeAnalysis = () => {
 
       const attempts = (attemptsData || []).map((attempt: any) => {
         const paper = paperMap.get(attempt.paper_id) || {};
-        const subjName = paper.subject_parent_id ? subjMap.get(paper.subject_parent_id) || 'General' : 'General';
-        const className = paper.class_parent_id ? classMap.get(paper.class_parent_id) || 'Class 10' : 'Class 10';
+        const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
+        const className = paper.class_id ? classMap.get(paper.class_id) || 'Class 10' : 'Class 10';
 
         return {
           ...attempt,
           question_papers: {
             title: paper.title || 'Question Paper',
             user_id: paper.user_id || '',
-            class_parent_id: paper.class_parent_id || '',
-            subjects_parent: { subject_name: subjName },
-            classes_parent: { class_name: className }
+            class_id: paper.class_id || '',
+            subjects: { subject_name: subjName },
+            classes: { class_name: className }
           }
         };
       });
@@ -150,7 +150,7 @@ export const ComparativeAnalysis = () => {
     attempts.forEach((attempt: any) => {
       const studentId = attempt.user_id;
       const studentName = profileMap[studentId]?.full_name || 'Unknown Student';
-      const subject = attempt.question_papers.subjects_parent?.subject_name || 'Unknown';
+      const subject = attempt.question_papers.subjects?.subject_name || 'Unknown';
       
       if (!studentMap.has(studentId)) {
         studentMap.set(studentId, {
@@ -240,8 +240,8 @@ export const ComparativeAnalysis = () => {
     const classMap = new Map<string, ClassComparison>();
     
     attempts.forEach((attempt: any) => {
-      const classLevel = attempt.question_papers.classes_parent?.class_name || 'Unknown';
-      const subject = attempt.question_papers.subjects_parent?.subject_name || 'Unknown';
+      const classLevel = attempt.question_papers.classes?.class_name || 'Unknown';
+      const subject = attempt.question_papers.subjects?.subject_name || 'Unknown';
       
       if (!classMap.has(classLevel)) {
         classMap.set(classLevel, {

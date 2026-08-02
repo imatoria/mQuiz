@@ -19,7 +19,7 @@ interface ScheduledTest {
   time_limit_minutes?: number;
   show_results?: boolean;
   total_questions: number;
-  subjects_parent?: { subject_name: string };
+  subjects?: { subject_name: string };
 }
 
 export const ScheduleManager = () => {
@@ -41,7 +41,7 @@ export const ScheduleManager = () => {
       .from('question_papers')
       .select(`
         *,
-        subjects_parent(subject_name)
+        subjects(subject_name)
       `)
       .eq('user_id', user.user.id)
       .neq('start_time', null)
@@ -131,7 +131,7 @@ export const ScheduleManager = () => {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm mb-1 truncate">{test.title}</h4>
                        <p className="text-xs text-muted-foreground mb-2">
-                          {test.subjects_parent?.subject_name}
+                          {test.subjects?.subject_name}
                           {test.show_results ? ' • Auto-approve results' : ' • Manual approval required'}
                         </p>
                       

@@ -34,14 +34,14 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
       // Fetch current subject assignments
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('child_subject_assignments')
-        .select('subject_parent_id')
+        .select('subject_id')
         .eq('child_id', childId)
         .eq('parent_id', user.user.id)
         .eq('is_current', true);
 
       if (assignmentsError) throw assignmentsError;
 
-      const subjectIds = assignmentsData?.map(a => a.subject_parent_id) || [];
+      const subjectIds = assignmentsData?.map(a => a.subject_id) || [];
       
       setCurrentSubjects(subjectIds);
       setSelectedSubjects(subjectIds);
@@ -84,7 +84,7 @@ export const ChildSubjectAssignment = ({ childId, childName }: ChildSubjectAssig
         const assignments = selectedSubjects.map(subjectParentId => ({
           child_id: childId,
           parent_id: user.user.id,
-          subject_parent_id: subjectParentId,
+          subject_id: subjectParentId,
           is_current: true,
         }));
 
