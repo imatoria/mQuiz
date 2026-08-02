@@ -1,18 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, UserProfile } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
-
-interface UserProfile {
-  id: string;
-  user_id: string;
-  email: string | null;
-  full_name: string | null;
-  role: 'admin' | 'parent' | 'child';
-  is_approved: boolean;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { authService } from '@/services/auth/authService';
+import { dbService } from '@/services/db';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
