@@ -73,7 +73,7 @@ const ParentDashboardContent = () => {
   return (
     <ErrorBoundary>
       <Navigation 
-        currentRole={profile?.role || null} 
+        currentRole={profile?.role === 'parent' ? 'parent' : null} 
         onRoleChange={() => signOut()}
       />
       <div className="flex w-full pt-[57px] md:pt-[65px]">

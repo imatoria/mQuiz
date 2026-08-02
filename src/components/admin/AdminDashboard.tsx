@@ -70,7 +70,7 @@ const AdminDashboardContent = () => {
   return (
     <ErrorBoundary>
       <Navigation 
-        currentRole={profile?.role || null} 
+        currentRole={profile?.role === 'admin' ? 'admin' : null} 
         onRoleChange={() => signOut()}
       />
       <div className="flex w-full pt-[57px] md:pt-[65px]">

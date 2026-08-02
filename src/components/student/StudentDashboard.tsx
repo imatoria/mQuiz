@@ -379,7 +379,7 @@ const StudentDashboardContent = () => {
   return (
     <>
       <Navigation 
-        currentRole={profile?.role || null} 
+        currentRole={(profile?.role === 'student' || profile?.role === 'child') ? 'student' : null} 
         onRoleChange={() => signOut()}
       />
       <div className="flex w-full pt-[57px] md:pt-[65px]">

@@ -28,8 +28,8 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 
 interface NavigationProps {
-  currentRole: 'admin' | 'parent' | 'child' | null;
-  onRoleChange: (role: 'admin' | 'parent' | 'child' | null) => void;
+  currentRole: 'admin' | 'parent' | 'student' | null;
+  onRoleChange?: (role: 'admin' | 'parent' | 'student' | null) => void;
   activeTabName?: string;
   activeTabIcon?: LucideIcon;
 }
@@ -48,7 +48,9 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
     return 'U';
   };
 
-  const roleConfig = {
+  const roleKey = (currentRole === 'child' ? 'student' : currentRole) as string | null;
+
+  const roleConfig: Record<string, { icon: any; label: string; color: string; features: string[] }> = {
     admin: {
       icon: Shield,
       label: 'Admin',
@@ -61,9 +63,9 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
       color: 'bg-gradient-success',
       features: ['Create Papers', 'Upload Documents', 'View Results']
     },
-    child: {
+    student: {
       icon: User,
-      label: 'Child',
+      label: 'Student',
       color: 'bg-quiz',
       features: ['Take Tests', 'View Results', 'Study Mode']
     }
@@ -111,9 +113,9 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
                     <p className="text-sm font-medium leading-none">
                       {profile.full_name || profile.email}
                     </p>
-                    {currentRole && (
+                    {roleKey && roleConfig[roleKey] && (
                       <Badge variant="secondary" className="text-xs w-fit">
-                        {roleConfig[currentRole].label}
+                        {roleConfig[roleKey].label}
                       </Badge>
                     )}
                   </div>
