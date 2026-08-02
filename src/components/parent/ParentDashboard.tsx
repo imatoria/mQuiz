@@ -76,7 +76,7 @@ const ParentDashboardContent = () => {
         currentRole={profile?.role || null} 
         onRoleChange={() => signOut()}
       />
-      <div className="flex w-full pt-[57px] md:pt-[64px]">
+      <div className="flex w-full pt-[57px] md:pt-[65px]">
         <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
           <SidebarContent className="h-full overflow-y-auto">
             <SidebarGroup>
@@ -115,7 +115,7 @@ const ParentDashboardContent = () => {
             })()}
           </div>
           
-          <div className="min-h-screen bg-background">
+          <div className="min-h-[calc(100vh-57px)] md:min-h-[calc(100vh-65px)] bg-background">
             <div className="p-3 sm:p-4 md:p-6">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
               {/* Content sections */}

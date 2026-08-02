@@ -120,7 +120,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ open, onOpenChan
           </div>
         </DialogHeader>
 
-        <div className="h-[calc(90vh-56px)]">
+        <div className="h-[calc(90vh-57px)]">
           {loading ? (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
               <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Loading PDF...

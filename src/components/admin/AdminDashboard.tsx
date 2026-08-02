@@ -73,7 +73,7 @@ const AdminDashboardContent = () => {
         currentRole={profile?.role || null} 
         onRoleChange={() => signOut()}
       />
-      <div className="flex w-full pt-[57px] md:pt-[64px]">
+      <div className="flex w-full pt-[57px] md:pt-[65px]">
         <Sidebar collapsible="icon" className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-40">
           <SidebarContent className="h-full overflow-y-auto">
             <SidebarGroup>

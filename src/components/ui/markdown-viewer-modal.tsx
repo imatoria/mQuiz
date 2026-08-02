@@ -76,7 +76,7 @@ export const MarkdownViewerModal: React.FC<MarkdownViewerModalProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="h-[calc(90vh-56px)]">
+        <div className="h-[calc(90vh-57px)]">
           <ScrollArea className="h-full">
             <div className="p-6">
               {isEditing ? (
