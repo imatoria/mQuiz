@@ -42,8 +42,7 @@ export const PapersManager: React.FC = () => {
   }, [refreshKey]);
 
   const fetchPapers = async () => {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return;
+    if (!user) return;
 
     const { data: papersData } = await supabase
       .from('question_papers')

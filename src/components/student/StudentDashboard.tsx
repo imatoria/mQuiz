@@ -178,8 +178,19 @@ const StudentDashboardContent = () => {
 
         const { data: subjectsData } = await supabase.from('subjects_parent').select('*');
         const subjMap = new Map((subjectsData || []).map((s: any) => [s.id, s.subject_name]));
-        
-        const validPapers = (papersData || []).filter((p: any) => p.is_deleted !== true);
+        // Load assignments for current student
+        const { data: assignmentsData } = await supabase
+          .from('paper_assignments')
+          .select('paper_id')
+          .eq('assigned_to_user_id', userId);
+
+        const assignedIds = new Set((assignmentsData || []).map((a: any) => a.paper_id));
+
+        const validPapers = (papersData || []).filter((p: any) => {
+          if (p.is_deleted === true) return false;
+          if (p.assign_to_all !== false) return true;
+          return assignedIds.has(p.id);
+        });
         
         // Get attempts for current user
         const { data: attemptsData, error: attemptsError } = await supabase
@@ -224,17 +235,23 @@ const StudentDashboardContent = () => {
         const categorized = { available: [] as ScheduledPaper[], completed: [] as ScheduledPaper[], active: [] as ScheduledPaper[] };
         
         processedPapers.forEach(paper => {
-          const start = new Date(paper.start_time);
-          const end = new Date(paper.end_time);
+          const hasStart = !!paper.start_time;
+          const hasEnd = !!paper.end_time;
+          const start = hasStart ? new Date(paper.start_time) : null;
+          const end = hasEnd ? new Date(paper.end_time) : null;
+
           const inProgress = paper.paper_attempts.filter(a => !a.completed_at);
           const hasCompleted = paper.paper_attempts.some(a => a.completed_at);
           const hasRemaining = paper.paper_attempts.length < paper.max_attempts;
-          
+
+          const isExpired = end ? end < now : false;
+          const isNotStartedYet = start ? start > now : false;
+
           if (inProgress.length > 0) {
             categorized.active.push(paper);
-          } else if (end < now || (hasCompleted && !hasRemaining)) {
+          } else if (isExpired || (hasCompleted && !hasRemaining)) {
             categorized.completed.push(paper);
-          } else {
+          } else if (!isNotStartedYet) {
             categorized.available.push(paper);
           }
         });
