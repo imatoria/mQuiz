@@ -1118,7 +1118,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                                   <span className="text-sm">{question.topic || 'N/A'}</span>
                                 </TableCell>
                                 <TableCell>
-                                  <span className="text-sm">{question.page_number || '-'}</span>
+                                  <span className="text-sm">{question.page_number ?? question.page ?? (question as any).page_num ?? '-'}</span>
                                 </TableCell>
                               </TableRow>
                             );
@@ -1365,9 +1365,15 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
                 <TabsContent value="ai-generator" className="space-y-4 pt-4">
                   <AIQuestionGenerator
+                    embeddedInPaperCreator={true}
+                    subject_id={formData.subject_id}
+                    class_id={formData.class_id}
+                    difficulty={formData.difficulty_filter?.[0] || 'medium'}
+                    total_questions={formData.total_questions || 10}
                     onQuestionsGenerated={(generated) => {
                       const formattedGen = generated.map(q => ({
                         ...q,
+                        page_number: q.page_number ?? 1,
                         options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options
                       }));
 

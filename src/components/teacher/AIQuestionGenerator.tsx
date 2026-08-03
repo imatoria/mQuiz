@@ -89,23 +89,47 @@ const DEFAULT_PRESETS: InstructionPreset[] = [
 
 interface AIQuestionGeneratorProps {
   onQuestionsGenerated?: (questions: any[]) => void;
+  embeddedInPaperCreator?: boolean;
+  subject_id?: string;
+  class_id?: string;
+  difficulty?: string;
+  total_questions?: number;
 }
 
-export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onQuestionsGenerated }) => {
+export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ 
+  onQuestionsGenerated,
+  embeddedInPaperCreator = false,
+  subject_id,
+  class_id,
+  difficulty,
+  total_questions
+}) => {
   const { uniqueSubjects = [], isLoading: loadingSubjects } = useStudentSubjects();
   const { uniqueClasses = [], isLoading: loadingClasses } = useStudentClasses();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [config, setConfig] = useState<GenerationConfig>({
     topic: '',
-    subject_id: '',
-    class_id: '',
-    difficulty: 'medium',
-    question_count: 5,
+    subject_id: subject_id || '',
+    class_id: class_id || '',
+    difficulty: difficulty || 'medium',
+    question_count: total_questions || 5,
     question_type: 'mixed',
     custom_instructions: '',
     document_id: ''
   });
+
+  useEffect(() => {
+    if (embeddedInPaperCreator) {
+      setConfig(prev => ({
+        ...prev,
+        subject_id: subject_id || prev.subject_id,
+        class_id: class_id || prev.class_id,
+        difficulty: difficulty || prev.difficulty || 'medium',
+        question_count: total_questions || prev.question_count || 5
+      }));
+    }
+  }, [embeddedInPaperCreator, subject_id, class_id, difficulty, total_questions]);
   const { toast } = useToast();
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
@@ -303,9 +327,18 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onQues
     setIsGenerating(true);
 
     try {
-      const questionCount = mode === 'book'
-        ? Math.max(1, maxQuestionsPerPage) * selectedPages.length
-        : config.question_count;
+      let questionCount = embeddedInPaperCreator
+        ? (total_questions || config.question_count || 5)
+        : (mode === 'book' && selectedPages.length > 0 ? Math.max(1, maxQuestionsPerPage) * selectedPages.length : config.question_count);
+
+      if (mode === 'book' && selectedPages.length > 0) {
+        if (minQuestionsPerPage > 0) {
+          questionCount = Math.max(questionCount, minQuestionsPerPage * selectedPages.length);
+        }
+        if (maxQuestionsPerPage > 0) {
+          questionCount = Math.min(questionCount, maxQuestionsPerPage * selectedPages.length);
+        }
+      }
 
       const payload = {
         config: { 
@@ -338,6 +371,10 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onQues
           `Option C: Advanced theorem`,
           `Option D: Fundamental observation`
         ];
+        const assignedPage = mode === 'book' && selectedPages.length > 0
+          ? selectedPages[(i - 1) % selectedPages.length]
+          : 1;
+
         const qRecord = {
           id: qId,
           user_id: currentUser?.id || 'system',
@@ -349,12 +386,13 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onQues
           correct_answer: optionsArr[0],
           explanation: `Detailed explanation for question ${i} covering ${topicTitle}.`,
           difficulty: config.difficulty === 'mixed' ? 'medium' : config.difficulty,
+          page_number: assignedPage,
           created_at: new Date().toISOString()
         };
 
         await dbService.getProvider().execute(
-          'INSERT INTO questions (id, user_id, subject_id, class_id, question_text, question_type, options, correct_answer, explanation, difficulty, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [qRecord.id, qRecord.user_id, qRecord.subject_id, qRecord.class_id, qRecord.question_text, qRecord.question_type, qRecord.options, qRecord.correct_answer, qRecord.explanation, qRecord.difficulty, qRecord.created_at]
+          'INSERT INTO questions (id, user_id, subject_id, class_id, question_text, question_type, options, correct_answer, explanation, difficulty, page_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [qRecord.id, qRecord.user_id, qRecord.subject_id, qRecord.class_id, qRecord.question_text, qRecord.question_type, qRecord.options, qRecord.correct_answer, qRecord.explanation, qRecord.difficulty, qRecord.page_number, qRecord.created_at]
         );
 
         newQuestions.push({
@@ -452,75 +490,79 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onQues
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>Subject</Label>
-            <Select 
-              value={config.subject_id} 
-              onValueChange={(value) => setConfig({ ...config, subject_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select subject" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingSubjects ? (
-                  <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
-                ) : uniqueSubjects.length === 0 ? (
-                  <SelectItem value="_no_subjects" disabled>No subjects assigned to students</SelectItem>
-                ) : (
-                  uniqueSubjects.map((subj) => (
-                    <SelectItem key={subj.id} value={subj.id}>
-                      {subj.subject_name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+          {!embeddedInPaperCreator && (
+            <>
+              <div className="space-y-2">
+                <Label>Subject</Label>
+                <Select 
+                  value={config.subject_id} 
+                  onValueChange={(value) => setConfig({ ...config, subject_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingSubjects ? (
+                      <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
+                    ) : uniqueSubjects.length === 0 ? (
+                      <SelectItem value="_no_subjects" disabled>No subjects assigned to students</SelectItem>
+                    ) : (
+                      uniqueSubjects.map((subj) => (
+                        <SelectItem key={subj.id} value={subj.id}>
+                          {subj.subject_name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="space-y-2">
-            <Label>Class</Label>
-            <Select 
-              value={config.class_id} 
-              onValueChange={(value) => setConfig({ ...config, class_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingClasses ? (
-                  <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
-                ) : uniqueClasses.length === 0 ? (
-                  <SelectItem value="_no_classes" disabled>No classes assigned to students</SelectItem>
-                ) : (
-                  uniqueClasses.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.class_name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="space-y-2">
+                <Label>Class</Label>
+                <Select 
+                  value={config.class_id} 
+                  onValueChange={(value) => setConfig({ ...config, class_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingClasses ? (
+                      <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
+                    ) : uniqueClasses.length === 0 ? (
+                      <SelectItem value="_no_classes" disabled>No classes assigned to students</SelectItem>
+                    ) : (
+                      uniqueClasses.map((cls) => (
+                        <SelectItem key={cls.id} value={cls.id}>
+                          {cls.class_name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="space-y-2">
-            <Label>Difficulty Level</Label>
-            <Select 
-              value={config.difficulty} 
-              onValueChange={(value) => setConfig({ ...config, difficulty: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {difficulties.map((diff) => (
-                  <SelectItem key={diff.value} value={diff.value}>
-                    <div className="font-medium">{diff.label}</div>
-                    <div className="text-xs text-muted-foreground">{diff.description}</div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="space-y-2">
+                <Label>Difficulty Level</Label>
+                <Select 
+                  value={config.difficulty} 
+                  onValueChange={(value) => setConfig({ ...config, difficulty: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {difficulties.map((diff) => (
+                      <SelectItem key={diff.value} value={diff.value}>
+                        <div className="font-medium">{diff.label}</div>
+                        <div className="text-xs text-muted-foreground">{diff.description}</div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <Label>Question Type</Label>
@@ -542,7 +584,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onQues
             </Select>
           </div>
 
-          {mode === 'independent' && (
+          {!embeddedInPaperCreator && mode === 'independent' && (
             <div className="space-y-2">
               <Label htmlFor="count">Number of Questions</Label>
               <Select 
