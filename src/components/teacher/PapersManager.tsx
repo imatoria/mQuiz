@@ -9,7 +9,6 @@ import { UnifiedPaperCreator } from './UnifiedPaperCreator';
 import { useToast } from '@/hooks/use-toast';
 import { Edit, Trash2, Users, Clock, Calendar, FileText, FilePlus, ArrowLeft, Undo2, Printer } from 'lucide-react';
 import { dbService } from '@/services/db';
-
 import { useAuth } from '@/hooks/useAuth';
 
 type ViewState = 'prepare' | 'previous' | 'edit';
@@ -47,17 +46,34 @@ export const PapersManager: React.FC = () => {
   const fetchPapers = async () => {
     if (!user) return;
 
-    const { data: papersData } = await dbService.getProvider().query(
-      'SELECT * FROM question_papers WHERE is_deleted = 0 OR is_deleted IS NULL'
+    // Fetch teacher's profile ID to match user_id or teacher profile id
+    const { data: profiles } = await dbService.getProvider().query(
+      'SELECT id, user_id FROM profiles WHERE user_id = ? OR id = ?',
+      [user.id, user.id]
     );
 
+    const teacherUserIds = new Set<string>();
+    if (user.id) teacherUserIds.add(user.id);
+    (profiles || []).forEach((p: any) => {
+      if (p.id) teacherUserIds.add(p.id);
+      if (p.user_id) teacherUserIds.add(p.user_id);
+    });
+
+    const { data: allPapersData } = await dbService.getProvider().query('SELECT * FROM question_papers');
     const { data: allClasses } = await dbService.getProvider().query('SELECT * FROM classes');
     const { data: allSubjects } = await dbService.getProvider().query('SELECT * FROM subjects');
 
     const classMap = new Map((allClasses || []).map((c: any) => [c.id, c.class_name]));
     const subjMap = new Map((allSubjects || []).map((s: any) => [s.id, s.subject_name]));
 
-    const formattedPapers = (papersData || []).map((paper: any) => {
+    // Filter active papers created by this teacher
+    const teacherActivePapers = (allPapersData || []).filter((paper: any) => {
+      const isOwner = teacherUserIds.has(paper.user_id) || !paper.user_id;
+      const isNotDeleted = !paper.is_deleted || paper.is_deleted === 0 || paper.is_deleted === false || paper.is_deleted === '0';
+      return isOwner && isNotDeleted;
+    });
+
+    const formattedPapers = teacherActivePapers.map((paper: any) => {
       const className = paper.class_id ? classMap.get(paper.class_id) || 'Class 10' : 'Class 10';
       const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
       return {
@@ -73,12 +89,14 @@ export const PapersManager: React.FC = () => {
     const scheduled = formattedPapers.filter((p: any) => p.start_time && p.end_time);
     setScheduledPapers(scheduled);
 
-    // Also fetch recently deleted papers for undo functionality
-    const { data: deletedData } = await dbService.getProvider().query(
-      'SELECT * FROM question_papers WHERE is_deleted = 1'
-    );
+    // Filter recently deleted papers created by this teacher
+    const teacherDeletedPapers = (allPapersData || []).filter((paper: any) => {
+      const isOwner = teacherUserIds.has(paper.user_id) || !paper.user_id;
+      const isDeleted = paper.is_deleted === 1 || paper.is_deleted === true || paper.is_deleted === '1';
+      return isOwner && isDeleted;
+    });
 
-    const formattedDeleted = (deletedData || []).map((paper: any) => {
+    const formattedDeleted = teacherDeletedPapers.map((paper: any) => {
       const className = paper.class_id ? classMap.get(paper.class_id) || 'Class 10' : 'Class 10';
       const subjName = paper.subject_id ? subjMap.get(paper.subject_id) || 'General' : 'General';
       return {
@@ -160,228 +178,240 @@ export const PapersManager: React.FC = () => {
     }
   };
 
-  const handlePrint = async (paper: any) => {
+  const formatScheduleTime = (startTime: string, endTime: string) => {
+    if (!startTime || !endTime) return 'Not scheduled';
     try {
-      // Fetch questions for this paper
-      const { data: paperQuestionsData, error } = await dbService.getProvider().query(`
-        SELECT 
-          qpq.question_order,
-          q.question_text,
-          q.option_a,
-          q.option_b,
-          q.option_c,
-          q.option_d,
-          q.correct_answer,
-          q.difficulty,
-          q.topic
-        FROM question_paper_questions qpq
-        JOIN questions q ON qpq.question_id = q.id
-        WHERE qpq.question_paper_id = ?
-        ORDER BY qpq.question_order
-      `, [paper.id]);
-
-      const paperQuestions = (paperQuestionsData || []).map((q: any) => ({
-        question_order: q.question_order,
-        questions: q
-      }));
-
-      if (error) throw error;
-
-      // Create print window content
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        toast({
-          title: "Print blocked",
-          description: "Please allow pop-ups to print the paper.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${paper.title}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 40px;
-              max-width: 800px;
-              margin: 0 auto;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #333;
-              padding-bottom: 20px;
-            }
-            .title {
-              font-size: 24px;
-              font-weight: bold;
-              margin-bottom: 10px;
-            }
-            .info {
-              font-size: 14px;
-              color: #666;
-              margin: 5px 0;
-            }
-            .question {
-              margin-bottom: 25px;
-              page-break-inside: avoid;
-            }
-            .question-text {
-              margin-bottom: 12px;
-              line-height: 1.6;
-            }
-            .question-number {
-              font-weight: bold;
-              margin-right: 8px;
-              display: inline;
-            }
-            .options {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 10px 20px;
-              margin-top: 10px;
-            }
-            .option {
-              padding: 8px 12px;
-              border: 1px solid #ddd;
-              border-radius: 4px;
-              line-height: 1.5;
-            }
-            @media print {
-              body {
-                padding: 20px;
-              }
-              .question {
-                page-break-inside: avoid;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">${paper.title}</div>
-            <div class="info">Subject: ${paper.subjects?.subject_name || 'N/A'} | Class: ${paper.classes?.class_name || 'N/A'}</div>
-            <div class="info">Total Questions: ${paper.total_questions} | Duration: ${paper.time_limit_minutes} minutes</div>
-          </div>
-          
-          ${paperQuestions?.map((pq: any, index: number) => {
-            const q = pq.questions;
-            return `
-              <div class="question">
-                <div class="question-text">
-                  <span class="question-number">Q${index + 1}.</span>
-                  ${q.question_text}
-                </div>
-                <div class="options">
-                  <div class="option">A) ${q.option_a}</div>
-                  <div class="option">B) ${q.option_b}</div>
-                  <div class="option">C) ${q.option_c}</div>
-                  <div class="option">D) ${q.option_d}</div>
-                </div>
-              </div>
-            `;
-          }).join('') || '<p>No questions found</p>'}
-        </body>
-        </html>
-      `;
-
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      // Wait for content to load then print
-      printWindow.onload = () => {
-        printWindow.print();
-      };
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast({
-        title: "Print failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      return `${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } catch (e) {
+      return 'Invalid date';
     }
   };
 
-  const getTestStatus = (test: any) => {
+  const isPaperActive = (startTime: string, endTime: string) => {
+    if (!startTime || !endTime) return false;
     const now = new Date();
-    const startTime = new Date(test.start_time);
-    const endTime = new Date(test.end_time);
-
-    if (endTime < now) return { label: 'Completed', variant: 'secondary' as const };
-    if (startTime > now) return { label: 'Scheduled', variant: 'outline' as const };
-    return { label: 'Active', variant: 'default' as const };
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    return now >= start && now <= end;
   };
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const isPaperUpcoming = (startTime: string) => {
+    if (!startTime) return false;
+    const now = new Date();
+    const start = new Date(startTime);
+    return start > now;
   };
 
-  const renderCurrentView = () => {
-    if (currentView === 'edit' && editingPaper) {
-      return (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between pb-4 border-b">
-            <h2 className="text-lg font-semibold">{editingPaper.title}</h2>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+  const isPaperCompleted = (endTime: string) => {
+    if (!endTime) return false;
+    const now = new Date();
+    const end = new Date(endTime);
+    return now > end;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header with Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-4">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">Question Papers</h2>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
+            {currentView === 'prepare' && "Create and configure new question papers for your classes."}
+            {currentView === 'previous' && "View and manage your previously created question papers."}
+            {currentView === 'edit' && "Edit and update your existing question paper configuration."}
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          {currentView === 'edit' ? (
+            <Button
+              variant="outline"
               onClick={handleBackToPrevious}
               className="flex items-center gap-2"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back
+              <ArrowLeft className="w-4 h-4" />
+              Back to Previous Papers
             </Button>
-          </div>
-          <UnifiedPaperCreator 
-            editingPaper={editingPaper} 
-            onPaperCreated={handlePaperCreated}
-          />
+          ) : (
+            <Tabs value={activeTab} onValueChange={handleSubTabChange} className="w-auto">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="prepare" className="flex items-center gap-2">
+                  <FilePlus className="w-4 h-4" />
+                  Prepare Paper
+                </TabsTrigger>
+                <TabsTrigger value="previous" className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Previous Papers ({questionPapers.length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
         </div>
-      );
-    }
+      </div>
 
-    if (currentView === 'previous' || activeTab === 'previous') {
-      return (
+      {/* View Content */}
+      {currentView === 'prepare' && (
+        <UnifiedPaperCreator onPaperCreated={handlePaperCreated} />
+      )}
+
+      {currentView === 'edit' && editingPaper && (
+        <UnifiedPaperCreator
+          editingPaper={editingPaper}
+          onPaperCreated={handlePaperCreated}
+        />
+      )}
+
+      {currentView === 'previous' && (
         <div className="space-y-6">
-          {/* Recently Deleted Papers - Undo Section */}
+          {/* Main Papers List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>All Question Papers</span>
+                <Badge variant="outline">{questionPapers.length} Papers</Badge>
+              </CardTitle>
+              <CardDescription>
+                Manage your created question papers, edit configurations, or print papers.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {questionPapers.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No Question Papers Found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    You haven't created any question papers yet. Click "Prepare Paper" to create your first paper.
+                  </p>
+                  <Button onClick={() => handleSubTabChange('prepare')}>
+                    <FilePlus className="w-4 h-4 mr-2" />
+                    Prepare First Paper
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {questionPapers.map((paper) => (
+                    <Card key={paper.id} className="flex flex-col justify-between">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-lg font-semibold">{paper.title}</CardTitle>
+                            <CardDescription className="mt-1">
+                              {paper.subjects?.subject_name} • {paper.classes?.class_name}
+                            </CardDescription>
+                          </div>
+                          {paper.start_time && paper.end_time && (
+                            <Badge
+                              variant={
+                                isPaperActive(paper.start_time, paper.end_time)
+                                  ? "default"
+                                  : isPaperUpcoming(paper.start_time)
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                            >
+                              {isPaperActive(paper.start_time, paper.end_time)
+                                ? "Active"
+                                : isPaperUpcoming(paper.start_time)
+                                ? "Upcoming"
+                                : "Completed"}
+                            </Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                          <div className="flex items-center">
+                            <FileText className="w-4 h-4 mr-1" />
+                            {paper.total_questions || 0} Questions
+                          </div>
+                          <div className="flex items-center">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {paper.time_limit_minutes || 60} mins
+                          </div>
+                        </div>
+
+                        {paper.start_time && paper.end_time && (
+                          <div className="text-xs text-muted-foreground flex items-center bg-muted p-2 rounded">
+                            <Calendar className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                            <span className="truncate">{formatScheduleTime(paper.start_time, paper.end_time)}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(paper)}
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Question Paper?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{paper.title}"? This paper will be moved to recently deleted and can be restored within 24 hours.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(paper.id, paper.title)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recently Deleted Papers Section */}
           {deletedPapers.length > 0 && (
-            <Card className="border-amber-200 bg-amber-50">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-amber-800">
-                  <Undo2 className="h-4 w-4" />
-                  Recently Deleted Papers
+            <Card className="border-amber-200 bg-amber-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center text-amber-900">
+                  <Undo2 className="w-5 h-5 mr-2" />
+                  Recently Deleted Papers ({deletedPapers.length})
                 </CardTitle>
-                <CardDescription className="text-amber-700">
-                  These papers were deleted within the last 24 hours. You can restore them.
+                <CardDescription className="text-amber-800">
+                  Papers deleted within the last 24 hours. You can restore them before they are permanently removed.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {deletedPapers.map((paper) => (
-                    <div key={paper.id} className="flex items-center justify-between p-3 bg-white rounded border border-amber-200">
+                    <div
+                      key={paper.id}
+                      className="flex items-center justify-between p-3 bg-background rounded-lg border border-amber-200"
+                    >
                       <div>
-                        <h4 className="font-medium text-sm text-amber-900">{paper.title}</h4>
-                        <p className="text-xs text-amber-700">
-                          {paper.subjects?.subject_name || 'Unknown'} - {paper.classes?.class_name || 'Unknown'} • Deleted {formatDateTime(paper.deleted_at)}
+                        <p className="font-medium text-foreground">{paper.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {paper.subjects?.subject_name} • {paper.classes?.class_name} • Deleted
                         </p>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleUndoDelete(paper.id, paper.title)}
-                        className="text-amber-800 border-amber-300 hover:bg-amber-100"
+                        className="flex items-center gap-1"
                       >
-                        <Undo2 className="h-3 w-3 mr-1" />
+                        <Undo2 className="w-3.5 h-3.5" />
                         Restore
                       </Button>
                     </div>
@@ -390,147 +420,7 @@ export const PapersManager: React.FC = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Previous Papers List */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Previous Papers
-              </CardTitle>
-              <CardDescription>
-                View and manage your previously created papers
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {questionPapers.map((paper) => (
-                  <div key={paper.id} className="border rounded-lg p-6 space-y-4 hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0 space-y-3">
-                        <div>
-                          <h4 className="font-semibold text-base mb-2 truncate">{paper.title}</h4>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
-                            <span className="font-medium">{paper.subjects?.subject_name || 'Unknown'}</span>
-                            <span>{paper.classes?.class_name || 'Unknown'}</span>
-                            <span>{paper.total_questions} questions</span>
-                            <span>{paper.time_limit_minutes || 60}m duration</span>
-                            <span>Max {paper.max_attempts} attempts</span>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              <span>{paper.assign_to_all ? 'All students' : 'Selected students'}</span>
-                            </div>
-                            <span>{paper.show_results ? 'Auto-approve results' : 'Manual approval required'}</span>
-                          </div>
-                        </div>
-                        
-                        {paper.start_time && paper.end_time && (
-                          <div className="p-3 bg-muted/30 rounded-md">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              <span className="font-medium">Scheduled:</span>
-                              <span>{formatDateTime(paper.start_time)} - {formatDateTime(paper.end_time)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-3 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(paper)}
-                        className="flex items-center gap-2"
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePrint(paper)}
-                        className="flex items-center gap-2"
-                      >
-                        <Printer className="h-4 w-4" />
-                        Print
-                      </Button>
-                      
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-2 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Paper</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{paper.title}"? You can undo this action within 24 hours.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(paper.id, paper.title)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                ))}
-                {questionPapers.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No papers created yet. Create your first paper in the "Prepare Paper" tab.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      );
-    }
-
-    return <UnifiedPaperCreator onPaperCreated={handlePaperCreated} />;
-  };
-
-  return (
-    <div className="space-y-6">
-      {currentView === 'edit' ? (
-        renderCurrentView()
-      ) : (
-        <Tabs value={activeTab} onValueChange={handleSubTabChange} className="w-full">
-          <TabsList className="w-full">
-            <TabsTrigger value="prepare" className="flex items-center gap-2">
-              <FilePlus className="h-4 w-4" />
-              Prepare Paper
-            </TabsTrigger>
-            <TabsTrigger value="previous" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Previous Papers
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="prepare" className="space-y-6">
-            {renderCurrentView()}
-          </TabsContent>
-
-          <TabsContent value="previous" className="space-y-6">
-            {renderCurrentView()}
-          </TabsContent>
-        </Tabs>
       )}
     </div>
   );

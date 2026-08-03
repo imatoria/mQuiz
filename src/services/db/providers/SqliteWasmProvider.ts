@@ -139,21 +139,21 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         } else {
           // Handle standard equality filtering
           const paramVal = params[0];
-          if (/\buser_id\s*=/i.test(cleanSql)) {
+          if (/\buser_id\s*=\s*\?/i.test(cleanSql)) {
             rows = rows.filter(r => r.user_id === paramVal);
-          } else if (/\bstudent_id\s*=/i.test(cleanSql)) {
+          } else if (/\bstudent_id\s*=\s*\?/i.test(cleanSql)) {
             rows = rows.filter(r => r.student_id === paramVal);
-          } else if (/\bteacher_id\s*=/i.test(cleanSql)) {
+          } else if (/\bteacher_id\s*=\s*\?/i.test(cleanSql)) {
             rows = rows.filter(r => r.teacher_id === paramVal);
-          } else if (/\bclass_id\s*=/i.test(cleanSql)) {
+          } else if (/\bclass_id\s*=\s*\?/i.test(cleanSql)) {
             rows = rows.filter(r => r.class_id === paramVal);
-          } else if (/\bsubject_id\s*=/i.test(cleanSql)) {
+          } else if (/\bsubject_id\s*=\s*\?/i.test(cleanSql)) {
             rows = rows.filter(r => r.subject_id === paramVal);
-          } else if (/\bis_approved\s*=/i.test(cleanSql)) {
-            const target = Boolean(paramVal);
+          } else if (/\bis_approved\s*=\s*\?/i.test(cleanSql)) {
+            const target = Boolean(Number(paramVal) === 1 || paramVal === true || paramVal === 'true');
             rows = rows.filter(r => Boolean(r.is_approved) === target);
-          } else if (/\bis_deleted\s*=/i.test(cleanSql)) {
-            const target = Boolean(paramVal);
+          } else if (/\bis_deleted\s*=\s*\?/i.test(cleanSql)) {
+            const target = Boolean(Number(paramVal) === 1 || paramVal === true || paramVal === 'true');
             rows = rows.filter(r => Boolean(r.is_deleted) === target);
           } else if (/\bis_active\s*=/i.test(cleanSql)) {
             const target = Boolean(paramVal);
@@ -161,16 +161,23 @@ export class SqliteWasmProvider implements IDatabaseProvider {
           } else if (/\bis_current\s*=/i.test(cleanSql)) {
             const target = Boolean(paramVal);
             rows = rows.filter(r => Boolean(r.is_current) === target);
-          } else if (/\bid\s*=/i.test(cleanSql)) {
+          } else if (/\bid\s*=\s*\?/i.test(cleanSql)) {
             rows = rows.filter(r => r.id === paramVal);
           }
         }
-      } else {
-        if (/\bis_approved\s*=\s*(false|0)/i.test(cleanSql)) {
-          rows = rows.filter(r => !r.is_approved);
-        } else if (/\bis_approved\s*=\s*(true|1)/i.test(cleanSql)) {
-          rows = rows.filter(r => Boolean(r.is_approved));
-        }
+      }
+
+      // Filter by literal WHERE clauses in SQL
+      if (/\bis_deleted\s*=\s*(1|true)/i.test(cleanSql)) {
+        rows = rows.filter(r => r.is_deleted === 1 || r.is_deleted === true || r.is_deleted === '1');
+      } else if (/\bis_deleted\s*=\s*(0|false)/i.test(cleanSql) || /\bis_deleted\s+IS\s+NULL/i.test(cleanSql)) {
+        rows = rows.filter(r => !r.is_deleted || r.is_deleted === 0 || r.is_deleted === false || r.is_deleted === '0');
+      }
+
+      if (/\bis_approved\s*=\s*(false|0)/i.test(cleanSql)) {
+        rows = rows.filter(r => !r.is_approved || r.is_approved === 0 || r.is_approved === false);
+      } else if (/\bis_approved\s*=\s*(true|1)/i.test(cleanSql)) {
+        rows = rows.filter(r => Boolean(r.is_approved) && r.is_approved !== 0 && r.is_approved !== -1);
       }
     }
 
@@ -179,12 +186,24 @@ export class SqliteWasmProvider implements IDatabaseProvider {
 
   private evaluateExecute(sql: string, params: any[]): number {
     const cleanSql = sql.trim();
-    const insertMatch = cleanSql.match(/INSERT\s+INTO\s+([a-zA-Z0-9_]+)/i);
+    const insertMatch = cleanSql.match(/INSERT\s+INTO\s+([a-zA-Z0-9_]+)\s*(?:\(([^)]+)\))?/i);
     if (insertMatch && params.length > 0) {
       const table = insertMatch[1];
+      const colListStr = insertMatch[2];
       const rows = this.getTable(table);
-      if (typeof params[0] === 'object' && !Array.isArray(params[0])) {
+
+      if (typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
         rows.push(params[0]);
+      } else if (colListStr) {
+        const cols = colListStr.split(',').map(c => c.trim());
+        const record: Record<string, any> = {};
+        cols.forEach((col, idx) => {
+          record[col] = params[idx] !== undefined ? params[idx] : null;
+        });
+        if (!record.id) {
+          record.id = params[0] || crypto.randomUUID();
+        }
+        rows.push(record);
       } else {
         const record: Record<string, any> = { id: params[0] || crypto.randomUUID() };
         rows.push(record);
