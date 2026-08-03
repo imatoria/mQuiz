@@ -29,7 +29,7 @@ const router = createBrowserRouter([
     element: <Dashboard />,
   },
   {
-    path: "/parent/:tab?/:subtab?",
+    
     element: <Dashboard />,
   },
   {

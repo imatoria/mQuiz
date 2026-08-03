@@ -321,7 +321,7 @@ export const AdminAIProviderConfig = () => {
               <Settings className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No AI providers configured</h3>
               <p className="text-muted-foreground mb-4">
-                Add AI providers to enable content generation features for parents.
+                Add AI providers to enable content generation features for teachers.
               </p>
               <Button onClick={handleAddProvider}>
                 <Plus className="w-4 h-4 mr-2" />

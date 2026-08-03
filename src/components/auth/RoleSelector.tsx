@@ -112,7 +112,7 @@ export const RoleSelector = ({ onRoleSelect }: RoleSelectorProps) => {
                 
                 <Button 
                   className="w-full group-hover:shadow-md transition-all duration-300"
-                  variant={role.id === 'admin' ? 'default' : role.id === 'parent' ? 'default' : 'default'}
+                  variant={role.id === 'admin' ? 'default' : role.id === 'teacher' ? 'default' : 'default'}
                 >
                   Continue as {role.title}
                   <ChevronRight className="w-4 h-4 ml-2" />

@@ -19,7 +19,7 @@ export const CommunicationHub = () => {
   useEffect(() => {
     const currentPath = window.location.pathname;
     if (!subtab && (currentPath.startsWith('/teacher/communications') || currentPath.startsWith('/admin/communications'))) {
-      const prefix = currentPath.startsWith('/teacher') ? '/parent' : '/admin';
+      const prefix = currentPath.startsWith('/teacher') ? '/teacher' : '/admin';
       navigate(`${prefix}/communications/messages`, { replace: true });
     }
   }, [subtab, navigate]);
@@ -27,7 +27,7 @@ export const CommunicationHub = () => {
   // Update URL when changing communication tabs
   const handleCommTabChange = (value: string) => {
     const currentPath = window.location.pathname;
-    const prefix = currentPath.startsWith('/parent') ? '/parent' : '/admin';
+    const prefix = currentPath.startsWith('/teacher') ? '/teacher' : '/admin';
     navigate(`${prefix}/communications/${value}`);
   };
 

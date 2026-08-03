@@ -99,7 +99,7 @@ export const ContentSharing = () => {
         {
           id: '2',
           document_id: documentsData?.[1]?.id || 'doc2',
-          shared_with_email: 'parent@family.com',
+          shared_with_email: 'teacher@school.com',
           permission_level: 'write',
           expires_at: undefined,
           is_active: true,

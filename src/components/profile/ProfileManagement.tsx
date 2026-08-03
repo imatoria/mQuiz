@@ -130,7 +130,7 @@ export const ProfileManagement = () => {
           'SELECT id, user_id, full_name, email, created_at FROM profiles'
         );
 
-        setStudents((allProfiles || []).filter((p: any) => childIds.has(p.user_id)));
+        setStudents((allProfiles || []).filter((p: any) => studentIds.has(p.user_id)));
       }
     } catch (error) {
       console.error('Error loading students:', error);
