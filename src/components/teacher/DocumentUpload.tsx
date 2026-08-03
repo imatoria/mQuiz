@@ -43,8 +43,8 @@ export const DocumentUpload = ({
   const [fetchingUsedPages, setFetchingUsedPages] = useState(false);
   
   // Use student assignments hooks
-  const { uniqueSubjects, isLoading: loadingSubjects } = useStudentSubjects();
-  const { uniqueClasses, isLoading: loadingClasses } = useStudentClasses();
+  const { uniqueSubjects = [], isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses = [], isLoading: loadingClasses } = useStudentClasses();
 
   // Fetch already used pages for the selected subject and class
   React.useEffect(() => {

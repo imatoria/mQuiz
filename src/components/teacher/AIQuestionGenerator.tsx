@@ -88,8 +88,8 @@ const DEFAULT_PRESETS: InstructionPreset[] = [
 ];
 
 export const AIQuestionGenerator = () => {
-  const { uniqueSubjects, isLoading: loadingSubjects } = useStudentSubjects();
-  const { uniqueClasses, isLoading: loadingClasses } = useStudentClasses();
+  const { uniqueSubjects = [], isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses = [], isLoading: loadingClasses } = useStudentClasses();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [config, setConfig] = useState<GenerationConfig>({

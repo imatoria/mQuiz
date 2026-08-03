@@ -74,8 +74,8 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const { toast } = useToast();
 
   // Use student assignments hooks
-  const { uniqueSubjects, isLoading: loadingSubjects } = useStudentSubjects();
-  const { uniqueClasses, isLoading: loadingClasses } = useStudentClasses();
+  const { uniqueSubjects = [], isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses = [], isLoading: loadingClasses } = useStudentClasses();
 
   const difficulties = ['easy', 'medium', 'difficult'];
 

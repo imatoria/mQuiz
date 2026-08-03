@@ -130,8 +130,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   const { toast } = useToast();
   
   // Use student assignments hooks (same as Upload tab)
-  const { uniqueSubjects, isLoading: loadingSubjects } = useStudentSubjects();
-  const { uniqueClasses, isLoading: loadingClasses } = useStudentClasses();
+  const { uniqueSubjects = [], isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses = [], isLoading: loadingClasses } = useStudentClasses();
   
   // When editing, ensure the paper's subject/class are available even if not currently assigned to students
   const subjects = React.useMemo(() => {

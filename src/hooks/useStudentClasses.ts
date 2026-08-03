@@ -101,6 +101,7 @@ export const useStudentClasses = () => {
 
   return {
     studentClasses,
+    uniqueClasses: getUniqueClasses(),
     isLoading,
     error,
     getUniqueClasses,

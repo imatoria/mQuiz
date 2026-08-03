@@ -101,6 +101,7 @@ export const useStudentSubjects = () => {
 
   return {
     studentSubjects,
+    uniqueSubjects: getUniqueSubjects(),
     isLoading,
     error,
     getUniqueSubjects,
