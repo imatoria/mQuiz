@@ -11,6 +11,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { ViolationReporting } from './ViolationReporting';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -88,6 +90,7 @@ export const TestResults = () => {
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
   const [showRecheckModal, setShowRecheckModal] = useState(false);
   const [showExplanationModal, setShowExplanationModal] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -598,10 +601,20 @@ export const TestResults = () => {
 
                     {/* Top Action Bar for Recheck and Explanation */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-muted/40 rounded-lg border">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Badge variant="secondary" className="font-mono text-xs">
                           {selectedQuestionIds.size} of {questionResults.length} Selected
                         </Badge>
+                        <div className="flex items-center gap-2 border-l pl-3">
+                          <Switch
+                            id="toggle-options-student"
+                            checked={showOptions}
+                            onCheckedChange={setShowOptions}
+                          />
+                          <Label htmlFor="toggle-options-student" className="text-xs cursor-pointer select-none font-medium text-muted-foreground">
+                            Show Choices
+                          </Label>
+                        </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Button
@@ -673,40 +686,43 @@ export const TestResults = () => {
                                 <TableCell className="max-w-md align-top pt-4">
                                   <div className="space-y-2">
                                     <p className="text-sm font-medium">{result.question_text}</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                      <div className={cn(
-                                        "p-1.5 rounded border transition-colors",
-                                        correctLetter === 'a' && isRecheckUpdated 
-                                          ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
-                                          : "text-muted-foreground bg-muted/20"
-                                      )}>
-                                        A. {result.option_a}
+                                    
+                                    {showOptions && (
+                                      <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className={cn(
+                                          "p-1.5 rounded border transition-colors",
+                                          correctLetter === 'a' && isRecheckUpdated 
+                                            ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
+                                            : "text-muted-foreground bg-muted/20"
+                                        )}>
+                                          A. {result.option_a}
+                                        </div>
+                                        <div className={cn(
+                                          "p-1.5 rounded border transition-colors",
+                                          correctLetter === 'b' && isRecheckUpdated 
+                                            ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
+                                            : "text-muted-foreground bg-muted/20"
+                                        )}>
+                                          B. {result.option_b}
+                                        </div>
+                                        <div className={cn(
+                                          "p-1.5 rounded border transition-colors",
+                                          correctLetter === 'c' && isRecheckUpdated 
+                                            ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
+                                            : "text-muted-foreground bg-muted/20"
+                                        )}>
+                                          C. {result.option_c}
+                                        </div>
+                                        <div className={cn(
+                                          "p-1.5 rounded border transition-colors",
+                                          correctLetter === 'd' && isRecheckUpdated 
+                                            ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
+                                            : "text-muted-foreground bg-muted/20"
+                                        )}>
+                                          D. {result.option_d}
+                                        </div>
                                       </div>
-                                      <div className={cn(
-                                        "p-1.5 rounded border transition-colors",
-                                        correctLetter === 'b' && isRecheckUpdated 
-                                          ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
-                                          : "text-muted-foreground bg-muted/20"
-                                      )}>
-                                        B. {result.option_b}
-                                      </div>
-                                      <div className={cn(
-                                        "p-1.5 rounded border transition-colors",
-                                        correctLetter === 'c' && isRecheckUpdated 
-                                          ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
-                                          : "text-muted-foreground bg-muted/20"
-                                      )}>
-                                        C. {result.option_c}
-                                      </div>
-                                      <div className={cn(
-                                        "p-1.5 rounded border transition-colors",
-                                        correctLetter === 'd' && isRecheckUpdated 
-                                          ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
-                                          : "text-muted-foreground bg-muted/20"
-                                      )}>
-                                        D. {result.option_d}
-                                      </div>
-                                    </div>
+                                    )}
 
                                     {/* Explanation rendered directly below the options/choices */}
                                     {explanations[result.question_id] && (

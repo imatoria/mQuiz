@@ -13,6 +13,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeleton } from "@/components/ui/skeleton-loaders";
+import { Switch } from "@/components/ui/switch";
 import { Search, Edit, Trash2, Plus, Filter, BookOpen, BarChart3, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
@@ -67,7 +68,8 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   // Track if any filter has been applied yet
   const [hasAppliedFilter, setHasAppliedFilter] = useState(false);
   
-  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showOptions, setShowOptions] = useState(false);
   const { toast } = useToast();
 
   // Use student assignments hooks
@@ -364,11 +366,23 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
 
       {/* Questions Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Questions</CardTitle>
-          <CardDescription>
-            {filteredQuestions.length} question{filteredQuestions.length !== 1 ? 's' : ''} found
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Questions</CardTitle>
+            <CardDescription>
+              {filteredQuestions.length} question{filteredQuestions.length !== 1 ? 's' : ''} found
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="toggle-options-qb"
+              checked={showOptions}
+              onCheckedChange={setShowOptions}
+            />
+            <Label htmlFor="toggle-options-qb" className="text-xs cursor-pointer select-none font-medium text-muted-foreground">
+              Show Choices
+            </Label>
+          </div>
         </CardHeader>
         <CardContent>
           {!hasAppliedFilter ? (
@@ -396,42 +410,67 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedQuestions.map((question, index) => (
-                    <TableRow key={`${question.id}-${index}`}>
-                      <TableCell className="max-w-md">
-                        <div className="truncate" title={question.question_text}>
-                          {question.question_text}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {uniqueSubjects.find(s => s.id === question.subject_id)?.subject_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {uniqueClasses.find(c => c.id === question.class_id)?.class_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {question.page_number || '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditQuestion(question)}
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteQuestion(question.id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {paginatedQuestions.map((question, index) => {
+                    let opts: string[] = [];
+                    if (question.options) {
+                      try {
+                        opts = typeof question.options === 'string' ? JSON.parse(question.options || '[]') : (question.options || []);
+                      } catch {
+                        opts = [];
+                      }
+                    }
+                    const optA = question.option_a || opts[0] || '';
+                    const optB = question.option_b || opts[1] || '';
+                    const optC = question.option_c || opts[2] || '';
+                    const optD = question.option_d || opts[3] || '';
+
+                    return (
+                      <TableRow key={`${question.id}-${index}`}>
+                        <TableCell className="max-w-md">
+                          <div className="space-y-1.5">
+                            <div className="font-medium text-sm text-foreground" title={question.question_text}>
+                              {question.question_text}
+                            </div>
+                            {showOptions && (
+                              <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground bg-muted/30 p-2 rounded border">
+                                <div>A) {optA || 'N/A'}</div>
+                                <div>B) {optB || 'N/A'}</div>
+                                <div>C) {optC || 'N/A'}</div>
+                                <div>D) {optD || 'N/A'}</div>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {uniqueSubjects.find(s => s.id === question.subject_id)?.subject_name || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {uniqueClasses.find(c => c.id === question.class_id)?.class_name || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {question.page_number || '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditQuestion(question)}
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteQuestion(question.id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

@@ -107,6 +107,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [questionFilters, setQuestionFilters] = useState({
     search: '',
@@ -971,10 +972,22 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <p className="text-sm text-muted-foreground">
-                          {selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''} selected
-                        </p>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                          <p className="text-sm text-muted-foreground">
+                            {selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''} selected
+                          </p>
+                          <div className="flex items-center gap-2 border-l pl-4">
+                            <Switch
+                              id="toggle-options-paper-selected"
+                              checked={showOptions}
+                              onCheckedChange={setShowOptions}
+                            />
+                            <Label htmlFor="toggle-options-paper-selected" className="text-xs cursor-pointer select-none font-medium text-muted-foreground">
+                              Show Choices
+                            </Label>
+                          </div>
+                        </div>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -1023,6 +1036,19 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                           </TableHeader>
                         <TableBody>
                           {selectedQuestions.map((question, index) => {
+                            let opts: string[] = [];
+                            if (question.options) {
+                              try {
+                                opts = typeof question.options === 'string' ? JSON.parse(question.options || '[]') : (question.options || []);
+                              } catch {
+                                opts = [];
+                              }
+                            }
+                            const optA = question.option_a || opts[0] || '';
+                            const optB = question.option_b || opts[1] || '';
+                            const optC = question.option_c || opts[2] || '';
+                            const optD = question.option_d || opts[3] || '';
+
                             return (
                               <TableRow 
                                 key={`${question.id}-${index}`} 
@@ -1039,15 +1065,17 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                                   </Button>
                                 </TableCell>
                                 <TableCell className="max-w-md">
-                                  <div className="truncate" title={question.question_text}>
+                                  <div className="font-medium text-sm text-foreground" title={question.question_text}>
                                     {question.question_text}
                                   </div>
-                                  <div className="text-xs text-muted-foreground mt-1 grid grid-cols-2 gap-1">
-                                    <div>A) {question.option_a}</div>
-                                    <div>B) {question.option_b}</div>
-                                    <div>C) {question.option_c}</div>
-                                    <div>D) {question.option_d}</div>
-                                  </div>
+                                  {showOptions && (
+                                    <div className="text-xs text-muted-foreground mt-1.5 grid grid-cols-2 gap-1 bg-muted/30 p-2 rounded border">
+                                      <div>A) {optA || 'N/A'}</div>
+                                      <div>B) {optB || 'N/A'}</div>
+                                      <div>C) {optC || 'N/A'}</div>
+                                      <div>D) {optD || 'N/A'}</div>
+                                    </div>
+                                  )}
                                 </TableCell>
                                 <TableCell>
                                   <span className="text-sm">{question.topic || 'N/A'}</span>
@@ -1203,10 +1231,10 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                       ) : (
                         <>
                           {/* Questions Table */}
-                          <div className="border rounded-lg">
+                          <div className="border rounded-lg overflow-hidden">
                         <Table>
                           <TableHeader>
-                          <TableRow>
+                          <TableRow className="bg-muted/30">
                             <TableHead className="w-12">Select</TableHead>
                             <TableHead>Question</TableHead>
                             <TableHead className="w-32">Topic</TableHead>
@@ -1214,26 +1242,42 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                           </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {paginatedQuestions.map((question, index) => (
-                              <TableRow key={`${question.id}-${index}`}>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={formData.selected_questions?.includes(question.id) || false}
-                                    onCheckedChange={(checked) => handleQuestionSelect(question.id, !!checked)}
-                                    disabled={(formData.selected_questions?.length || 0) >= formData.total_questions && !formData.selected_questions?.includes(question.id)}
-                                  />
-                                </TableCell>
-                                <TableCell className="max-w-md">
-                                  <div className="truncate" title={question.question_text}>
-                                    {question.question_text}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground mt-1 grid grid-cols-2 gap-1">
-                                    <div>A) {question.option_a}</div>
-                                    <div>B) {question.option_b}</div>
-                                    <div>C) {question.option_c}</div>
-                                    <div>D) {question.option_d}</div>
-                                  </div>
-                                </TableCell>
+                            {paginatedQuestions.map((question, index) => {
+                              let opts: string[] = [];
+                              if (question.options) {
+                                try {
+                                  opts = typeof question.options === 'string' ? JSON.parse(question.options || '[]') : (question.options || []);
+                                } catch {
+                                  opts = [];
+                                }
+                              }
+                              const optA = question.option_a || opts[0] || '';
+                              const optB = question.option_b || opts[1] || '';
+                              const optC = question.option_c || opts[2] || '';
+                              const optD = question.option_d || opts[3] || '';
+
+                              return (
+                                <TableRow key={`${question.id}-${index}`}>
+                                  <TableCell className="align-top pt-4">
+                                    <Checkbox
+                                      checked={formData.selected_questions?.includes(question.id) || false}
+                                      onCheckedChange={(checked) => handleQuestionSelect(question.id, !!checked)}
+                                      disabled={(formData.selected_questions?.length || 0) >= formData.total_questions && !formData.selected_questions?.includes(question.id)}
+                                    />
+                                  </TableCell>
+                                  <TableCell className="max-w-md align-top pt-4">
+                                    <div className="font-medium text-sm text-foreground" title={question.question_text}>
+                                      {question.question_text}
+                                    </div>
+                                    {showOptions && (
+                                      <div className="text-xs text-muted-foreground mt-1.5 grid grid-cols-2 gap-1 bg-muted/30 p-2 rounded border">
+                                        <div>A) {optA || 'N/A'}</div>
+                                        <div>B) {optB || 'N/A'}</div>
+                                        <div>C) {optC || 'N/A'}</div>
+                                        <div>D) {optD || 'N/A'}</div>
+                                      </div>
+                                    )}
+                                  </TableCell>
                                 <TableCell>
                                   <span className="text-sm">{question.topic || 'N/A'}</span>
                                 </TableCell>
@@ -1241,7 +1285,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                                   <span className="text-sm">{question.page_number || '-'}</span>
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            );
+                          })}
                           </TableBody>
                         </Table>
                        </div>
