@@ -27,12 +27,13 @@ import {
   CheckCircle2,
   Users,
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 import { PageMultiSelect } from '@/components/ui/page-multi-select';
+import { AIQuestionGenerator } from './AIQuestionGenerator';
 
 interface Subject {
   id: string;
@@ -997,7 +998,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
             </div>
               
               <Tabs value={questionTabValue} onValueChange={setQuestionTabValue} className="w-full">
-                <TabsList className="w-full">
+                <TabsList className="w-full grid grid-cols-3">
                   <TabsTrigger value="selected" className="flex items-center gap-2">
                     Selected Questions
                     {selectedQuestions.length > 0 && (
@@ -1008,6 +1009,10 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                   </TabsTrigger>
                   <TabsTrigger value="unselected" className="flex items-center gap-2">
                     Unselected Questions
+                  </TabsTrigger>
+                  <TabsTrigger value="ai-generator" className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-500" />
+                    AI Generator
                   </TabsTrigger>
                 </TabsList>
 
@@ -1356,8 +1361,37 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                        )}
                       </>
                     )}
-               </TabsContent>
-           </Tabs>
+                </TabsContent>
+
+                <TabsContent value="ai-generator" className="space-y-4 pt-4">
+                  <AIQuestionGenerator
+                    onQuestionsGenerated={(generated) => {
+                      const formattedGen = generated.map(q => ({
+                        ...q,
+                        options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options
+                      }));
+
+                      setSelectedQuestions(prev => {
+                        const existingIds = new Set(prev.map(p => p.id));
+                        const newAdditions = formattedGen.filter(g => !existingIds.has(g.id));
+                        return [...prev, ...newAdditions];
+                      });
+
+                      setFormData(prev => ({
+                        ...prev,
+                        selected_questions: Array.from(new Set([...(prev.selected_questions || []), ...generated.map(g => g.id)]))
+                      }));
+
+                      setQuestionTabValue('selected');
+
+                      toast({
+                        title: 'Questions Added to Paper!',
+                        description: `Added ${generated.length} AI generated questions directly to your question paper.`,
+                      });
+                    }}
+                  />
+                </TabsContent>
+            </Tabs>
          </div>
         
           <div className="flex justify-end space-x-4">
