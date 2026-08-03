@@ -159,7 +159,7 @@ export const NotificationCenter = () => {
 
   return (
     <Popover>
-      <PopoverTrigger asSlot>
+      <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="relative">
           {unreadCount > 0 ? <BellDot className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
           {unreadCount > 0 && (

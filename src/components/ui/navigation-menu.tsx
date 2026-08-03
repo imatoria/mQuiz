@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 const NavigationMenu = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Root>
->(({ className, content, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <NavigationMenuPrimitive.Root
     ref={ref}
     className={cn(
@@ -17,7 +17,7 @@ const NavigationMenu = React.forwardRef<
     )}
     {...props}
   >
-    {content}
+    {children}
     <NavigationMenuViewport />
   </NavigationMenuPrimitive.Root>
 ))
@@ -47,13 +47,13 @@ const navigationMenuTriggerStyle = cva(
 const NavigationMenuTrigger = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Trigger>
->(({ className, content, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <NavigationMenuPrimitive.Trigger
     ref={ref}
     className={cn(navigationMenuTriggerStyle(), "group", className)}
     {...props}
   >
-    {content}{" "}
+    {children}{" "}
     <ChevronDown
       className="relative top-[1px] ml-1 h-3 w-3 transition duration-200 group-data-[state=open]:rotate-180"
       aria-hidden="true"

@@ -60,7 +60,7 @@ const SidebarProvider = React.forwardRef<
       onOpenChange: setOpenProp,
       className,
       style,
-      content,
+      children,
       ...props
     },
     ref
@@ -145,7 +145,7 @@ const SidebarProvider = React.forwardRef<
             ref={ref}
             {...props}
           >
-            {content}
+            {children}
           </div>
         </TooltipProvider>
       </SidebarContext.Provider>
@@ -168,7 +168,7 @@ const Sidebar = React.forwardRef<
       variant = "sidebar",
       collapsible = "offcanvas",
       className,
-      content,
+      children,
       ...props
     },
     ref
@@ -185,7 +185,7 @@ const Sidebar = React.forwardRef<
           ref={ref}
           {...props}
         >
-          {content}
+          {children}
         </div>
       )
     }
@@ -205,7 +205,7 @@ const Sidebar = React.forwardRef<
             side={side}
             showClose={true}
           >
-            <div className="flex h-full w-full flex-col">{content}</div>
+            <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>
       )
@@ -249,7 +249,7 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
-            {content}
+            {children}
           </div>
         </div>
       </div>
@@ -429,9 +429,9 @@ SidebarGroup.displayName = "SidebarGroup"
 
 const SidebarGroupLabel = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & { asSlot?: boolean }
->(({ className, asSlot = false, ...props }, ref) => {
-  const Comp = asSlot ? Slot : "div"
+  React.ComponentProps<"div"> & { asChild?: boolean }
+>(({ className, asChild = false, ...props }, ref) => {
+  const Comp = asChild ? Slot : "div"
 
   return (
     <Comp
@@ -450,9 +450,9 @@ SidebarGroupLabel.displayName = "SidebarGroupLabel"
 
 const SidebarGroupAction = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<"button"> & { asSlot?: boolean }
->(({ className, asSlot = false, ...props }, ref) => {
-  const Comp = asSlot ? Slot : "button"
+  React.ComponentProps<"button"> & { asChild?: boolean }
+>(({ className, asChild = false, ...props }, ref) => {
+  const Comp = asChild ? Slot : "button"
 
   return (
     <Comp
@@ -535,14 +535,14 @@ const sidebarMenuButtonVariants = cva(
 const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
-    asSlot?: boolean
+    asChild?: boolean
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
     {
-      asSlot = false,
+      asChild = false,
       isActive = false,
       variant = "default",
       size = "default",
@@ -552,7 +552,7 @@ const SidebarMenuButton = React.forwardRef<
     },
     ref
   ) => {
-    const Comp = asSlot ? Slot : "button"
+    const Comp = asChild ? Slot : "button"
     const { isMobile, state } = useSidebar()
 
     const button = (
@@ -572,13 +572,13 @@ const SidebarMenuButton = React.forwardRef<
 
     if (typeof tooltip === "string") {
       tooltip = {
-        content: tooltip,
+        children: tooltip,
       }
     }
 
     return (
       <Tooltip>
-        <TooltipTrigger asSlot>{button}</TooltipTrigger>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
@@ -594,11 +594,11 @@ SidebarMenuButton.displayName = "SidebarMenuButton"
 const SidebarMenuAction = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
-    asSlot?: boolean
+    asChild?: boolean
     showOnHover?: boolean
   }
->(({ className, asSlot = false, showOnHover = false, ...props }, ref) => {
-  const Comp = asSlot ? Slot : "button"
+>(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
+  const Comp = asChild ? Slot : "button"
 
   return (
     <Comp
@@ -707,12 +707,12 @@ SidebarMenuSubItem.displayName = "SidebarMenuSubItem"
 const SidebarMenuSubButton = React.forwardRef<
   HTMLAnchorElement,
   React.ComponentProps<"a"> & {
-    asSlot?: boolean
+    asChild?: boolean
     size?: "sm" | "md"
     isActive?: boolean
   }
->(({ asSlot = false, size = "md", isActive, className, ...props }, ref) => {
-  const Comp = asSlot ? Slot : "a"
+>(({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
+  const Comp = asChild ? Slot : "a"
 
   return (
     <Comp

@@ -21,7 +21,7 @@ const ContextMenuSubTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger> & {
     inset?: boolean
   }
->(({ className, inset, content, ...props }, ref) => (
+>(({ className, inset, children, ...props }, ref) => (
   <ContextMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
@@ -31,7 +31,7 @@ const ContextMenuSubTrigger = React.forwardRef<
     )}
     {...props}
   >
-    {content}
+    {children}
     <ChevronRight className="ml-auto h-4 w-4" />
   </ContextMenuPrimitive.SubTrigger>
 ))
@@ -90,7 +90,7 @@ ContextMenuItem.displayName = ContextMenuPrimitive.Item.displayName
 const ContextMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.CheckboxItem>
->(({ className, content, checked, ...props }, ref) => (
+>(({ className, children, checked, ...props }, ref) => (
   <ContextMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
@@ -105,7 +105,7 @@ const ContextMenuCheckboxItem = React.forwardRef<
         <Check className="h-4 w-4" />
       </ContextMenuPrimitive.ItemIndicator>
     </span>
-    {content}
+    {children}
   </ContextMenuPrimitive.CheckboxItem>
 ))
 ContextMenuCheckboxItem.displayName =
@@ -114,7 +114,7 @@ ContextMenuCheckboxItem.displayName =
 const ContextMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.RadioItem>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.RadioItem>
->(({ className, content, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <ContextMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
@@ -128,7 +128,7 @@ const ContextMenuRadioItem = React.forwardRef<
         <Circle className="h-2 w-2 fill-current" />
       </ContextMenuPrimitive.ItemIndicator>
     </span>
-    {content}
+    {children}
   </ContextMenuPrimitive.RadioItem>
 ))
 ContextMenuRadioItem.displayName = ContextMenuPrimitive.RadioItem.displayName

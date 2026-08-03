@@ -51,7 +51,7 @@ const Carousel = React.forwardRef<
       setApi,
       plugins,
       className,
-      content,
+      children,
       ...props
     },
     ref
@@ -140,7 +140,7 @@ const Carousel = React.forwardRef<
           aria-roledescription="carousel"
           {...props}
         >
-          {content}
+          {children}
         </div>
       </CarouselContext.Provider>
     )

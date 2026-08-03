@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertCircle } from 'lucide-react';
 
 interface RoleBasedAccessProps {
-  content?: ReactNode;
+  children?: ReactNode;
   content?: ReactNode;
   allowedRoles?: string[];
   requireApproval?: boolean;
@@ -13,7 +13,7 @@ interface RoleBasedAccessProps {
 }
 
 export const RoleBasedAccess = ({ 
-  content, 
+  children, 
   allowedRoles = [], 
   requireApproval = true,
   fallback,
@@ -81,36 +81,36 @@ export const RoleBasedAccess = ({
   }
 
   // All checks passed, render content
-  return <>{content || content}</>;
+  return <>{children || content}</>;
 };
 
 // Convenience components for specific roles
-export const AdminOnly = ({ content, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
+export const AdminOnly = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
   <RoleBasedAccess allowedRoles={['admin']} {...props}>
-    {content}
+    {children}
   </RoleBasedAccess>
 );
 
-export const TeacherOnly = ({ content, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
+export const TeacherOnly = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
   <RoleBasedAccess allowedRoles={['teacher']} {...props}>
-    {content}
+    {children}
   </RoleBasedAccess>
 );
 
-export const StudentOnly = ({ content, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
+export const StudentOnly = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
   <RoleBasedAccess allowedRoles={['student']} requireApproval={false} {...props}>
-    {content}
+    {children}
   </RoleBasedAccess>
 );
 
-export const TeacherOrAdmin = ({ content, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
+export const TeacherOrAdmin = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
   <RoleBasedAccess allowedRoles={['teacher', 'admin']} {...props}>
-    {content}
+    {children}
   </RoleBasedAccess>
 );
 
-export const ApprovedUsers = ({ content, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
+export const ApprovedUsers = ({ children, ...props }: Omit<RoleBasedAccessProps, 'allowedRoles'>) => (
   <RoleBasedAccess allowedRoles={['admin', 'teacher', 'student']} {...props}>
-    {content}
+    {children}
   </RoleBasedAccess>
 );

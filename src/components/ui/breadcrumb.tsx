@@ -42,10 +42,10 @@ BreadcrumbItem.displayName = "BreadcrumbItem"
 const BreadcrumbLink = React.forwardRef<
   HTMLAnchorElement,
   React.ComponentPropsWithoutRef<"a"> & {
-    asSlot?: boolean
+    asChild?: boolean
   }
->(({ asSlot, className, ...props }, ref) => {
-  const Comp = asSlot ? Slot : "a"
+>(({ asChild, className, ...props }, ref) => {
+  const Comp = asChild ? Slot : "a"
 
   return (
     <Comp
@@ -73,7 +73,7 @@ const BreadcrumbPage = React.forwardRef<
 BreadcrumbPage.displayName = "BreadcrumbPage"
 
 const BreadcrumbSeparator = ({
-  content,
+  children,
   className,
   ...props
 }: React.ComponentProps<"li">) => (
@@ -83,7 +83,7 @@ const BreadcrumbSeparator = ({
     className={cn("[&>svg]:size-3.5", className)}
     {...props}
   >
-    {content ?? <ChevronRight />}
+    {children ?? <ChevronRight />}
   </li>
 )
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator"

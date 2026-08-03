@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 interface ResponsiveCardProps {
-  content?: React.ReactNode;
+  children: React.ReactNode;
   title?: string;
   description?: string;
   className?: string;
@@ -13,7 +13,7 @@ interface ResponsiveCardProps {
 }
 
 export const ResponsiveCard = ({ 
-  content, 
+  children, 
   title, 
   description, 
   className,
@@ -55,10 +55,10 @@ export const ResponsiveCard = ({
       )}>
         {variant === 'dashboard' ? (
           <ScrollArea className="h-full">
-            {content}
+            {children}
           </ScrollArea>
         ) : (
-          content
+          children
         )}
       </CardContent>
     </Card>
@@ -66,22 +66,22 @@ export const ResponsiveCard = ({
 };
 
 interface ResponsiveTableProps {
-  content?: React.ReactNode;
+  children: React.ReactNode;
   className?: string;
 }
 
-export const ResponsiveTable = ({ content, className }: ResponsiveTableProps) => {
+export const ResponsiveTable = ({ children, className }: ResponsiveTableProps) => {
   return (
     <div className="w-full">
       {/* Mobile: Stack view */}
       <div className="block sm:hidden space-y-3">
-        {content}
+        {children}
       </div>
       
       {/* Desktop: Table view */}
       <div className="hidden sm:block overflow-x-auto">
         <div className={cn('min-w-full', className)}>
-          {content}
+          {children}
         </div>
       </div>
     </div>
@@ -89,17 +89,17 @@ export const ResponsiveTable = ({ content, className }: ResponsiveTableProps) =>
 };
 
 interface MobileStackedItemProps {
-  content?: React.ReactNode;
+  children: React.ReactNode;
   className?: string;
 }
 
-export const MobileStackedItem = ({ content, className }: MobileStackedItemProps) => {
+export const MobileStackedItem = ({ children, className }: MobileStackedItemProps) => {
   return (
     <div className={cn(
       'sm:hidden p-4 border rounded-lg bg-card space-y-2',
       className
     )}>
-      {content}
+      {children}
     </div>
   );
 };

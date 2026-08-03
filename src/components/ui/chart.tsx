@@ -36,11 +36,11 @@ const ChartContainer = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
     config: ChartConfig
-    content: React.ComponentProps<
+    children: React.ComponentProps<
       typeof RechartsPrimitive.ResponsiveContainer
-    >[ "content" ]
+    >["children"]
   }
->(({ id, className, content, config, ...props }, ref) => {
+>(({ id, className, children, config, ...props }, ref) => {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
 
@@ -57,7 +57,7 @@ const ChartContainer = React.forwardRef<
       >
         <ChartStyle id={chartId} config={config} />
         <RechartsPrimitive.ResponsiveContainer>
-          {content}
+          {children}
         </RechartsPrimitive.ResponsiveContainer>
       </div>
     </ChartContext.Provider>

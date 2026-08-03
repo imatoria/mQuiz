@@ -82,7 +82,7 @@ export const PageMultiSelect: React.FC<PageMultiSelectProps> = ({
 
   return (
     <Popover>
-      <PopoverTrigger asSlot>
+      <PopoverTrigger asChild>
         <Button type="button" variant="outline" disabled={disabled} className={cn('justify-between', className)}>
           <span className="truncate">{label}</span>
           <span className="ml-2 text-muted-foreground">{display}</span>
