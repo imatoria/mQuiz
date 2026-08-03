@@ -287,11 +287,13 @@ const StudentDashboardContent = () => {
 
   const getTestStatus = (test: ScheduledPaper) => {
     const now = new Date();
-    const testStart = new Date(test.start_time);
-    const testEnd = new Date(test.end_time);
+    const hasStart = !!test.start_time;
+    const hasEnd = !!test.end_time;
+    const testStart = hasStart ? new Date(test.start_time) : null;
+    const testEnd = hasEnd ? new Date(test.end_time) : null;
     
-    if (testEnd < now) return 'expired';
-    if (testStart > now) return 'scheduled';
+    if (testEnd && testEnd < now) return 'expired';
+    if (testStart && testStart > now) return 'scheduled';
     return 'active';
   };
 
@@ -301,7 +303,8 @@ const StudentDashboardContent = () => {
     return { variant: "destructive" as const, label: "Hard" };
   };
 
-  const formatTimeRemaining = (endTime: string) => {
+  const formatTimeRemaining = (endTime?: string) => {
+    if (!endTime) return "Always Available";
     const end = new Date(endTime);
     const diff = end.getTime() - currentTime.getTime();
     
@@ -316,7 +319,8 @@ const StudentDashboardContent = () => {
     return `${minutes}m`;
   };
 
-  const formatTimeUntilStart = (startTime: string) => {
+  const formatTimeUntilStart = (startTime?: string) => {
+    if (!startTime) return null;
     const start = new Date(startTime);
     const diff = start.getTime() - currentTime.getTime();
     
@@ -615,7 +619,7 @@ const StudentDashboardContent = () => {
                                
                                {status === 'active' && (
                                  <Badge variant="default" className="text-xs bg-quiz animate-pulse shadow-sm">
-                                   🔴 {timeRemaining} remaining
+                                   🔴 {test.end_time ? `${timeRemaining} remaining` : 'Always Available'}
                                  </Badge>
                                )}
                                
