@@ -341,7 +341,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
             <div className="space-y-2">
               <Label>Date Range</Label>
               <Popover>
-                <PopoverTrigger asStudent>
+                <PopoverTrigger asChild>
                   <Button
                     id="date"
                     variant="outline"

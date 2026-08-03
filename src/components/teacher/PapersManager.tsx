@@ -460,7 +460,7 @@ export const PapersManager: React.FC = () => {
                       </Button>
                       
                       <AlertDialog>
-                        <AlertDialogTrigger asStudent>
+                        <AlertDialogTrigger asChild>
                           <Button
                             variant="outline"
                             size="sm"

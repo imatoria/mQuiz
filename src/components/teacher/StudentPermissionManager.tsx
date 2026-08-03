@@ -148,7 +148,7 @@ export const StudentPermissionManager = () => {
                   </div>
                 </div>
                 <Dialog>
-                  <DialogTrigger asStudent>
+                  <DialogTrigger asChild>
                     <Button variant="outline" size="sm" onClick={() => setSelectedStudent(student.user_id)}>
                       <Settings className="w-3.5 h-3.5 mr-1" />
                       Configure

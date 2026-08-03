@@ -176,7 +176,7 @@ export const ScheduleManager = () => {
                     </Button>
                     
                     <AlertDialog>
-                      <AlertDialogTrigger asStudent>
+                      <AlertDialogTrigger asChild>
                         <Button
                           variant="outline"
                           size="sm"

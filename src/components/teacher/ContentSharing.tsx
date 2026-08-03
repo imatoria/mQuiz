@@ -225,7 +225,7 @@ export const ContentSharing = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Content Sharing</h2>
         <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-          <DialogTrigger asStudent>
+          <DialogTrigger asChild>
             <Button>
               <Share2 className="h-4 w-4 mr-2" />
               Share Pages

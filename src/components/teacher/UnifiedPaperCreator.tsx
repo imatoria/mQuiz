@@ -866,7 +866,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                 <div className="space-y-2">
                   <Label>Start Time</Label>
                   <Popover>
-                    <PopoverTrigger asStudent>
+                    <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {formData.start_time ? format(formData.start_time, "PPP") : "Pick date"}
@@ -894,7 +894,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                 <div className="space-y-2">
                   <Label>End Time</Label>
                   <Popover>
-                    <PopoverTrigger asStudent>
+                    <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {formData.end_time ? format(formData.end_time, "PPP") : "Pick date"}
@@ -1025,7 +1025,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                           {selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''} selected
                         </p>
                         <AlertDialog>
-                          <AlertDialogTrigger asStudent>
+                          <AlertDialogTrigger asChild>
                             <Button
                               type="button"
                               variant="outline"
@@ -1173,7 +1173,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                       <div className="space-y-2">
                         <Label>Date Range</Label>
                         <Popover>
-                          <PopoverTrigger asStudent>
+                          <PopoverTrigger asChild>
                             <Button
                               variant="outline"
                               className={cn(

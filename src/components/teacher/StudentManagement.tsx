@@ -264,7 +264,7 @@ export const StudentManagement = ({ onStudentsUpdate }: StudentManagementProps) 
           <p className="text-muted-foreground">Manage student profiles, assign classes and subjects</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asStudent>
+          <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
               <UserPlus className="w-4 h-4 mr-2" />
               Add Student
