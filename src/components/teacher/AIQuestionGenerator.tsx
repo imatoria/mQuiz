@@ -120,16 +120,19 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
   });
 
   useEffect(() => {
-    if (embeddedInPaperCreator) {
+    const effectiveSubj = subject_id || config.subject_id || uniqueSubjects[0]?.id || '';
+    const effectiveClass = class_id || config.class_id || uniqueClasses[0]?.id || '';
+
+    if (embeddedInPaperCreator || !config.subject_id || !config.class_id) {
       setConfig(prev => ({
         ...prev,
-        subject_id: subject_id || prev.subject_id,
-        class_id: class_id || prev.class_id,
+        subject_id: effectiveSubj,
+        class_id: effectiveClass,
         difficulty: difficulty || prev.difficulty || 'medium',
         question_count: total_questions || prev.question_count || 5
       }));
     }
-  }, [embeddedInPaperCreator, subject_id, class_id, difficulty, total_questions]);
+  }, [embeddedInPaperCreator, subject_id, class_id, difficulty, total_questions, uniqueSubjects, uniqueClasses]);
   const { toast } = useToast();
   const [availablePages, setAvailablePages] = useState<number[]>([]);
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
@@ -304,20 +307,39 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
   }, [config.subject_id, config.class_id, mode]);
 
   const handleGenerateQuestions = async () => {
+    const targetSubjId = config.subject_id || subject_id || uniqueSubjects[0]?.id || '';
+    const targetClassId = config.class_id || class_id || uniqueClasses[0]?.id || '';
+
     if (mode === 'independent') {
-      if (!config.topic.trim() || !config.subject_id || !config.class_id) {
+      if (!config.topic.trim()) {
         toast({
           title: 'Missing Information',
-          description: 'Please fill in topic, subject, and class level.',
+          description: 'Please enter topic/theme.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!embeddedInPaperCreator && (!targetSubjId || !targetClassId)) {
+        toast({
+          title: 'Missing Information',
+          description: 'Please select subject and class level.',
           variant: 'destructive',
         });
         return;
       }
     } else {
-      if (!config.document_id || !config.subject_id || !config.class_id || selectedPages.length === 0) {
+      if (!config.document_id || selectedPages.length === 0) {
         toast({
           title: 'Missing Information',
-          description: 'Please select a book and page(s) along with subject and class.',
+          description: 'Please select a book and page(s).',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!embeddedInPaperCreator && (!targetSubjId || !targetClassId)) {
+        toast({
+          title: 'Missing Information',
+          description: 'Please select subject and class level.',
           variant: 'destructive',
         });
         return;
@@ -343,6 +365,8 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       const payload = {
         config: { 
           ...config, 
+          subject_id: targetSubjId,
+          class_id: targetClassId,
           selected_pages: selectedPages, 
           question_count: questionCount, 
           ...(mode === 'book' ? { 
@@ -388,8 +412,8 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
         const qRecord = {
           id: qId,
           user_id: currentUser?.id || 'system',
-          subject_id: config.subject_id,
-          class_id: config.class_id,
+          subject_id: targetSubjId,
+          class_id: targetClassId,
           topic: topicTitle,
           question_text: qText,
           question_type: config.question_type === 'mixed' ? (i % 2 === 0 ? 'multiple_choice' : 'true_false') : config.question_type,

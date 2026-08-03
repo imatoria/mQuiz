@@ -182,8 +182,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       setFormData(prev => ({
         ...prev,
         title: editingPaper.title || '',
-        subject_id: editingPaper.subject_id || '',
-        class_id: editingPaper.class_id || '',
+        subject_id: editingPaper.subject_id || subjects[0]?.id || '',
+        class_id: editingPaper.class_id || classes[0]?.id || '',
         total_questions: editingPaper.total_questions || 10,
         time_limit_minutes: editingPaper.time_limit_minutes || 60,
         start_time: editingPaper.start_time ? new Date(editingPaper.start_time) : undefined,
