@@ -151,17 +151,19 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
   // Check if test attempt is within time limits
   const validateTestTimeLimit = useCallback(async (attemptData: any) => {
     const now = new Date();
-    const testEndTime = new Date(test.end_time);
     
-    // Check if test window has expired
-    if (now > testEndTime) {
-      toast({
-        title: "Test Expired",
-        description: "The test window has closed. You can no longer continue this test.",
-        variant: "destructive"
-      });
-      onComplete();
-      return false;
+    // Check if test window has expired (only if end_time is set)
+    if (test.end_time) {
+      const testEndTime = new Date(test.end_time);
+      if (now > testEndTime) {
+        toast({
+          title: "Test Expired",
+          description: "The test window has closed. You can no longer continue this test.",
+          variant: "destructive"
+        });
+        onComplete();
+        return false;
+      }
     }
     
     // For resumed attempts, use stored time_remaining if available
@@ -499,16 +501,18 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         const attemptNumber = (test.test_attempts?.length || 0) + 1;
         const startTime = new Date();
         
-        // Check if we're still within the test window
-        const testEndTime = new Date(test.end_time);
-        if (startTime > testEndTime) {
-          toast({
-            title: "Test Expired",
-            description: "The test window has closed. You can no longer start this test.",
-            variant: "destructive"
-          });
-          onComplete();
-          return;
+        // Check if we're still within the test window (only if end_time is set)
+        if (test.end_time) {
+          const testEndTime = new Date(test.end_time);
+          if (startTime > testEndTime) {
+            toast({
+              title: "Test Expired",
+              description: "The test window has closed. You can no longer start this test.",
+              variant: "destructive"
+            });
+            onComplete();
+            return;
+          }
         }
         
         // Get the paper's show_results setting
