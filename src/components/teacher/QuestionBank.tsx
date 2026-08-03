@@ -63,6 +63,16 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  
+  // Track if any filter has been applied yet
+  const [hasAppliedFilter, setHasAppliedFilter] = useState(false);
+  
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const { toast } = useToast();
+
+  // Use student assignments hooks
+  const { uniqueSubjects = [], isLoading: loadingSubjects } = useStudentSubjects();
+  const { uniqueClasses = [], isLoading: loadingClasses } = useStudentClasses();
 
   useEffect(() => {
     // Only load initial data dependencies, do not auto-fetch questions yet.
