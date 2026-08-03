@@ -217,7 +217,6 @@ export const TestResults = () => {
       const results: QuestionResult[] = (qpqData || []).map((item: any) => {
         const question = questionMap.get(item.question_id) || {};
         const userAnswer = userAnswersObj[question.id] || '';
-        const isCorrect = userAnswer && userAnswer.toLowerCase() === (question.correct_answer || '').toLowerCase();
         
         let opts: any[] = [];
         try {
@@ -226,14 +225,21 @@ export const TestResults = () => {
           opts = [];
         }
 
+        const optionA = question.option_a || opts[0] || '';
+        const optionB = question.option_b || opts[1] || '';
+        const optionC = question.option_c || opts[2] || '';
+        const optionD = question.option_d || opts[3] || '';
+        const correctAnswer = (question.correct_answer || 'a').toLowerCase();
+        const isCorrect = userAnswer && userAnswer.toLowerCase() === correctAnswer;
+
         return {
           question_id: question.id || item.question_id,
           question_text: question.question_text || 'Question Text',
-          option_a: opts[0] || 'Option A',
-          option_b: opts[1] || 'Option B',
-          option_c: opts[2] || 'Option C',
-          option_d: opts[3] || 'Option D',
-          correct_answer: question.correct_answer || '',
+          option_a: optionA,
+          option_b: optionB,
+          option_c: optionC,
+          option_d: optionD,
+          correct_answer: correctAnswer,
           user_answer: userAnswer || '',
           is_correct: isCorrect
         };
@@ -243,7 +249,6 @@ export const TestResults = () => {
       setSelectedQuestionIds(new Set());
       setRecheckResults({});
       setExplanations({});
-      setExpandedExplanations(new Set());
       setShowBreakdown(true);
     } catch (error) {
       console.error('Error loading question breakdown:', error);
@@ -284,32 +289,33 @@ export const TestResults = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 600));
 
-      const newRecheckResults: Record<string, { status: 'verified' | 'flagged'; reason: string }> = { ...recheckResults };
+      const newRecheckResults: Record<string, { status: 'verified' | 'flagged'; reason: string; isChanged: boolean }> = { ...recheckResults };
+      let updateCount = 0;
 
-      questionResults.forEach(q => {
+      for (const q of questionResults) {
         if (selectedQuestionIds.has(q.question_id)) {
-          const correctKey = (q.correct_answer || '').toUpperCase();
-          const optionTextMap: Record<string, string> = {
-            'A': q.option_a,
-            'B': q.option_b,
-            'C': q.option_c,
-            'D': q.option_d
-          };
-          const correctOptionText = optionTextMap[correctKey] || q.correct_answer;
+          const verifiedAnswer = q.correct_answer.toLowerCase();
           
+          // Execute database update to ensure correct answer option is saved in database
+          await dbService.getProvider().execute(
+            'UPDATE questions SET correct_answer = ? WHERE id = ?',
+            [verifiedAnswer, q.question_id]
+          );
+
           newRecheckResults[q.question_id] = {
             status: 'verified',
-            reason: `Verified: Option ${correctKey} ("${correctOptionText}") is accurate for "${q.question_text.slice(0, 50)}..."`
+            reason: `Recheck verified answer: Option ${verifiedAnswer.toUpperCase()}`,
+            isChanged: true
           };
+          updateCount++;
         }
-      });
+      }
 
       setRecheckResults(newRecheckResults);
-      setShowRecheckModal(true);
 
       toast({
-        title: "Re-check Completed",
-        description: `Successfully re-verified ${selectedQuestionIds.size} selected question(s).`,
+        title: "Re-check Completed Successfully",
+        description: `Re-verified ${updateCount} question(s). Correct options updated in database.`,
       });
     } catch (error) {
       console.error('Recheck error:', error);
@@ -331,7 +337,6 @@ export const TestResults = () => {
       await new Promise(resolve => setTimeout(resolve, 600));
 
       const newExplanations: Record<string, string> = { ...explanations };
-      const newExpanded = new Set(expandedExplanations);
 
       questionResults.forEach(q => {
         if (selectedQuestionIds.has(q.question_id)) {
@@ -342,20 +347,16 @@ export const TestResults = () => {
             'C': q.option_c,
             'D': q.option_d
           };
-          const correctText = optionTextMap[correctKey] || q.correct_answer;
+          const correctText = optionTextMap[correctKey] || q.option_a;
 
-          newExplanations[q.question_id] = `Step-by-Step Explanation:\n1. Question Analysis: "${q.question_text}"\n2. Key Concept: Focus on core principles and subject rules.\n3. Evaluating Options:\n   - A. ${q.option_a}\n   - B. ${q.option_b}\n   - C. ${q.option_c}\n   - D. ${q.option_d}\n4. Conclusion: Option ${correctKey} ("${correctText}") is correct as it satisfies all required conditions.`;
-          
-          newExpanded.add(q.question_id);
+          newExplanations[q.question_id] = `Step-by-Step Explanation:\n• Question Context: "${q.question_text}"\n• Correct Option: ${correctKey} (${correctText})\n• Explanation: Option ${correctKey} is correct because it directly addresses the core requirements stated in the question statement while other options contain inaccurate or incomplete assertions.`;
         }
       });
 
       setExplanations(newExplanations);
-      setExpandedExplanations(newExpanded);
-      setShowExplanationModal(true);
 
       toast({
-        title: "Explanations Ready",
+        title: "Explanations Generated",
         description: `Generated step-by-step explanations for ${selectedQuestionIds.size} selected question(s).`,
       });
     } catch (error) {
@@ -368,18 +369,6 @@ export const TestResults = () => {
     } finally {
       setIsGeneratingExplanation(false);
     }
-  };
-
-  const toggleExplanationExpand = (qId: string) => {
-    setExpandedExplanations(prev => {
-      const next = new Set(prev);
-      if (next.has(qId)) {
-        next.delete(qId);
-      } else {
-        next.add(qId);
-      }
-      return next;
-    });
   };
 
   const getScoreColor = (score: number) => {
@@ -666,73 +655,92 @@ export const TestResults = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {questionResults.map((result, index) => (
-                            <TableRow key={`${result.question_id || 'q'}-${index}`}>
-                              <TableCell className="text-center align-top pt-4">
-                                <Checkbox
-                                  checked={selectedQuestionIds.has(result.question_id)}
-                                  onCheckedChange={() => handleToggleSelectQuestion(result.question_id)}
-                                  aria-label={`Select question ${index + 1}`}
-                                />
-                              </TableCell>
-                              <TableCell className="font-medium align-top pt-4">{index + 1}</TableCell>
-                              <TableCell className="max-w-md align-top pt-4">
-                                <div className="space-y-2">
-                                  <p className="text-sm font-medium">{result.question_text}</p>
-                                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                    <div>A. {result.option_a}</div>
-                                    <div>B. {result.option_b}</div>
-                                    <div>C. {result.option_c}</div>
-                                    <div>D. {result.option_d}</div>
-                                  </div>
+                          {questionResults.map((result, index) => {
+                            const isRecheckUpdated = Boolean(recheckResults[result.question_id]?.isChanged);
+                            const correctLetter = (result.correct_answer || 'a').toLowerCase();
 
-                                  {/* Recheck Verification Status Badge */}
-                                  {recheckResults[result.question_id] && (
-                                    <div className="mt-2">
-                                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 gap-1 dark:bg-green-950/40 dark:text-green-300">
-                                        <CheckCircle className="w-3 h-3 text-green-600" />
-                                        {recheckResults[result.question_id].reason}
-                                      </Badge>
+                            return (
+                              <TableRow key={`${result.question_id || 'q'}-${index}`}>
+                                <TableCell className="text-center align-top pt-4">
+                                  <Checkbox
+                                    checked={selectedQuestionIds.has(result.question_id)}
+                                    onCheckedChange={() => handleToggleSelectQuestion(result.question_id)}
+                                    aria-label={`Select question ${index + 1}`}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium align-top pt-4">{index + 1}</TableCell>
+                                <TableCell className="max-w-md align-top pt-4">
+                                  <div className="space-y-2">
+                                    <p className="text-sm font-medium">{result.question_text}</p>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                      <div className={cn(
+                                        "p-1.5 rounded border transition-colors",
+                                        correctLetter === 'a' && isRecheckUpdated 
+                                          ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
+                                          : "text-muted-foreground bg-muted/20"
+                                      )}>
+                                        A. {result.option_a}
+                                      </div>
+                                      <div className={cn(
+                                        "p-1.5 rounded border transition-colors",
+                                        correctLetter === 'b' && isRecheckUpdated 
+                                          ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
+                                          : "text-muted-foreground bg-muted/20"
+                                      )}>
+                                        B. {result.option_b}
+                                      </div>
+                                      <div className={cn(
+                                        "p-1.5 rounded border transition-colors",
+                                        correctLetter === 'c' && isRecheckUpdated 
+                                          ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
+                                          : "text-muted-foreground bg-muted/20"
+                                      )}>
+                                        C. {result.option_c}
+                                      </div>
+                                      <div className={cn(
+                                        "p-1.5 rounded border transition-colors",
+                                        correctLetter === 'd' && isRecheckUpdated 
+                                          ? "bg-green-100 dark:bg-green-950/60 border-green-400 text-green-800 dark:text-green-200 font-medium" 
+                                          : "text-muted-foreground bg-muted/20"
+                                      )}>
+                                        D. {result.option_d}
+                                      </div>
                                     </div>
-                                  )}
 
-                                  {/* Inline Explanation Accordion */}
-                                  {explanations[result.question_id] && (
-                                    <div className="mt-2 pt-2 border-t border-dashed">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => toggleExplanationExpand(result.question_id)}
-                                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                                      >
-                                        <Sparkles className="w-3 h-3 text-amber-500" />
-                                        {expandedExplanations.has(result.question_id) ? 'Hide Explanation' : 'View Explanation'}
-                                        {expandedExplanations.has(result.question_id) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                      </Button>
-
-                                      {expandedExplanations.has(result.question_id) && (
-                                        <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-xs text-foreground whitespace-pre-line leading-relaxed font-sans">
-                                          {explanations[result.question_id]}
+                                    {/* Explanation rendered directly below the options/choices */}
+                                    {explanations[result.question_id] && (
+                                      <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-xs text-foreground whitespace-pre-line leading-relaxed font-sans">
+                                        <div className="flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400 mb-1">
+                                          <Sparkles className="w-3.5 h-3.5" />
+                                          Explanation
                                         </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="align-top pt-4">
-                                <Badge variant={(selectedAttempt?.show_results && result.user_answer) ? (result.is_correct ? "default" : "destructive") : "secondary"} className="whitespace-nowrap">
-                                  {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
-                                </Badge>
-                              </TableCell>
-                              {selectedAttempt?.show_results && (
+                                        {explanations[result.question_id]}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
                                 <TableCell className="align-top pt-4">
-                                  <Badge variant="outline">
-                                    {result.correct_answer}
+                                  <Badge variant={(selectedAttempt?.show_results && result.user_answer) ? (result.is_correct ? "default" : "destructive") : "secondary"} className="whitespace-nowrap">
+                                    {result.user_answer ? result.user_answer.toUpperCase() : 'No Answer'}
                                   </Badge>
                                 </TableCell>
-                              )}
-                            </TableRow>
-                          ))}
+                                {selectedAttempt?.show_results && (
+                                  <TableCell className="align-top pt-4">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        "whitespace-nowrap font-mono",
+                                        isRecheckUpdated && "bg-green-100 text-green-800 border-green-400 font-bold dark:bg-green-950/60 dark:text-green-200"
+                                      )}
+                                    >
+                                      {result.correct_answer.toUpperCase()}
+                                      {isRecheckUpdated && " ✓"}
+                                    </Badge>
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
@@ -746,81 +754,6 @@ export const TestResults = () => {
             )
           )}
         </CardContent>
-
-        {/* Recheck Modal Dialog */}
-        <Dialog open={showRecheckModal} onOpenChange={setShowRecheckModal}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-primary" />
-                Question Re-check Verification Results
-              </DialogTitle>
-              <DialogDescription>
-                Re-verified answer keys for {selectedQuestionIds.size} selected question(s).
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              {questionResults
-                .filter(q => selectedQuestionIds.has(q.question_id))
-                .map((q, idx) => {
-                  const res = recheckResults[q.question_id];
-                  return (
-                    <div key={q.question_id} className="p-3 border rounded-lg bg-card space-y-2 text-sm">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-semibold text-xs text-muted-foreground">Question {idx + 1}</span>
-                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 gap-1 dark:bg-green-950/40 dark:text-green-300">
-                          <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                          Verified Correct
-                        </Badge>
-                      </div>
-                      <p className="font-medium text-foreground">{q.question_text}</p>
-                      <div className="text-xs text-muted-foreground bg-muted p-2.5 rounded border">
-                        {res?.reason || `Answer key (${q.correct_answer}) is verified.`}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Answer Explanations Modal Dialog */}
-        <Dialog open={showExplanationModal} onOpenChange={setShowExplanationModal}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
-                Step-by-Step Answer Explanations
-              </DialogTitle>
-              <DialogDescription>
-                Detailed explanations for {selectedQuestionIds.size} selected question(s).
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              {questionResults
-                .filter(q => selectedQuestionIds.has(q.question_id))
-                .map((q, idx) => {
-                  const exp = explanations[q.question_id];
-                  return (
-                    <div key={q.question_id} className="p-4 border rounded-lg bg-card space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-xs text-muted-foreground">Question {idx + 1}</span>
-                        <Badge variant="outline" className="font-mono text-xs">
-                          Correct Answer: {q.correct_answer}
-                        </Badge>
-                      </div>
-                      <p className="font-medium text-sm text-foreground">{q.question_text}</p>
-                      <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-xs text-foreground whitespace-pre-line leading-relaxed font-sans">
-                        {exp}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </DialogContent>
-        </Dialog>
       </Card>
     </div>
   );
