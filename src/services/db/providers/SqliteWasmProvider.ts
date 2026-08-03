@@ -149,6 +149,9 @@ export class SqliteWasmProvider implements IDatabaseProvider {
             rows = rows.filter(r => r.class_id === paramVal);
           } else if (/\bsubject_id\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => r.subject_id === paramVal);
+          } else if (/\bis_approved\s*=/i.test(cleanSql)) {
+            const target = Boolean(paramVal);
+            rows = rows.filter(r => Boolean(r.is_approved) === target);
           } else if (/\bis_deleted\s*=/i.test(cleanSql)) {
             const target = Boolean(paramVal);
             rows = rows.filter(r => Boolean(r.is_deleted) === target);
@@ -161,6 +164,12 @@ export class SqliteWasmProvider implements IDatabaseProvider {
           } else if (/\bid\s*=/i.test(cleanSql)) {
             rows = rows.filter(r => r.id === paramVal);
           }
+        }
+      } else {
+        if (/\bis_approved\s*=\s*(false|0)/i.test(cleanSql)) {
+          rows = rows.filter(r => !r.is_approved);
+        } else if (/\bis_approved\s*=\s*(true|1)/i.test(cleanSql)) {
+          rows = rows.filter(r => Boolean(r.is_approved));
         }
       }
     }

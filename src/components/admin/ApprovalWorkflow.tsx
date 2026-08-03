@@ -68,8 +68,8 @@ export const ApprovalWorkflow = () => {
     try {
       // Update user approval status
       const { error: updateError } = await dbService.getProvider().execute(
-        'UPDATE profiles SET is_approved = ?, updated_at = ? WHERE id = ?',
-        [approved, new Date().toISOString(), user.id]
+        'UPDATE profiles SET is_approved = ?, updated_at = ? WHERE id = ? OR user_id = ?',
+        [approved, new Date().toISOString(), user.id, user.user_id || user.id]
       );
 
       if (updateError) throw updateError;
