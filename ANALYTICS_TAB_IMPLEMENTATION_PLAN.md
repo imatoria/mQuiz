@@ -1,7 +1,7 @@
 # Implementation Plan: Student Dashboard Analytics Tab - Result Approval Filter
 
 ## Overview
-Transform the Analytics tab to respect parent approval of test results via the `show_results` field in `paper_attempts` table.
+Transform the Analytics tab to respect teacher approval of test results via the `show_results` field in `paper_attempts` table.
 
 ---
 
@@ -23,7 +23,7 @@ Transform the Analytics tab to respect parent approval of test results via the `
 
 ### 2.1 Add Approval Status Indicators ✅
 - ✅ Created yellow alert card showing pending approval count
-- ✅ Message: "X test result(s) pending parent approval"
+- ✅ Message: "X test result(s) pending teacher approval"
 - ✅ Visual distinction with border and background color
 - ✅ Only shows when `pendingApprovalCount > 0`
 
@@ -47,7 +47,7 @@ Transform the Analytics tab to respect parent approval of test results via the `
 
 ### 3.1 No Approved Results ✅
 - ✅ Special card shown if `totalTests > 0` but `performanceData.length === 0`
-- ✅ Message: "You've completed X test(s)! Results will appear here once your parent reviews and approves them."
+- ✅ Message: "You've completed X test(s)! Results will appear here once your teacher reviews and approves them."
 - ✅ Friendly icon and centered layout
 - ✅ Returns early to prevent showing empty charts
 
@@ -108,7 +108,7 @@ To verify implementation:
 ## Status: ✅ FULLY IMPLEMENTED
 
 All phases completed successfully. The Analytics tab now:
-- Only shows scores from parent-approved results
+- Only shows scores from teacher-approved results
 - Counts all completed tests regardless of approval
 - Shows clear indicators when results are pending approval
 - Provides appropriate empty states for all scenarios

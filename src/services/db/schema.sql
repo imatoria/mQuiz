@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS messages (
   reply_to_message_id TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (parent_message_id) REFERENCES messages(id) ON DELETE SET NULL
+  FOREIGN KEY (reply_to_message_id) REFERENCES messages(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS notifications (

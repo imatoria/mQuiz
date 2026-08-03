@@ -275,7 +275,7 @@ export const AnnouncementSystem = () => {
         </div>
         {canCreateAnnouncements && (
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger >
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 New Announcement

@@ -396,7 +396,7 @@ export const ExportManager = () => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Date Range</label>
             <Popover>
-              <PopoverTrigger asChild>
+              <PopoverTrigger >
                 <Button
                   variant="outline"
                   className={cn(

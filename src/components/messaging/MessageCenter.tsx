@@ -209,7 +209,7 @@ export const MessageCenter = () => {
 
     try {
       const { error } = await dbService.getProvider().execute(
-        'INSERT INTO messages (sender_id, recipient_id, subject, content, parent_message_id) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO messages (sender_id, recipient_id, subject, content, reply_to_message_id) VALUES (?, ?, ?, ?, ?)',
         [user.id, selectedMessage.sender_id, `Re: ${selectedMessage.subject}`, replyContent, selectedMessage.id]
       );
 
