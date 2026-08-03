@@ -127,42 +127,35 @@ export class SqliteWasmProvider implements IDatabaseProvider {
 
     if (/WHERE/i.test(cleanSql)) {
       if (params.length > 0) {
-        // Handle IN clauses e.g. user_id IN (?, ?), student_id IN (?, ?)
-        if (/\buser_id\s+IN\s*\(/i.test(cleanSql)) {
-          rows = rows.filter(r => params.includes(r.user_id));
-        } else if (/\bstudent_id\s+IN\s*\(/i.test(cleanSql)) {
-          rows = rows.filter(r => params.includes(r.student_id));
-        } else if (/\bid\s+IN\s*\(/i.test(cleanSql)) {
-          rows = rows.filter(r => params.includes(r.id));
-        } else if (/\bteacher_id\s+IN\s*\(/i.test(cleanSql)) {
-          rows = rows.filter(r => params.includes(r.teacher_id));
+        // 1. Check for IN clauses e.g. WHERE column IN (?, ?, ?)
+        const inMatch = cleanSql.match(/\b([a-zA-Z0-9_]+)\s+IN\s*\(/i);
+        if (inMatch) {
+          const colName = inMatch[1];
+          rows = rows.filter(r => params.includes(r[colName]));
         } else {
-          // Handle standard equality filtering
-          const paramVal = params[0];
-          if (/\buser_id\s*=\s*\?/i.test(cleanSql)) {
-            rows = rows.filter(r => r.user_id === paramVal);
-          } else if (/\bstudent_id\s*=\s*\?/i.test(cleanSql)) {
-            rows = rows.filter(r => r.student_id === paramVal);
-          } else if (/\bteacher_id\s*=\s*\?/i.test(cleanSql)) {
-            rows = rows.filter(r => r.teacher_id === paramVal);
-          } else if (/\bclass_id\s*=\s*\?/i.test(cleanSql)) {
-            rows = rows.filter(r => r.class_id === paramVal);
-          } else if (/\bsubject_id\s*=\s*\?/i.test(cleanSql)) {
-            rows = rows.filter(r => r.subject_id === paramVal);
-          } else if (/\bis_approved\s*=\s*\?/i.test(cleanSql)) {
-            const target = Boolean(Number(paramVal) === 1 || paramVal === true || paramVal === 'true');
-            rows = rows.filter(r => Boolean(r.is_approved) === target);
-          } else if (/\bis_deleted\s*=\s*\?/i.test(cleanSql)) {
-            const target = Boolean(Number(paramVal) === 1 || paramVal === true || paramVal === 'true');
-            rows = rows.filter(r => Boolean(r.is_deleted) === target);
-          } else if (/\bis_active\s*=/i.test(cleanSql)) {
-            const target = Boolean(paramVal);
-            rows = rows.filter(r => Boolean(r.is_active) === target);
-          } else if (/\bis_current\s*=/i.test(cleanSql)) {
-            const target = Boolean(paramVal);
-            rows = rows.filter(r => Boolean(r.is_current) === target);
-          } else if (/\bid\s*=\s*\?/i.test(cleanSql)) {
-            rows = rows.filter(r => r.id === paramVal);
+          // 2. Check for parameterized equality clauses e.g. WHERE column = ?
+          const eqMatches = Array.from(cleanSql.matchAll(/\b([a-zA-Z0-9_]+)\s*=\s*\?/gi));
+          if (eqMatches.length > 0) {
+            eqMatches.forEach((match, idx) => {
+              const colName = match[1];
+              const paramVal = params[idx];
+              if (paramVal !== undefined) {
+                if (colName === 'is_approved' || colName === 'is_deleted' || colName === 'is_active' || colName === 'is_current') {
+                  const target = Boolean(Number(paramVal) === 1 || paramVal === true || paramVal === 'true');
+                  rows = rows.filter(r => Boolean(r[colName]) === target);
+                } else {
+                  rows = rows.filter(r => String(r[colName]) === String(paramVal));
+                }
+              }
+            });
+          } else {
+            // Fallback for custom parameterized clauses
+            const firstColMatch = cleanSql.match(/WHERE\s+([a-zA-Z0-9_]+)/i);
+            if (firstColMatch) {
+              const colName = firstColMatch[1];
+              const paramVal = params[0];
+              rows = rows.filter(r => String(r[colName]) === String(paramVal));
+            }
           }
         }
       }
