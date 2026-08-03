@@ -112,7 +112,7 @@ export const ContentModeration = () => {
           json_object('class_name', c.class_name) as classes,
           json_object('subject_name', s.subject_name) as subjects
         FROM documents d
-        LEFT JOIN profiles p ON d.user_id = p.id
+        LEFT JOIN profiles p ON (d.user_id = p.user_id OR d.user_id = p.id)
         LEFT JOIN classes c ON d.class_id = c.id
         LEFT JOIN subjects s ON d.subject_id = s.id
         ORDER BY d.created_at DESC
@@ -127,7 +127,7 @@ export const ContentModeration = () => {
           json_object('class_name', c.class_name) as classes,
           json_object('subject_name', s.subject_name) as subjects
         FROM question_papers qp
-        LEFT JOIN profiles p ON qp.user_id = p.id
+        LEFT JOIN profiles p ON (qp.user_id = p.user_id OR qp.user_id = p.id)
         LEFT JOIN classes c ON qp.class_id = c.id
         LEFT JOIN subjects s ON qp.subject_id = s.id
         ORDER BY qp.created_at DESC
@@ -467,10 +467,36 @@ export const ContentModeration = () => {
                           {new Date(questionPaper.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-1" />
-                            Review
-                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <Eye className="w-4 h-4 mr-1" />
+                                Review
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Review Question Paper</DialogTitle>
+                                <DialogDescription>
+                                  Review details for question paper
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <h4 className="font-medium mb-2">Question Paper Details</h4>
+                                  <div className="text-sm space-y-1">
+                                    <p><strong>Title:</strong> {questionPaper.title}</p>
+                                    <p><strong>Questions:</strong> {questionPaper.total_questions}</p>
+                                    <p><strong>Time Limit:</strong> {questionPaper.time_limit_minutes ? `${questionPaper.time_limit_minutes} mins` : 'N/A'}</p>
+                                    <p><strong>Class:</strong> {questionPaper.classes?.class_name || 'All Classes'}</p>
+                                    <p><strong>Subject:</strong> {questionPaper.subjects?.subject_name || 'All Subjects'}</p>
+                                    <p><strong>Creator:</strong> {questionPaper.profiles?.full_name || questionPaper.profiles?.email || 'Unknown'} ({questionPaper.profiles?.email || 'N/A'})</p>
+                                    <p><strong>Created:</strong> {new Date(questionPaper.created_at).toLocaleDateString()}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         </TableCell>
                       </TableRow>
                     ))}
