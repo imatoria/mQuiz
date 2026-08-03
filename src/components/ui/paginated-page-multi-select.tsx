@@ -106,7 +106,7 @@ const display = selectedPages.length > 0
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asSlot>
         <Button type="button" variant="outline" disabled={disabled} className={cn('justify-between', className)}>
           <span className="truncate">{label}</span>
           <span className="ml-2 text-muted-foreground">{display}</span>

@@ -102,7 +102,7 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
           
           {profile && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asSlot>
                 <Button variant="outline" size="sm" className="w-8 h-8 rounded-full p-0">
                   <span className="text-sm font-semibold">{getUserInitial()}</span>
                 </Button>
@@ -136,7 +136,7 @@ export const Navigation = ({ currentRole, onRoleChange, activeTabName, activeTab
           
           {profile && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asSlot>
                 <Button variant="outline" size="sm" className="w-8 h-8 rounded-full p-0">
                   <span className="text-sm font-semibold">{getUserInitial()}</span>
                 </Button>

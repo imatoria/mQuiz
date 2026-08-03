@@ -3,14 +3,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 interface ResponsiveContainerProps {
-  children: React.ReactNode;
+  content?: React.ReactNode;
   className?: string;
   variant?: 'default' | 'dashboard' | 'auth' | 'fullscreen';
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
 export const ResponsiveContainer = ({ 
-  children, 
+  content, 
   className, 
   variant = 'default',
   padding = 'md'
@@ -35,13 +35,13 @@ export const ResponsiveContainer = ({
       paddingClasses[padding],
       className
     )}>
-      {children}
+      {content}
     </div>
   );
 };
 
 interface ResponsiveGridProps {
-  children: React.ReactNode;
+  content?: React.ReactNode;
   columns?: {
     default?: number;
     sm?: number;
@@ -54,7 +54,7 @@ interface ResponsiveGridProps {
 }
 
 export const ResponsiveGrid = ({ 
-  children, 
+  content, 
   columns = { default: 1, md: 2, lg: 3 },
   gap = 'md',
   className 
@@ -83,13 +83,13 @@ export const ResponsiveGrid = ({
       gapClasses[gap],
       className
     )}>
-      {children}
+      {content}
     </div>
   );
 };
 
 interface ResponsiveStackProps {
-  children: React.ReactNode;
+  content?: React.ReactNode;
   direction?: 'vertical' | 'horizontal' | 'responsive';
   spacing?: 'sm' | 'md' | 'lg';
   align?: 'start' | 'center' | 'end' | 'stretch';
@@ -97,7 +97,7 @@ interface ResponsiveStackProps {
 }
 
 export const ResponsiveStack = ({ 
-  children, 
+  content, 
   direction = 'vertical',
   spacing = 'md',
   align = 'stretch',
@@ -129,7 +129,7 @@ export const ResponsiveStack = ({
       alignClasses[align],
       className
     )}>
-      {children}
+      {content}
     </div>
   );
 };

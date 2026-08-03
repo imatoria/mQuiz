@@ -5,21 +5,21 @@ import { Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MobileDrawerProps {
-  children: React.ReactNode;
+  content?: React.ReactNode;
   title?: string;
   trigger?: React.ReactNode;
 }
 
-export const MobileDrawer = ({ children, title = "Menu", trigger }: MobileDrawerProps) => {
+export const MobileDrawer = ({ content, title = "Menu", trigger }: MobileDrawerProps) => {
   const isMobile = useIsMobile();
 
   if (!isMobile) {
-    return <>{children}</>;
+    return <>{content}</>;
   }
 
   return (
     <Sheet>
-      <SheetTrigger asChild>
+      <SheetTrigger asSlot>
         {trigger || (
           <Button variant="ghost" size="sm" className="md:hidden">
             <Menu className="w-5 h-5" />
@@ -31,7 +31,7 @@ export const MobileDrawer = ({ children, title = "Menu", trigger }: MobileDrawer
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
         <div className="mt-6">
-          {children}
+          {content}
         </div>
       </SheetContent>
     </Sheet>

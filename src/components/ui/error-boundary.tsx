@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
-  children: ReactNode;
+  content?: ReactNode;
   fallback?: ReactNode;
   onReset?: () => void;
 }
@@ -79,6 +79,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return this.props.content;
   }
 }
