@@ -334,10 +334,15 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
     
     try {
       const saveStartTime = Date.now();
+      const payloadAnswers = {
+        userAnswers: progressData.answers,
+        flaggedQuestions: progressData.flaggedQuestions
+      };
+
       const { error } = await dbService.getProvider().execute(
         'UPDATE paper_attempts SET answers = ?, current_question_index = ?, progress_percentage = ?, time_remaining = ? WHERE id = ?',
         [
-          JSON.stringify(progressData.answers),
+          JSON.stringify(payloadAnswers),
           progressData.currentQuestionIndex,
           progressData.progressPercentage,
           progressData.timeRemaining,
@@ -482,10 +487,23 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
         setTestAttemptId(attemptData.id);
         setCurrentQuestionIndex(attemptData.current_question_index || 0);
         
-        if (attemptData.answers && typeof attemptData.answers === 'string') {
+        if (attemptData.answers) {
           try {
-            const parsed = JSON.parse(attemptData.answers);
-            setAnswers(parsed);
+            const parsed = typeof attemptData.answers === 'string'
+              ? JSON.parse(attemptData.answers)
+              : attemptData.answers;
+
+            if (parsed && typeof parsed === 'object') {
+              if (parsed.userAnswers) {
+                setAnswers(parsed.userAnswers);
+              } else {
+                setAnswers(parsed);
+              }
+
+              if (Array.isArray(parsed.flaggedQuestions)) {
+                setFlaggedQuestions(new Set(parsed.flaggedQuestions));
+              }
+            }
           } catch (e) {
             console.error('Error parsing answers:', e);
           }
@@ -673,11 +691,25 @@ export const TestInterface = ({ test, onComplete, displayMode = 'single' }: Test
       }
       const score = Math.round((correctCount / totalCount) * 100);
 
+      const payloadAnswers = {
+        userAnswers: answers,
+        flaggedQuestions: Array.from(flaggedQuestions),
+        metadata: {
+          completedAt: completionTime,
+          completionType: type,
+          completionReason: reason || 'Manual submission by user',
+          questionsFlagged: flaggedQuestions.size,
+          questionsAnswered: Object.keys(answers).length,
+          finalTimeRemaining: Math.max(0, timeLeft),
+          finalProgressPercentage: Math.round((Object.keys(answers).length / totalCount) * 100)
+        }
+      };
+
       const { error } = await dbService.getProvider().execute(
         'UPDATE paper_attempts SET completed_at = ?, answers = ?, current_question_index = ?, progress_percentage = ?, time_remaining = ?, score = ? WHERE id = ?',
         [
           completionTime,
-          JSON.stringify(answers),
+          JSON.stringify(payloadAnswers),
           currentQuestionIndex,
           Math.round((Object.keys(answers).length / totalCount) * 100),
           Math.max(0, timeLeft),
