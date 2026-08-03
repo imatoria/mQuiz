@@ -206,15 +206,21 @@ export const ContentModeration = () => {
   };
 
   const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const docTitle = doc?.title || (doc as any)?.original_file_name || (doc as any)?.file_name || '';
+    const docEmail = doc?.profiles?.email || '';
+    const term = (searchTerm || '').toLowerCase();
+    const matchesSearch = docTitle.toLowerCase().includes(term) ||
+                         docEmail.toLowerCase().includes(term);
     const matchesStatus = statusFilter === 'all' || doc.processing_status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const filteredQuestionPapers = questionPapers.filter(qp => {
-    const matchesSearch = qp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         qp.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const qpTitle = qp?.title || (qp as any)?.paper_title || (qp as any)?.name || '';
+    const qpEmail = qp?.profiles?.email || '';
+    const term = (searchTerm || '').toLowerCase();
+    const matchesSearch = qpTitle.toLowerCase().includes(term) ||
+                         qpEmail.toLowerCase().includes(term);
     return matchesSearch;
   });
 
