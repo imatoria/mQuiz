@@ -229,26 +229,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     }
   }, [formData.subject_id, formData.class_id, formData.difficulty_filter]);
 
-  // Effect to handle criteria changes and update selected questions visibility
-  React.useEffect(() => {
-    if (selectedQuestions.length > 0 && formData.subject_id && formData.class_id) {
-      // Filter out questions that no longer meet the current criteria
-      const validQuestions = selectedQuestions.filter(question => {
-        const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(question.difficulty);
-        return matchesDifficulty;
-      });
 
-      // Update selected questions to only include valid ones
-      const validQuestionIds = validQuestions.map(q => q.id);
-      if (validQuestionIds.length !== formData.selected_questions?.length) {
-        setSelectedQuestions(validQuestions);
-        setFormData(prev => ({
-          ...prev,
-          selected_questions: validQuestionIds
-        }));
-      }
-    }
-  }, [formData.difficulty_filter]);
 
   React.useEffect(() => {
     applyQuestionFilters();
@@ -346,7 +327,8 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       
       if (qpqError) throw qpqError;
 
-      const questionIds = (qpqData || []).map((item: any) => item.question_id || item.questions?.id).filter(Boolean);
+      const sortedQpq = (qpqData || []).sort((a: any, b: any) => (a.question_order || 0) - (b.question_order || 0));
+      const questionIds = sortedQpq.map((item: any) => item.question_id || item.questions?.id).filter(Boolean);
 
       if (questionIds.length > 0) {
         const { data: allQuestions } = await dbService.getProvider().query(
@@ -356,8 +338,14 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
 
         const qMap = new Map((allQuestions || []).map((q: any) => [q.id, q]));
         
-        // Preserve question order
-        const questionsList = questionIds.map((qId: string) => qMap.get(qId)).filter(Boolean);
+        // Preserve question order and format options
+        const questionsList = questionIds
+          .map((qId: string) => qMap.get(qId))
+          .filter(Boolean)
+          .map((q: any) => ({
+            ...q,
+            options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options
+          }));
         
         setSelectedQuestions(questionsList);
         setFormData(prev => ({

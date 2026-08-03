@@ -219,9 +219,11 @@ export class SqliteWasmProvider implements IDatabaseProvider {
           return 1;
         }
       } else {
-        const setMatch = cleanSql.match(/SET\s+(.+?)(?:\s+WHERE|$)/i);
+        const setMatch = cleanSql.match(/SET\s+(.+?)(?:\s+WHERE\s+(.+)|$)/i);
         if (setMatch) {
           const setClause = setMatch[1];
+          const whereClause = setMatch[2] || '';
+          
           const setCols = setClause.split(',').map(s => {
             const parts = s.trim().split('=');
             return parts[0].trim();
@@ -235,18 +237,20 @@ export class SqliteWasmProvider implements IDatabaseProvider {
             updates[col] = setValues[i];
           });
 
+          // Extract WHERE column names
+          const whereColMatches = Array.from(whereClause.matchAll(/\b([a-zA-Z0-9_]+)\s*=\s*\?/gi));
+          const whereCols = whereColMatches.map(m => m[1]);
+
           let updatedCount = 0;
           if (whereValues.length > 0) {
             rows.forEach((r, idx) => {
-              const matches = whereValues.some(val => 
-                r.id === val || 
-                r.user_id === val || 
-                r.student_id === val || 
-                r.teacher_id === val ||
-                 
-                r.teacher_id === val
-              );
-              if (matches) {
+              let isMatch = true;
+              if (whereCols.length > 0) {
+                isMatch = whereCols.every((col, wIdx) => String(r[col]) === String(whereValues[wIdx]));
+              } else {
+                isMatch = whereValues.some(val => r.id === val || r.user_id === val || r.student_id === val || r.teacher_id === val);
+              }
+              if (isMatch) {
                 rows[idx] = { ...rows[idx], ...updates };
                 updatedCount++;
               }
@@ -258,13 +262,14 @@ export class SqliteWasmProvider implements IDatabaseProvider {
       }
     }
 
-    const deleteMatch = cleanSql.match(/DELETE\s+FROM\s+([a-zA-Z0-9_]+)/i);
+    const deleteMatch = cleanSql.match(/DELETE\s+FROM\s+([a-zA-Z0-9_]+)(?:\s+WHERE\s+([a-zA-Z0-9_]+)\s*=\s*\?)?/i);
     if (deleteMatch && params.length > 0) {
       const table = deleteMatch[1];
+      const whereCol = deleteMatch[2] || 'id';
       let rows = this.getTable(table);
-      const targetId = params[0];
+      const targetVal = params[0];
       const beforeLen = rows.length;
-      rows = rows.filter(r => r.id !== targetId);
+      rows = rows.filter(r => String(r[whereCol]) !== String(targetVal));
       this.db[table] = rows;
       this.persist();
       return beforeLen - rows.length;
