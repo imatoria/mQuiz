@@ -3,8 +3,8 @@ import { loginAs } from '../helpers/auth.helper';
 
 test.describe('Book Manager Page Content & Persistence Tests', () => {
   test('Edit Book Page Content and verify post-refresh persistence', async ({ page }) => {
-    await loginAs(page, 'parent');
-    await page.goto('/parent/content/book');
+    await loginAs(page, 'teacher');
+    await page.goto('/teacher/content/book');
     await page.waitForLoadState('networkidle');
 
     // Verify Content Creation heading renders

@@ -20,7 +20,7 @@ interface Message {
   subject: string;
   content: string;
   is_read: boolean;
-  parent_message_id?: string;
+  reply_to_message_id?: string;
   created_at: string;
   sender?: {
     full_name: string;

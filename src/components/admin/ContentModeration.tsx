@@ -332,7 +332,7 @@ export const ContentModeration = () => {
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
                             <Dialog>
-                              <DialogTrigger asChild>
+                              <DialogTrigger>
                                 <Button variant="outline" size="sm">
                                   <Eye className="w-4 h-4 mr-1" />
                                   Review

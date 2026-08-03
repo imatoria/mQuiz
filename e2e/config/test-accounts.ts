@@ -5,11 +5,11 @@ export const TEST_ACCOUNTS = {
     role: 'admin',
     fullName: 'Praveen Matoria (Admin)'
   },
-  parent: {
-    email: 'praveen.matoria+parent@gmail.com',
+  teacher: {
+    email: 'praveen.matoria+teacher@gmail.com',
     password: 'Matoria1',
-    role: 'parent',
-    fullName: 'Praveen Matoria'
+    role: 'teacher',
+    fullName: 'Praveen Matoria (Teacher)'
   },
   student: {
     email: 'praveen.matoria+student1@gmail.com',

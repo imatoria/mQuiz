@@ -4,7 +4,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertCircle } from 'lucide-react';
 
 interface RoleBasedAccessProps {
-  children: ReactNode;
+  children?: ReactNode;
+  content?: ReactNode;
   allowedRoles?: string[];
   requireApproval?: boolean;
   fallback?: ReactNode;
@@ -80,7 +81,7 @@ export const RoleBasedAccess = ({
   }
 
   // All checks passed, render content
-  return <>{children}</>;
+  return <>{children || content}</>;
 };
 
 // Convenience components for specific roles

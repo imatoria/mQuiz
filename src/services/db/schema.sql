@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS messages (
   subject TEXT NOT NULL,
   content TEXT NOT NULL,
   is_read INTEGER NOT NULL DEFAULT 0,
-  parent_message_id TEXT,
+  reply_to_message_id TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (parent_message_id) REFERENCES messages(id) ON DELETE SET NULL
