@@ -361,38 +361,53 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       // Generate actual question objects and save to database
       const currentUser = authService.getCurrentUser();
       const newQuestions: any[] = [];
-      const topicTitle = config.topic || 'General Knowledge';
+      const topicTitle = config.topic.trim() || 'General Knowledge';
+
+      const questionTemplates = [
+        `What is the primary concept behind ${topicTitle}?`,
+        `Which of the following best describes the key principles of ${topicTitle}?`,
+        `In the context of ${topicTitle}, what factor plays the most critical role?`,
+        `How does ${topicTitle} apply to practical real-world scenarios?`,
+        `What is the main outcome when implementing ${topicTitle}?`
+      ];
 
       for (let i = 1; i <= questionCount; i++) {
         const qId = crypto.randomUUID();
-        const optionsArr = [
-          `Option A: Core concept of ${topicTitle}`,
-          `Option B: Secondary application`,
-          `Option C: Advanced theorem`,
-          `Option D: Fundamental observation`
-        ];
+        const optionA = `Core principle of ${topicTitle}`;
+        const optionB = `Secondary application of ${topicTitle}`;
+        const optionC = `Theoretical framework`;
+        const optionD = `None of the above`;
+        const optionsArr = [optionA, optionB, optionC, optionD];
+        
         const assignedPage = mode === 'book' && selectedPages.length > 0
           ? selectedPages[(i - 1) % selectedPages.length]
           : 1;
+
+        const qText = questionTemplates[(i - 1) % questionTemplates.length];
 
         const qRecord = {
           id: qId,
           user_id: currentUser?.id || 'system',
           subject_id: config.subject_id,
           class_id: config.class_id,
-          question_text: `[AI Generated] Question ${i} on ${topicTitle}: What is the primary significance of ${topicTitle}?`,
+          topic: topicTitle,
+          question_text: qText,
           question_type: config.question_type === 'mixed' ? (i % 2 === 0 ? 'multiple_choice' : 'true_false') : config.question_type,
+          option_a: optionA,
+          option_b: optionB,
+          option_c: optionC,
+          option_d: optionD,
           options: JSON.stringify(optionsArr),
-          correct_answer: optionsArr[0],
-          explanation: `Detailed explanation for question ${i} covering ${topicTitle}.`,
+          correct_answer: optionA,
+          explanation: `Detailed explanation covering ${topicTitle}.`,
           difficulty: config.difficulty === 'mixed' ? 'medium' : config.difficulty,
           page_number: assignedPage,
           created_at: new Date().toISOString()
         };
 
         await dbService.getProvider().execute(
-          'INSERT INTO questions (id, user_id, subject_id, class_id, question_text, question_type, options, correct_answer, explanation, difficulty, page_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [qRecord.id, qRecord.user_id, qRecord.subject_id, qRecord.class_id, qRecord.question_text, qRecord.question_type, qRecord.options, qRecord.correct_answer, qRecord.explanation, qRecord.difficulty, qRecord.page_number, qRecord.created_at]
+          'INSERT INTO questions (id, user_id, subject_id, class_id, topic, question_text, question_type, option_a, option_b, option_c, option_d, options, correct_answer, explanation, difficulty, page_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [qRecord.id, qRecord.user_id, qRecord.subject_id, qRecord.class_id, qRecord.topic, qRecord.question_text, qRecord.question_type, qRecord.option_a, qRecord.option_b, qRecord.option_c, qRecord.option_d, qRecord.options, qRecord.correct_answer, qRecord.explanation, qRecord.difficulty, qRecord.page_number, qRecord.created_at]
         );
 
         newQuestions.push({
