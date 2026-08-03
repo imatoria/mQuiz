@@ -6,7 +6,6 @@ interface QuestionStats {
   question_id: string;
   question_text: string;
   subject_name: string;
-  difficulty: string;
   total_attempts: number;
   correct_attempts: number;
   success_rate: number;
@@ -29,7 +28,7 @@ interface OverallStats {
   avg_completion_time: number | null;
 }
 
-export function useAnalytics(selectedPeriod: string, selectedDifficulty: string) {
+export function useAnalytics(selectedPeriod: string) {
   const [questionStats, setQuestionStats] = useState<QuestionStats[]>([]);
   const [paperPerformance, setPaperPerformance] = useState<PaperPerformance[]>([]);
   const [overallStats, setOverallStats] = useState<OverallStats | null>(null);
@@ -38,7 +37,7 @@ export function useAnalytics(selectedPeriod: string, selectedDifficulty: string)
 
   useEffect(() => {
     fetchAnalytics();
-  }, [selectedPeriod, selectedDifficulty]);
+  }, [selectedPeriod]);
 
   const fetchAnalytics = async () => {
     try {

@@ -112,7 +112,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
     topic: '',
     subject_id: subject_id || '',
     class_id: class_id || '',
-    difficulty: difficulty || 'medium',
+    difficulty: 'olympiad',
     question_count: total_questions || 5,
     question_type: 'mixed',
     custom_instructions: '',
@@ -128,7 +128,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
         ...prev,
         subject_id: effectiveSubj,
         class_id: effectiveClass,
-        difficulty: difficulty || prev.difficulty || 'medium',
+        difficulty: 'olympiad',
         question_count: total_questions || prev.question_count || 5
       }));
     }
@@ -424,14 +424,13 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
           options: JSON.stringify(optionsArr),
           correct_answer: optionA,
           explanation: `Detailed explanation covering ${topicTitle}.`,
-          difficulty: config.difficulty === 'mixed' ? 'medium' : config.difficulty,
           page_number: assignedPage,
           created_at: new Date().toISOString()
         };
 
         await dbService.getProvider().execute(
-          'INSERT INTO questions (id, user_id, subject_id, class_id, topic, question_text, question_type, option_a, option_b, option_c, option_d, options, correct_answer, explanation, difficulty, page_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [qRecord.id, qRecord.user_id, qRecord.subject_id, qRecord.class_id, qRecord.topic, qRecord.question_text, qRecord.question_type, qRecord.option_a, qRecord.option_b, qRecord.option_c, qRecord.option_d, qRecord.options, qRecord.correct_answer, qRecord.explanation, qRecord.difficulty, qRecord.page_number, qRecord.created_at]
+          'INSERT INTO questions (id, user_id, subject_id, class_id, topic, question_text, question_type, option_a, option_b, option_c, option_d, options, correct_answer, explanation, page_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [qRecord.id, qRecord.user_id, qRecord.subject_id, qRecord.class_id, qRecord.topic, qRecord.question_text, qRecord.question_type, qRecord.option_a, qRecord.option_b, qRecord.option_c, qRecord.option_d, qRecord.options, qRecord.correct_answer, qRecord.explanation, qRecord.page_number, qRecord.created_at]
         );
 
         newQuestions.push({
@@ -581,25 +580,6 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Difficulty Level</Label>
-                <Select 
-                  value={config.difficulty} 
-                  onValueChange={(value) => setConfig({ ...config, difficulty: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {difficulties.map((diff) => (
-                      <SelectItem key={diff.value} value={diff.value}>
-                        <div className="font-medium">{diff.label}</div>
-                        <div className="text-xs text-muted-foreground">{diff.description}</div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </>
           )}
 

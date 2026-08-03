@@ -96,7 +96,6 @@ CREATE TABLE IF NOT EXISTS questions (
   correct_answer TEXT,
   explanation TEXT,
   marks INTEGER NOT NULL DEFAULT 1,
-  difficulty_level TEXT NOT NULL DEFAULT 'medium',
   tags TEXT, -- JSON Array
   is_deleted INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -114,7 +113,6 @@ CREATE TABLE IF NOT EXISTS question_papers (
   subject_id TEXT,
   total_questions INTEGER NOT NULL DEFAULT 0,
   time_limit_minutes INTEGER NOT NULL DEFAULT 60,
-  difficulty_filter TEXT, -- JSON Array
   assign_to_all INTEGER DEFAULT 0,
   start_time TEXT,
   end_time TEXT,

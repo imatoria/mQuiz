@@ -143,13 +143,12 @@ class DatabaseService {
       correct_answer: question.correct_answer || '',
       explanation: question.explanation || '',
       marks: question.marks || 1,
-      difficulty_level: question.difficulty_level || 'medium',
       tags: typeof question.tags === 'string' ? question.tags : JSON.stringify(question.tags || []),
       is_deleted: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO questions (id, user_id, class_id, subject_id, document_id, page_number, question_text, question_type, options, correct_answer, explanation, marks, difficulty_level, tags, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO questions (id, user_id, class_id, subject_id, document_id, page_number, question_text, question_type, options, correct_answer, explanation, marks, tags, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   // --- Question Papers & Attempts ---
@@ -166,7 +165,6 @@ class DatabaseService {
       subject_id: paper.subject_id || null,
       total_questions: paper.total_questions || 0,
       time_limit_minutes: paper.time_limit_minutes || 60,
-      difficulty_filter: typeof paper.difficulty_filter === 'string' ? paper.difficulty_filter : JSON.stringify(paper.difficulty_filter || []),
       assign_to_all: paper.assign_to_all ? 1 : 0,
       start_time: paper.start_time || null,
       end_time: paper.end_time || null,
@@ -177,7 +175,7 @@ class DatabaseService {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    return this.provider.execute('INSERT INTO question_papers (id, user_id, title, class_id, subject_id, total_questions, time_limit_minutes, difficulty_filter, assign_to_all, start_time, end_time, max_attempts, show_results, is_deleted, deleted_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
+    return this.provider.execute('INSERT INTO question_papers (id, user_id, title, class_id, subject_id, total_questions, time_limit_minutes, assign_to_all, start_time, end_time, max_attempts, show_results, is_deleted, deleted_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [record]);
   }
 
   async getPaperAttempts(userId?: string) {

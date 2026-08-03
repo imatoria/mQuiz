@@ -57,7 +57,6 @@ interface QuestionPaper {
   subject_id: string | null;
   class_id: string | null;
   time_limit_minutes: number;
-  difficulty_filter: string[] | null;
   updated_at: string;
   profiles?: {
     full_name: string | null;

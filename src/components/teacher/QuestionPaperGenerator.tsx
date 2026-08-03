@@ -17,6 +17,24 @@ interface QuestionPaperGeneratorProps {
   onPaperGenerated: () => void;
 }
 
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileQuestion, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import PageMultiSelect from '@/components/ui/page-multi-select';
+import { dbService } from '@/services/db';
+import { authService } from '@/services/auth/authService';
+import { useStudentSubjects } from '@/hooks/useStudentSubjects';
+import { useStudentClasses } from '@/hooks/useStudentClasses';
+
+interface QuestionPaperGeneratorProps {
+  onPaperGenerated: () => void;
+}
+
 export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGeneratorProps) => {
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
@@ -25,7 +43,6 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   
   const [minQuestionsPerPage, setMinQuestionsPerPage] = useState('1');
   const [maxQuestionsPerPage, setMaxQuestionsPerPage] = useState('10');
-  const [difficulties, setDifficulties] = useState<('easy' | 'medium' | 'difficult')[]>([]);
   const [availableQuestions, setAvailableQuestions] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [availablePages, setAvailablePages] = useState<number[]>([]);
@@ -37,10 +54,10 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
   const { uniqueClasses = [], isLoading: loadingClasses } = useStudentClasses();
 
   useEffect(() => {
-    if (subject && classLevel && difficulties.length > 0) {
+    if (subject && classLevel) {
       checkAvailableQuestions();
     }
-  }, [subject, classLevel, difficulties, selectedPages]);
+  }, [subject, classLevel, selectedPages]);
 
   useEffect(() => {
     fetchAvailablePages();
@@ -80,11 +97,6 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
     let query = 'SELECT COUNT(*) as count FROM questions WHERE is_deleted = 0 AND subject_id = ? AND class_id = ?';
     let params: any[] = [subject, classLevel];
 
-    if (difficulties.length > 0) {
-      query += ` AND difficulty IN (${difficulties.map(() => '?').join(',')})`;
-      params.push(...difficulties);
-    }
-
     if (selectedPages.length > 0) {
       query += ` AND page_number IN (${selectedPages.map(() => '?').join(',')})`;
       params.push(...selectedPages);
@@ -94,17 +106,8 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
     setAvailableQuestions(data?.[0]?.count || 0);
   };
 
-  const handleDifficultyChange = (difficulty: string, checked: boolean) => {
-    const difficultyLevel = difficulty as 'easy' | 'medium' | 'difficult';
-    if (checked) {
-      setDifficulties([...difficulties, difficultyLevel]);
-    } else {
-      setDifficulties(difficulties.filter(d => d !== difficultyLevel));
-    }
-  };
-
   const handleGenerate = async () => {
-    if (!title || !subject || !classLevel || !totalQuestions || !minQuestionsPerPage || !maxQuestionsPerPage || difficulties.length === 0) {
+    if (!title || !subject || !classLevel || !totalQuestions || !minQuestionsPerPage || !maxQuestionsPerPage) {
       toast({
         title: "Missing information",
         description: "Please fill in all fields.",
@@ -144,9 +147,9 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       const paperId = crypto.randomUUID();
       // Create question paper
       const { error: paperError } = await dbService.getProvider().execute(
-        `INSERT INTO question_papers (id, user_id, title, subject_id, class_id, total_questions, time_limit_minutes, difficulty_filter) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [paperId, user.id, title, subject, classLevel, questionsNeeded, 0, JSON.stringify(difficulties)]
+        `INSERT INTO question_papers (id, user_id, title, subject_id, class_id, total_questions, time_limit_minutes) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [paperId, user.id, title, subject, classLevel, questionsNeeded, 0]
       );
 
       if (paperError) throw paperError;
@@ -154,11 +157,6 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       // Get questions directly
       let queryStr = 'SELECT * FROM questions WHERE user_id = ? AND subject_id = ? AND class_id = ? AND is_deleted = 0';
       let params: any[] = [user.id, subject, classLevel];
-
-      if (difficulties.length > 0) {
-        queryStr += ` AND difficulty IN (${difficulties.map(() => '?').join(',')})`;
-        params.push(...difficulties);
-      }
 
       if (selectedPages.length > 0) {
         queryStr += ` AND page_number IN (${selectedPages.map(() => '?').join(',')})`;
@@ -200,171 +198,9 @@ export const QuestionPaperGenerator = ({ onPaperGenerated }: QuestionPaperGenera
       
       setMinQuestionsPerPage('1');
       setMaxQuestionsPerPage('10');
-      setDifficulties([]);
       onPaperGenerated();
 
     } catch (error: any) {
-      console.error('Error:', error);
-      toast({
-        title: "Generation failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileQuestion className="h-5 w-5" />
-          Generate Question Paper
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor="title">Paper Title</Label>
-          <Input
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter question paper title"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="subject">Subject</Label>
-            <Select value={subject} onValueChange={setSubject}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select subject" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingSubjects ? (
-                  <SelectItem value="_loading" disabled>Loading subjects...</SelectItem>
-                ) : uniqueSubjects.length === 0 ? (
-                  <SelectItem value="_no_subjects" disabled>No subjects assigned to students</SelectItem>
-                ) : (
-                  uniqueSubjects.map((subj) => (
-                    <SelectItem key={subj.id} value={subj.id}>
-                      {subj.subject_name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="class">Class Level</Label>
-            <Select value={classLevel} onValueChange={setClassLevel}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingClasses ? (
-                  <SelectItem value="_loading" disabled>Loading classes...</SelectItem>
-                ) : uniqueClasses.length === 0 ? (
-                  <SelectItem value="_no_classes" disabled>No classes assigned to students</SelectItem>
-                ) : (
-                  uniqueClasses.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id || cls.class_key || cls.class_name || 'cls'}>
-                      {cls.class_name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="questions">Total Questions</Label>
-            <Input
-              id="questions"
-              type="number"
-              value={totalQuestions}
-              onChange={(e) => setTotalQuestions(e.target.value)}
-              placeholder="e.g., 20"
-              min="0"
-            />
-          </div>
-
-          <div>
-            <Label>Pages to Include</Label>
-            <PageMultiSelect
-              label="Select Pages"
-              availablePages={availablePages}
-              selectedPages={selectedPages}
-              onChange={setSelectedPages}
-              className="w-full"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="minPerPage">Minimum Questions per Page</Label>
-            <Input
-              id="minPerPage"
-              type="number"
-              value={minQuestionsPerPage}
-              onChange={(e) => setMinQuestionsPerPage(e.target.value)}
-              placeholder="e.g., 1"
-              min="0"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="maxPerPage">Maximum Questions per Page</Label>
-            <Input
-              id="maxPerPage"
-              type="number"
-              value={maxQuestionsPerPage}
-              onChange={(e) => setMaxQuestionsPerPage(e.target.value)}
-              placeholder="e.g., 10"
-              min="0"
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label>Difficulty Levels</Label>
-          <div className="flex gap-4 mt-2">
-            {['easy', 'medium', 'difficult'].map((level) => (
-              <div key={level} className="flex items-center space-x-2">
-                <Checkbox
-                  id={level}
-                  checked={difficulties.includes(level as 'easy' | 'medium' | 'difficult')}
-                  onCheckedChange={(checked) => handleDifficultyChange(level, checked as boolean)}
-                />
-                <Label htmlFor={level} className="capitalize">
-                  {level}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {subject && classLevel && difficulties.length > 0 && (
-          <div className="text-sm text-muted-foreground">
-            Available questions: {availableQuestions}
-          </div>
-        )}
-
-        <Button
-          onClick={handleGenerate}
-          disabled={!title || !subject || !classLevel || !totalQuestions || !minQuestionsPerPage || !maxQuestionsPerPage || difficulties.length === 0 || isGenerating}
-          className="w-full"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
-            </>
           ) : (
             'Generate Question Paper'
           )}

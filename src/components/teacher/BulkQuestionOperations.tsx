@@ -24,7 +24,6 @@ interface Question {
   option_c: string;
   option_d: string;
   correct_answer: string;
-  difficulty: 'easy' | 'medium' | 'difficult';
   page_number?: number;
   subject_id?: string;
   class_id?: string;
@@ -39,9 +38,9 @@ export default function BulkQuestionOperations() {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string>('');
   const { toast } = useToast();
 
-  const csvTemplate = `question_text,option_a,option_b,option_c,option_d,correct_answer,difficulty,page_number
-"What is the capital of France?","Paris","London","Berlin","Madrid","a","easy",1
-"What is 2 + 2?","3","4","5","6","b","easy",2`;
+  const csvTemplate = `question_text,option_a,option_b,option_c,option_d,correct_answer,page_number
+"What is the capital of France?","Paris","London","Berlin","Madrid","a",1
+"What is 2 + 2?","3","4","5","6","b",2`;
 
   const jsonTemplate = `[
   {
@@ -51,7 +50,6 @@ export default function BulkQuestionOperations() {
     "option_c": "Berlin",
     "option_d": "Madrid",
     "correct_answer": "a",
-    "difficulty": "easy",
     "page_number": 1
   },
   {
@@ -61,7 +59,6 @@ export default function BulkQuestionOperations() {
     "option_c": "5", 
     "option_d": "6",
     "correct_answer": "b",
-    "difficulty": "easy",
     "page_number": 2
   }
 ]`;
@@ -106,9 +103,6 @@ export default function BulkQuestionOperations() {
         if (!['a', 'b', 'c', 'd'].includes(q.correct_answer)) {
           errors.push(`Row ${index + 1}: Invalid correct answer (must be a, b, c, or d)`);
         }
-        if (!['easy', 'medium', 'difficult'].includes(q.difficulty)) {
-          errors.push(`Row ${index + 1}: Invalid difficulty (must be easy, medium, or difficult)`);
-        }
       });
 
       if (errors.length > 0) {
@@ -126,30 +120,12 @@ export default function BulkQuestionOperations() {
         document_id: selectedDocumentId
       }));
 
-      // Insert questions into database
-      const placeholders = questionsWithDoc.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(',');
-      const values = questionsWithDoc.flatMap(q => [
-        crypto.randomUUID(),
-        q.question_text,
-        q.option_a,
-        q.option_b,
-        q.option_c,
-        q.option_d,
-        q.correct_answer,
-        q.difficulty,
-        q.page_number || null,
-        q.subject_id || null,
-        q.class_id || null,
-        // Wait, we also need document_id, let me look at the fields:
-      ]);
-      
-      // Let's do it simpler, one by one, to avoid guessing the exact schema
       let error = null;
       for (const q of questionsWithDoc) {
         const { error: insertErr } = await dbService.getProvider().execute(
-          `INSERT INTO questions (id, question_text, option_a, option_b, option_c, option_d, correct_answer, difficulty, page_number, document_id) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [crypto.randomUUID(), q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, q.difficulty, q.page_number || null, q.document_id]
+          `INSERT INTO questions (id, question_text, option_a, option_b, option_c, option_d, correct_answer, page_number, document_id) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [crypto.randomUUID(), q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, q.page_number || null, q.document_id]
         );
         if (insertErr) {
           error = insertErr;
@@ -245,7 +221,7 @@ export default function BulkQuestionOperations() {
       const filename = `questions_export_${new Date().toISOString().split('T')[0]}`;
 
       if (selectedFormat === 'csv') {
-        const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'page_number', 'document_title'];
+        const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'page_number', 'document_title'];
         exportData = headers.join(',') + '\n';
         
         questions.forEach(q => {
@@ -256,7 +232,6 @@ export default function BulkQuestionOperations() {
             `"${q.option_c}"`,
             `"${q.option_d}"`,
             q.correct_answer,
-            q.difficulty,
             q.page_number || '',
             '' // No longer using document title
           ];
@@ -272,7 +247,6 @@ export default function BulkQuestionOperations() {
           option_c: q.option_c,
           option_d: q.option_d,
           correct_answer: q.correct_answer,
-          difficulty: q.difficulty,
           page_number: q.page_number
         }));
         
@@ -439,7 +413,6 @@ export default function BulkQuestionOperations() {
                   <li>• <strong>question_text</strong>: The question text (required)</li>
                   <li>• <strong>option_a/b/c/d</strong>: Answer options (required)</li>
                   <li>• <strong>correct_answer</strong>: Must be 'a', 'b', 'c', or 'd' (required)</li>
-                  <li>• <strong>difficulty</strong>: Must be 'easy', 'medium', or 'difficult' (required)</li>
                   <li>• <strong>page_number</strong>: Page reference (optional)</li>
                 </ul>
               </div>

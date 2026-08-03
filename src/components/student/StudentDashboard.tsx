@@ -297,11 +297,6 @@ const StudentDashboardContent = () => {
     return 'active';
   };
 
-  const getDifficultyBadge = (questionCount: number) => {
-    if (questionCount <= 10) return { variant: "secondary" as const, label: "Easy" };
-    if (questionCount <= 20) return { variant: "outline" as const, label: "Medium" };
-    return { variant: "destructive" as const, label: "Hard" };
-  };
 
   const formatTimeRemaining = (endTime?: string) => {
     if (!endTime) return "Always Available";
@@ -595,7 +590,6 @@ const StudentDashboardContent = () => {
                 ) : (
                    <div className="space-y-4">
                      {availableTests.map((test) => {
-                       const difficulty = getDifficultyBadge(test.total_questions);
                        const status = getTestStatus(test);
                        const attemptsLeft = test.max_attempts - (test.paper_attempts?.length || 0);
                        const timeUntilStart = formatTimeUntilStart(test.start_time);
@@ -609,7 +603,6 @@ const StudentDashboardContent = () => {
                                   {test.subjects?.subject_name || 'No subject'} • {test.total_questions} questions • {test.time_limit_minutes}m
                                 </p>
                              <div className="flex flex-wrap items-center mt-2 gap-2">
-                               <Badge variant={difficulty.variant} className="text-xs">{difficulty.label}</Badge>
                                
                                {status === 'scheduled' && timeUntilStart && (
                                  <Badge variant="secondary" className="text-xs font-mono tracking-tight bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">

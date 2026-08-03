@@ -58,7 +58,7 @@ export const ImprovedWorkflows = () => {
     {
       id: 'questions',
       title: 'Configure Questions',
-      description: 'Set number of questions and difficulty level',
+      description: 'Set number of questions',
       icon: BookOpen,
       status: 'pending'
     },
@@ -274,7 +274,7 @@ export const ImprovedWorkflows = () => {
                   <div>
                     <h4 className="font-medium">Paper Creation</h4>
                     <p className="text-sm text-muted-foreground">
-                      Create comprehensive question papers with proper difficulty distribution
+                      Create comprehensive question papers efficiently
                     </p>
                   </div>
                 </div>

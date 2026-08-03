@@ -62,7 +62,6 @@ interface Question {
   option_c: string;
   option_d: string;
   correct_answer: string;
-  difficulty: 'easy' | 'medium' | 'difficult';
   topic?: string;
   page_number?: number;
   created_at: string;
@@ -79,8 +78,6 @@ interface PaperFormData {
   max_attempts: number;
   assign_to_all: boolean;
   show_results: boolean;
-  difficulty_filter?: string[];
-  difficulty?: string;
   selected_students?: string[];
   selected_questions?: string[];
 }
@@ -101,8 +98,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     max_attempts: 1,
     assign_to_all: true,
     show_results: false,
-    difficulty_filter: [], // Empty by default for single-select
-    difficulty: '',
     selected_students: [],
     selected_questions: []
   });
@@ -191,9 +186,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
         max_attempts: editingPaper.max_attempts || 1,
         assign_to_all: editingPaper.assign_to_all ?? true,
         show_results: editingPaper.show_results || false,
-        difficulty_filter: editingPaper.difficulty_filter && editingPaper.difficulty_filter.length > 0 
-          ? [editingPaper.difficulty_filter[0]] 
-          : [],
       }));
       
       // Set default tab based on editing vs creating
@@ -227,7 +219,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       setQuestions([]);
       setFilteredQuestions([]);
     }
-  }, [formData.subject_id, formData.class_id, formData.difficulty_filter]);
+  }, [formData.subject_id, formData.class_id]);
 
 
 
@@ -300,9 +292,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
         const matchesSubject = matchingSubjectIds.length === 0 || matchingSubjectIds.includes(q.subject_id) || !q.subject_id;
         // Match class if selected
         const matchesClass = matchingClassIds.length === 0 || matchingClassIds.includes(q.class_id) || !q.class_id;
-        // Match difficulty if specified
-        const matchesDifficulty = !formData.difficulty_filter || formData.difficulty_filter.length === 0 || formData.difficulty_filter.includes('all') || formData.difficulty_filter.includes(q.difficulty);
-        return matchesSubject && matchesClass && matchesDifficulty;
+        return matchesSubject && matchesClass;
       });
 
       setQuestions(filtered);
@@ -450,8 +440,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
         end_time: formData.end_time?.toISOString() || null,
         max_attempts: formData.max_attempts,
         assign_to_all: formData.assign_to_all,
-        show_results: formData.show_results,
-        difficulty_filter: formData.difficulty_filter as ("easy" | "medium" | "difficult")[] || []
+        show_results: formData.show_results
       };
       
       let paperId: string;
@@ -459,11 +448,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
       if (editingPaper) {
         // Update existing paper
         const { error } = await dbService.getProvider().execute(
-          'UPDATE question_papers SET title = ?, subject_id = ?, class_id = ?, total_questions = ?, time_limit_minutes = ?, start_time = ?, end_time = ?, max_attempts = ?, assign_to_all = ?, show_results = ?, difficulty_filter = ? WHERE id = ?',
+          'UPDATE question_papers SET title = ?, subject_id = ?, class_id = ?, total_questions = ?, time_limit_minutes = ?, start_time = ?, end_time = ?, max_attempts = ?, assign_to_all = ?, show_results = ? WHERE id = ?',
           [
             paperData.title, paperData.subject_id, paperData.class_id, paperData.total_questions, 
             paperData.time_limit_minutes, paperData.start_time, paperData.end_time, paperData.max_attempts, 
-            paperData.assign_to_all ? 1 : 0, paperData.show_results ? 1 : 0, JSON.stringify(paperData.difficulty_filter), 
+            paperData.assign_to_all ? 1 : 0, paperData.show_results ? 1 : 0,
             editingPaper.id
           ]
         );
@@ -480,11 +469,11 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
         // Create new paper
         paperId = crypto.randomUUID();
         const { error } = await dbService.getProvider().execute(
-          'INSERT INTO question_papers (id, user_id, title, subject_id, class_id, total_questions, time_limit_minutes, start_time, end_time, max_attempts, assign_to_all, show_results, difficulty_filter) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO question_papers (id, user_id, title, subject_id, class_id, total_questions, time_limit_minutes, start_time, end_time, max_attempts, assign_to_all, show_results) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           [
             paperId, paperData.user_id, paperData.title, paperData.subject_id, paperData.class_id, paperData.total_questions, 
             paperData.time_limit_minutes, paperData.start_time, paperData.end_time, paperData.max_attempts, 
-            paperData.assign_to_all ? 1 : 0, paperData.show_results ? 1 : 0, JSON.stringify(paperData.difficulty_filter)
+            paperData.assign_to_all ? 1 : 0, paperData.show_results ? 1 : 0
           ]
         );
         
@@ -544,7 +533,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
           max_attempts: 1,
           assign_to_all: true,
           show_results: false,
-          difficulty_filter: [], // Empty by default for single-select
           selected_students: [],
           selected_questions: []
         });
@@ -672,14 +660,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
     }));
   };
 
-  const getDifficultyBadgeVariant = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'secondary';
-      case 'medium': return 'default';
-      case 'difficult': return 'destructive';
-      default: return 'outline';
-    }
-  };
 
   return (
     <Card>
@@ -821,28 +801,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                 min="0"
                 max="10"
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Difficulty Level</Label>
-              <Select 
-                value={formData.difficulty_filter?.[0] || 'all'} 
-                onValueChange={(value) => setFormData(prev => ({ 
-                  ...prev, 
-                  difficulty_filter: value && value !== 'all' ? [value] : ['all'] 
-                }))}
-                disabled={!!editingPaper}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Difficulties" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Difficulties</SelectItem>
-                  <SelectItem value="easy">Easy</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="difficult">Difficult</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           
@@ -1059,21 +1017,15 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                             <TableRow>
                               <TableHead className="w-12">Remove</TableHead>
                               <TableHead>Question</TableHead>
-                              <TableHead className="w-24">Difficulty</TableHead>
                               <TableHead className="w-32">Topic</TableHead>
                               <TableHead className="w-20">Page</TableHead>
                             </TableRow>
                           </TableHeader>
                         <TableBody>
                           {selectedQuestions.map((question, index) => {
-                            // Check if question matches current difficulty filter
-                            const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(question.difficulty);
-                            const isValid = matchesDifficulty;
-                            
                             return (
                               <TableRow 
                                 key={`${question.id}-${index}`} 
-                                className={cn(!isValid && "opacity-50 bg-muted/50")}
                               >
                                 <TableCell>
                                   <Button
@@ -1098,11 +1050,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
-                                    {question.difficulty}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
                                   <span className="text-sm">{question.topic || 'N/A'}</span>
                                 </TableCell>
                                 <TableCell>
@@ -1114,15 +1061,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                         </TableBody>
                        </Table>
                       </div>
-                      {selectedQuestions.some(q => {
-                        const matchesDifficulty = !formData.difficulty_filter?.length || formData.difficulty_filter.includes(q.difficulty);
-                        return !matchesDifficulty;
-                      }) && (
-                        <div className="p-3 bg-amber-50 border-amber-200 border rounded text-sm text-amber-800">
-                          <AlertCircle className="w-4 h-4 inline mr-2" />
-                          Some selected questions don't match current difficulty criteria and will be excluded from the paper.
-                        </div>
-                      )}
                     </div>
                   )}
                 </TabsContent>
@@ -1271,7 +1209,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                           <TableRow>
                             <TableHead className="w-12">Select</TableHead>
                             <TableHead>Question</TableHead>
-                            <TableHead className="w-24">Difficulty</TableHead>
                             <TableHead className="w-32">Topic</TableHead>
                             <TableHead className="w-20">Page</TableHead>
                           </TableRow>
@@ -1296,11 +1233,6 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                                     <div>C) {question.option_c}</div>
                                     <div>D) {question.option_d}</div>
                                   </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
-                                    {question.difficulty}
-                                  </Badge>
                                 </TableCell>
                                 <TableCell>
                                   <span className="text-sm">{question.topic || 'N/A'}</span>
@@ -1356,7 +1288,7 @@ export const UnifiedPaperCreator: React.FC<UnifiedPaperCreatorProps> = ({ onRefr
                     embeddedInPaperCreator={true}
                     subject_id={formData.subject_id}
                     class_id={formData.class_id}
-                    difficulty={formData.difficulty_filter?.[0] || 'medium'}
+                    difficulty="olympiad"
                     total_questions={formData.total_questions || 10}
                     onQuestionsGenerated={(generated) => {
                       const formattedGen = generated.map(q => ({

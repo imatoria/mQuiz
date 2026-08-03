@@ -10,11 +10,9 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function QuestionAnalytics() {
   const [selectedPeriod, setSelectedPeriod] = useState('30');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   
   const { questionStats, paperPerformance, overallStats, isLoading } = useAnalytics(
-    selectedPeriod,
-    selectedDifficulty
+    selectedPeriod
   );
 
   const filteredQuestions = questionStats;
@@ -75,18 +73,6 @@ export default function QuestionAnalytics() {
             <SelectItem value="30">Last 30 days</SelectItem>
             <SelectItem value="90">Last 3 months</SelectItem>
             <SelectItem value="all">All time</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by difficulty" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All difficulties</SelectItem>
-            <SelectItem value="easy">Easy</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="difficult">Difficult</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -240,7 +226,6 @@ export default function QuestionAnalytics() {
                 <TableRow>
                   <TableHead>Question</TableHead>
                   <TableHead>Subject</TableHead>
-                  <TableHead>Difficulty</TableHead>
                   <TableHead>Attempts</TableHead>
                   <TableHead>Success Rate</TableHead>
                   <TableHead>Avg Time</TableHead>
@@ -255,11 +240,6 @@ export default function QuestionAnalytics() {
                       </div>
                     </TableCell>
                     <TableCell>{question.subject_name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {question.difficulty}
-                      </Badge>
-                    </TableCell>
                     <TableCell>{question.total_attempts}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

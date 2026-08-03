@@ -31,7 +31,6 @@ interface Question {
   option_c: string;
   option_d: string;
   correct_answer: string;
-  difficulty: 'easy' | 'medium' | 'difficult';
   page_number?: number;
   subject_id: string;
   class_id: string;
@@ -56,28 +55,14 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   // Temporary filter states (not applied until Apply Filters is clicked)
   const [tempSearchTerm, setTempSearchTerm] = useState('');
   const [tempSelectedSubject, setTempSelectedSubject] = useState<string>('all');
-  const [tempSelectedDifficulty, setTempSelectedDifficulty] = useState<string>('all');
   const [tempSelectedClass, setTempSelectedClass] = useState<string>('all');
   const [tempDateRange, setTempDateRange] = useState<{ from?: Date; to?: Date }>({});
   
   // Applied filter states (used for actual filtering)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-  
-  // Track if any filter has been applied yet
-  const [hasAppliedFilter, setHasAppliedFilter] = useState(false);
-  
-  const [itemsPerPage, setItemsPerPage] = useState(20);
-  const { toast } = useToast();
-
-  // Use student assignments hooks
-  const { uniqueSubjects = [], isLoading: loadingSubjects } = useStudentSubjects();
-  const { uniqueClasses = [], isLoading: loadingClasses } = useStudentClasses();
-
-  const difficulties = ['easy', 'medium', 'difficult'];
 
   useEffect(() => {
     // Only load initial data dependencies, do not auto-fetch questions yet.
@@ -110,7 +95,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const filteredQuestions = questions.filter(question => {
     const matchesSearch = question.question_text.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSubject = selectedSubject === 'all' || question.subject_id === selectedSubject;
-    const matchesDifficulty = selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
     const matchesClass = selectedClass === 'all' || question.class_id === selectedClass;
     
     // Date range filtering
@@ -118,7 +102,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     const matchesDateRange = (!dateRange.from || questionDate >= dateRange.from) && 
                             (!dateRange.to || questionDate <= dateRange.to);
     
-    return matchesSearch && matchesSubject && matchesDifficulty && matchesClass && matchesDateRange;
+    return matchesSearch && matchesSubject && matchesClass && matchesDateRange;
   });
 
   const {
@@ -144,7 +128,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const applyFilters = () => {
     setSearchTerm(tempSearchTerm);
     setSelectedSubject(tempSelectedSubject);
-    setSelectedDifficulty(tempSelectedDifficulty);
     setSelectedClass(tempSelectedClass);
     setDateRange(tempDateRange);
     setHasAppliedFilter(true);
@@ -154,25 +137,14 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
   const clearAllFilters = () => {
     setTempSearchTerm('');
     setTempSelectedSubject('all');
-    setTempSelectedDifficulty('all');
     setTempSelectedClass('all');
     setTempDateRange({});
     setSearchTerm('');
     setSelectedSubject('all');
-    setSelectedDifficulty('all');
     setSelectedClass('all');
     setDateRange({});
     setHasAppliedFilter(false);
     setQuestions([]); // Clear questions
-  };
-
-  const getDifficultyBadgeVariant = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'default';
-      case 'medium': return 'secondary';
-      case 'difficult': return 'destructive';
-      default: return 'outline';
-    }
   };
 
   const handleEditQuestion = (question: Question) => {
@@ -186,7 +158,7 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
     try {
       const { error } = await dbService.getProvider().execute(`
         UPDATE questions 
-        SET question_text = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, correct_answer = ?, difficulty = ?
+        SET question_text = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, correct_answer = ?
         WHERE id = ?
       `, [
         editingQuestion.question_text,
@@ -195,7 +167,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
         editingQuestion.option_c,
         editingQuestion.option_d,
         editingQuestion.correct_answer,
-        editingQuestion.difficulty,
         editingQuestion.id
       ]);
 
@@ -300,22 +271,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Difficulty</Label>
-              <Select value={tempSelectedDifficulty} onValueChange={setTempSelectedDifficulty}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All difficulties" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Difficulties</SelectItem>
-                  {difficulties.map((difficulty) => (
-                    <SelectItem key={difficulty} value={difficulty}>
-                      {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-2">
               <Label>Class Level</Label>
@@ -425,7 +380,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                   <TableRow>
                     <TableHead>Question</TableHead>
                     <TableHead>Subject</TableHead>
-                    <TableHead>Difficulty</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Page</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -441,11 +395,6 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                       </TableCell>
                       <TableCell>
                         {uniqueSubjects.find(s => s.id === question.subject_id)?.subject_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getDifficultyBadgeVariant(question.difficulty)}>
-                          {question.difficulty}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         {uniqueClasses.find(c => c.id === question.class_id)?.class_name || '-'}
@@ -669,46 +618,25 @@ export default function QuestionBank({ onQuestionUpdate }: QuestionBankProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Correct Answer</Label>
-                  <Select 
-                    value={editingQuestion.correct_answer?.toLowerCase()} 
-                    onValueChange={(value: 'a' | 'b' | 'c' | 'd') => setEditingQuestion({
-                      ...editingQuestion,
-                      correct_answer: value
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select correct answer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="a">Option A</SelectItem>
-                      <SelectItem value="b">Option B</SelectItem>
-                      <SelectItem value="c">Option C</SelectItem>
-                      <SelectItem value="d">Option D</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Difficulty</Label>
-                  <Select 
-                    value={editingQuestion.difficulty} 
-                    onValueChange={(value: 'easy' | 'medium' | 'difficult') => setEditingQuestion({
-                      ...editingQuestion,
-                      difficulty: value
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="easy">Easy</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="difficult">Difficult</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label>Correct Answer</Label>
+                <Select 
+                  value={editingQuestion.correct_answer?.toLowerCase()} 
+                  onValueChange={(value: 'a' | 'b' | 'c' | 'd') => setEditingQuestion({
+                    ...editingQuestion,
+                    correct_answer: value
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select correct answer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="a">Option A</SelectItem>
+                    <SelectItem value="b">Option B</SelectItem>
+                    <SelectItem value="c">Option C</SelectItem>
+                    <SelectItem value="d">Option D</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">

@@ -39,7 +39,6 @@ const predefinedMetrics = [
   { id: 'question_accuracy', label: 'Question Accuracy', icon: BarChart3 },
   { id: 'improvement_trend', label: 'Improvement Trend', icon: TrendingUp },
   { id: 'subject_performance', label: 'Subject Performance', icon: PieChart },
-  { id: 'difficulty_analysis', label: 'Difficulty Analysis', icon: BarChart3 },
   { id: 'participation_rate', label: 'Participation Rate', icon: Users }
 ];
 
@@ -77,7 +76,7 @@ export const CustomReports = () => {
       id: '2',
       name: 'Subject Analysis',
       description: 'Performance breakdown by subject areas',
-      metrics: ['subject_performance', 'difficulty_analysis'],
+      metrics: ['subject_performance'],
       groupBy: 'subject',
       filterBy: ['class_level', 'date_range'],
       chartType: 'pie',
@@ -302,7 +301,7 @@ export const CustomReports = () => {
             <div className="space-y-3">
               <Label>Available Filters</Label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {['date_range', 'subject', 'class_level', 'student', 'test_type', 'difficulty'].map((filter) => (
+                {['date_range', 'subject', 'class_level', 'student', 'test_type'].map((filter) => (
                   <div key={filter} className="flex items-center space-x-2">
                     <Checkbox
                       id={filter}
