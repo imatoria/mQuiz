@@ -68,8 +68,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
       // Fetch active AI providers configured by admin
       const { data: providersData, error: providersError } = await dbService.getProvider().query(
-        'SELECT * FROM ai_providers WHERE is_active = ? ORDER BY name',
-        [true]
+        'SELECT * FROM ai_providers WHERE is_active = 1 ORDER BY COALESCE(display_order, 99) ASC, name ASC'
       );
 
       if (providersError) throw providersError;
@@ -90,7 +89,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
         };
       });
 
-      setProviders((providersData || []).filter((p: any) => ['gemini','groq','openai'].includes(p.provider_key.toLowerCase())));
+      setProviders(providersData || []);
       setUserKeys(keysData || []);
     } catch (error: any) {
       console.error('Error:', error);
@@ -478,7 +477,12 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
                         {getProviderIcon(provider.provider_key)}
                       </div>
                       <div>
-                        <h3 className="font-medium">{provider.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{provider.name}</h3>
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                            Priority #{providers.indexOf(provider) + 1}
+                          </Badge>
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           {provider.description}
                         </p>

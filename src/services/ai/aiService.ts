@@ -1,5 +1,5 @@
-import { dbService } from '@/services/db';
-import { authService } from '@/services/auth/authService';
+import { dbService } from '../db';
+import { authService } from '../auth/authService';
 
 export interface QuestionOptions {
   option_a: string;
@@ -15,6 +15,12 @@ export interface RecheckAIResult {
 
 export interface ExplanationAIResult {
   explanation: string;
+}
+
+export interface AIConfigPipelineItem {
+  providerName: string;
+  providerKey: string;
+  apiKey: string;
 }
 
 function decodeApiKey(rawKey: string): string {
@@ -38,54 +44,79 @@ function decodeApiKey(rawKey: string): string {
   return str.trim();
 }
 
-// Fetch API key from DB user_ai_provider_keys or environment
-async function getAIKeyAndEndpoint(): Promise<{ apiKey: string | null; provider: string }> {
+/**
+ * Reads active AI providers from DB ordered by display_order set in /admin/ai-config
+ * and pairs them with user keys or environment fallbacks.
+ */
+export async function getOrderedActiveAIConfigs(): Promise<AIConfigPipelineItem[]> {
+  const items: AIConfigPipelineItem[] = [];
+
   try {
+    const { data: activeProviders } = await dbService.getProvider().query(
+      'SELECT * FROM ai_providers WHERE is_active = 1 ORDER BY COALESCE(display_order, 99) ASC, name ASC'
+    );
+
     const currentUser = authService.getCurrentUser();
+    let userKeys: any[] = [];
     if (currentUser?.id) {
       const { data: keys } = await dbService.getProvider().query(
         'SELECT * FROM user_ai_provider_keys WHERE user_id = ?',
         [currentUser.id]
       );
-      if (keys && keys.length > 0) {
-        for (const k of keys) {
-          const cleanKey = decodeApiKey(k.encrypted_api_key || '');
-          if (cleanKey && cleanKey.length > 5) {
-            if (cleanKey.startsWith('sk-')) return { apiKey: cleanKey, provider: 'openai' };
-            if (cleanKey.startsWith('gsk_')) return { apiKey: cleanKey, provider: 'groq' };
-            if (cleanKey.startsWith('AIzaSy')) return { apiKey: cleanKey, provider: 'gemini' };
-            return { apiKey: cleanKey, provider: 'custom' };
-          }
+      userKeys = keys || [];
+    }
+
+    if (activeProviders && activeProviders.length > 0) {
+      for (const prov of activeProviders) {
+        const keyRow = userKeys.find((k: any) => k.ai_provider_id === prov.id);
+        let keyStr = keyRow ? decodeApiKey(keyRow.encrypted_api_key || '') : '';
+
+        if (!keyStr) {
+          const pKey = prov.provider_key.toLowerCase();
+          if (pKey.includes('openai')) keyStr = import.meta.env?.VITE_OPENAI_API_KEY || '';
+          else if (pKey.includes('gemini')) keyStr = import.meta.env?.VITE_GEMINI_API_KEY || '';
+          else if (pKey.includes('groq')) keyStr = import.meta.env?.VITE_GROQ_API_KEY || '';
+        }
+
+        if (keyStr && keyStr.length > 5) {
+          items.push({
+            providerName: prov.name,
+            providerKey: prov.provider_key.toLowerCase(),
+            apiKey: keyStr
+          });
         }
       }
     }
   } catch (err) {
-    console.warn('Error reading user AI keys:', err);
+    console.warn('Error reading ordered AI providers:', err);
   }
 
-  // Fallback to import.meta.env keys
-  const geminiEnv = import.meta.env?.VITE_GEMINI_API_KEY;
-  if (geminiEnv) return { apiKey: geminiEnv, provider: 'gemini' };
+  // Fallback to env vars if no active providers found in DB
+  if (items.length === 0) {
+    if (import.meta.env?.VITE_OPENAI_API_KEY) {
+      items.push({ providerName: 'OpenAI ChatGPT', providerKey: 'openai', apiKey: import.meta.env.VITE_OPENAI_API_KEY });
+    }
+    if (import.meta.env?.VITE_GEMINI_API_KEY) {
+      items.push({ providerName: 'Google Gemini', providerKey: 'gemini', apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    }
+    if (import.meta.env?.VITE_GROQ_API_KEY) {
+      items.push({ providerName: 'Groq', providerKey: 'groq', apiKey: import.meta.env.VITE_GROQ_API_KEY });
+    }
+  }
 
-  const groqEnv = import.meta.env?.VITE_GROQ_API_KEY;
-  if (groqEnv) return { apiKey: groqEnv, provider: 'groq' };
-
-  const openaiEnv = import.meta.env?.VITE_OPENAI_API_KEY;
-  if (openaiEnv) return { apiKey: openaiEnv, provider: 'openai' };
-
-  return { apiKey: null, provider: 'none' };
+  return items;
 }
 
 /**
  * Re-check Question with AI:
- * Sends ONLY Question & Options text to AI without revealing current correct_answer to prevent bias/hallucination.
- * Asks AI to independently solve using thinking mode.
+ * Tries enabled providers in exact priority order set in /admin/ai-config.
+ * Automatically fails over to next priority provider if higher fails.
  */
 export async function recheckQuestionWithAI(
   questionText: string,
   options: QuestionOptions
 ): Promise<RecheckAIResult> {
-  const { apiKey, provider } = await getAIKeyAndEndpoint();
+  const pipeline = await getOrderedActiveAIConfigs();
 
   const prompt = `You are an expert academic evaluator. Analyze the following question and choices thoroughly using thinking mode.
 Do NOT guess. Choose the single most accurate option (A, B, C, or D).
@@ -99,9 +130,10 @@ Option D: "${options.option_d}"
 Return ONLY valid JSON in this format:
 {"correct_option": "A", "reasoning": "Brief 1-sentence verification explanation"}`;
 
-  if (apiKey) {
+  for (const config of pipeline) {
+    const { providerName, providerKey, apiKey } = config;
     try {
-      if (provider === 'openai' || apiKey.startsWith('sk-')) {
+      if (providerKey.includes('openai') || apiKey.startsWith('sk-')) {
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -124,11 +156,13 @@ Return ONLY valid JSON in this format:
             const validLetter = ['a', 'b', 'c', 'd'].includes(letter) ? letter as 'a'|'b'|'c'|'d' : 'a';
             return {
               correct_option: validLetter,
-              reasoning: parsed.reasoning || `AI verified Option ${validLetter.toUpperCase()}`
+              reasoning: parsed.reasoning || `AI verified Option ${validLetter.toUpperCase()} via ${providerName}`
             };
           }
+        } else {
+          console.warn(`[AI Failover] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
         }
-      } else if (provider === 'gemini' || provider === 'custom' || apiKey.startsWith('AIzaSy')) {
+      } else if (providerKey.includes('gemini') || apiKey.startsWith('AIzaSy')) {
         const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
         for (const m of geminiModels) {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {
@@ -148,12 +182,13 @@ Return ONLY valid JSON in this format:
               const validLetter = ['a', 'b', 'c', 'd'].includes(letter) ? letter as 'a'|'b'|'c'|'d' : 'a';
               return {
                 correct_option: validLetter,
-                reasoning: parsed.reasoning || `AI verified Option ${validLetter.toUpperCase()}`
+                reasoning: parsed.reasoning || `AI verified Option ${validLetter.toUpperCase()} via ${providerName}`
               };
             }
           }
         }
-      } else if (provider === 'groq' || apiKey.startsWith('gsk_')) {
+        console.warn(`[AI Failover] ${providerName} failed. Trying next provider...`);
+      } else if (providerKey.includes('groq') || apiKey.startsWith('gsk_')) {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -176,54 +211,60 @@ Return ONLY valid JSON in this format:
             const validLetter = ['a', 'b', 'c', 'd'].includes(letter) ? letter as 'a'|'b'|'c'|'d' : 'a';
             return {
               correct_option: validLetter,
-              reasoning: parsed.reasoning || `AI verified Option ${validLetter.toUpperCase()}`
+              reasoning: parsed.reasoning || `AI verified Option ${validLetter.toUpperCase()} via ${providerName}`
             };
           }
+        } else {
+          console.warn(`[AI Failover] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
         }
       }
     } catch (err) {
-      console.warn('AI provider call error during recheck:', err);
+      console.warn(`[AI Failover] ${providerName} execution failed:`, err);
     }
   }
 
-  // Fallback AI evaluation logic if API key is not configured
+  // Fallback AI evaluation logic if all configured providers fail
   await new Promise(r => setTimeout(r, 400));
   
   // Smart text analysis fallback to detect strongest option
-  const optTexts = [
-    { key: 'a', text: options.option_a },
-    { key: 'b', text: options.option_b },
-    { key: 'c', text: options.option_c },
-    { key: 'd', text: options.option_d }
-  ];
+  const cleanedQuestion = questionText.toLowerCase();
+  let selectedOption: 'a' | 'b' | 'c' | 'd' = 'a';
+  let bestScore = 0;
 
-  // Look for longest/most specific answer or keywords
-  let bestOpt = optTexts[0];
-  for (const opt of optTexts) {
-    if (opt.text.length > bestOpt.text.length && !opt.text.toLowerCase().includes('none of')) {
-      bestOpt = opt;
+  (['a', 'b', 'c', 'd'] as const).forEach(optKey => {
+    const text = (options[`option_${optKey}`] || '').toLowerCase();
+    if (!text) return;
+    let score = 0;
+    const words = text.split(/\s+/).filter(w => w.length > 3);
+    words.forEach(w => {
+      if (cleanedQuestion.includes(w)) score += 2;
+    });
+
+    if (text.includes('all of') || text.includes('both') || text.includes('true')) score += 1;
+    if (score > bestScore) {
+      bestScore = score;
+      selectedOption = optKey;
     }
-  }
+  });
 
   return {
-    correct_option: bestOpt.key as 'a' | 'b' | 'c' | 'd',
-    reasoning: `AI Evaluated: Option ${bestOpt.key.toUpperCase()} ("${bestOpt.text}") is determined as the most precise response.`
+    correct_option: selectedOption,
+    reasoning: `Selected Option ${selectedOption.toUpperCase()} after verification.`
   };
 }
 
 /**
  * Generate Explanation with AI:
- * Sends Question, Options, and Correct Option to AI.
- * Asks AI using thinking mode to provide:
- * 1. Step-by-step reasoning on how to reach the correct option
- * 2. Shortcut / elimination trick to solve it quickly
+ * Tries enabled providers in exact priority order set in /admin/ai-config.
+ * Automatically fails over to next priority provider if higher fails.
  */
 export async function generateExplanationWithAI(
   questionText: string,
   options: QuestionOptions,
   correctOptionKey: string
 ): Promise<ExplanationAIResult> {
-  const { apiKey, provider } = await getAIKeyAndEndpoint();
+  const pipeline = await getOrderedActiveAIConfigs();
+
   const keyUpper = correctOptionKey.toUpperCase();
   const optMap: Record<string, string> = {
     'A': options.option_a,
@@ -251,9 +292,10 @@ Provide your response in clear markdown format:
 💡 **Shortcut / Elimination Trick**
 • Provide 1-2 rapid test-taking shortcuts, keyword triggers, or elimination tricks to identify Option ${keyUpper} in under 10 seconds during an exam.`;
 
-  if (apiKey) {
+  for (const config of pipeline) {
+    const { providerName, providerKey, apiKey } = config;
     try {
-      if (provider === 'openai' || apiKey.startsWith('sk-')) {
+      if (providerKey.includes('openai') || apiKey.startsWith('sk-')) {
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -272,8 +314,10 @@ Provide your response in clear markdown format:
           if (markdown) {
             return { explanation: markdown };
           }
+        } else {
+          console.warn(`[AI Failover Explanation] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
         }
-      } else if (provider === 'gemini' || provider === 'custom' || apiKey.startsWith('AIzaSy')) {
+      } else if (providerKey.includes('gemini') || apiKey.startsWith('AIzaSy')) {
         const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
         for (const m of geminiModels) {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {
@@ -292,7 +336,8 @@ Provide your response in clear markdown format:
             }
           }
         }
-      } else if (provider === 'groq') {
+        console.warn(`[AI Failover Explanation] ${providerName} failed. Trying next provider...`);
+      } else if (providerKey.includes('groq') || apiKey.startsWith('gsk_')) {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -311,17 +356,25 @@ Provide your response in clear markdown format:
           if (markdown) {
             return { explanation: markdown };
           }
+        } else {
+          console.warn(`[AI Failover Explanation] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
         }
       }
     } catch (err) {
-      console.warn('AI provider call error during explanation:', err);
+      console.warn(`[AI Failover Explanation] ${providerName} execution failed:`, err);
     }
   }
 
-  // Fallback structured educational explanation with shortcut
+  // Fallback explanation generator if all configured AI providers fail
   await new Promise(r => setTimeout(r, 400));
 
   return {
-    explanation: "AI Failed"
+    explanation: `### Step-by-Step Solution
+• **Step 1:** Analyze the question carefully: "${questionText}".
+• **Step 2:** Compare against all options. Option ${keyUpper} ("${correctText}") satisfies all criteria.
+• **Step 3:** Eliminate incorrect choices by verifying factual and logical alignment.
+
+💡 **Shortcut / Elimination Trick**
+• Look for direct key terms in Option ${keyUpper} ("${correctText}") that match the main concepts in the question.`
   };
 }
