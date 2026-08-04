@@ -28,7 +28,7 @@ async function getAIKeyAndEndpoint(): Promise<{ apiKey: string | null; provider:
       );
       if (keys && keys.length > 0) {
         const rawKey = keys[0].encrypted_api_key || '';
-        const cleanKey = rawKey.replace(/^encrypted_/, '').replace(/^["']|["']$/g, '').trim();
+        const cleanKey = rawKey.replace(/^(encrypted_)+/gi, '').replace(/^["']|["']$/g, '').trim();
         if (cleanKey && cleanKey.length > 5) {
           return { apiKey: cleanKey, provider: 'custom' };
         }
