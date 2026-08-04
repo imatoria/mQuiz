@@ -399,9 +399,31 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       const subjObj = uniqueSubjects.find(s => s.id === targetSubjId);
       const classObj = uniqueClasses.find(c => c.id === targetClassId);
 
+      // Determine topic title: Book Name for 'book' mode, Topic field value for 'independent' mode
+      let topicTitle = 'General Knowledge';
+      if (mode === 'book') {
+        const docObj = documents.find((d: any) => d.id === config.document_id);
+        if (docObj?.title) {
+          topicTitle = docObj.title;
+        } else if (config.document_id) {
+          const { data: dRows } = await dbService.getProvider().query(
+            'SELECT title, file_name FROM documents WHERE id = ?',
+            [config.document_id]
+          );
+          if (dRows && dRows[0]) {
+            topicTitle = dRows[0].title || dRows[0].file_name || 'Book Based';
+          }
+        }
+        if (!topicTitle || topicTitle === 'General Knowledge') {
+          topicTitle = 'Book Based';
+        }
+      } else {
+        topicTitle = config.topic.trim() || subjObj?.subject_name || 'General Knowledge';
+      }
+
       // 3. Call AI model via priority failover pipeline
       const generatedAIList = await generateQuestionsWithAI({
-        topic: config.topic.trim() || 'General Knowledge',
+        topic: topicTitle,
         subjectName: subjObj?.subject_name,
         className: classObj?.class_name,
         difficulty: config.difficulty || difficulty,
@@ -414,7 +436,6 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       // 4. Save AI generated questions to database & prepare output array
       const currentUser = authService.getCurrentUser();
       const newQuestions: any[] = [];
-      const topicTitle = config.topic.trim() || 'General Knowledge';
 
       for (let i = 0; i < generatedAIList.length; i++) {
         const aiQ = generatedAIList[i];
