@@ -585,9 +585,23 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
             </DialogTitle>
             <DialogDescription>
               {selectedProvider && (
-                <>
-                  Enter your {selectedProvider.name} API key. This will be encrypted and stored securely.
-                </>
+                <div className="space-y-1">
+                  <div>Enter your {selectedProvider.name} API key. This will be encrypted and stored securely.</div>
+                  {selectedProvider.provider_key.toLowerCase().includes('groq') && (
+                    <div className="text-xs text-primary pt-1">
+                      <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="underline font-medium hover:text-primary/80">
+                        → Click here to generate a free Groq API Key (console.groq.com/keys)
+                      </a>
+                    </div>
+                  )}
+                  {selectedProvider.provider_key.toLowerCase().includes('gemini') && (
+                    <div className="text-xs text-primary pt-1">
+                      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline font-medium hover:text-primary/80">
+                        → Click here to generate a Google Gemini API Key (aistudio.google.com/app/apikey)
+                      </a>
+                    </div>
+                  )}
+                </div>
               )}
             </DialogDescription>
           </DialogHeader>
