@@ -399,24 +399,10 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       const subjObj = uniqueSubjects.find(s => s.id === targetSubjId);
       const classObj = uniqueClasses.find(c => c.id === targetClassId);
 
-      // Determine topic title: Book Name for 'book' mode, Topic field value for 'independent' mode
+      // Determine topic title: Subject Name for 'book' mode, Topic field value for 'independent' mode
       let topicTitle = 'General Knowledge';
       if (mode === 'book') {
-        const docObj = documents.find((d: any) => d.id === config.document_id);
-        if (docObj?.title) {
-          topicTitle = docObj.title;
-        } else if (config.document_id) {
-          const { data: dRows } = await dbService.getProvider().query(
-            'SELECT title, file_name FROM documents WHERE id = ?',
-            [config.document_id]
-          );
-          if (dRows && dRows[0]) {
-            topicTitle = dRows[0].title || dRows[0].file_name || 'Book Based';
-          }
-        }
-        if (!topicTitle || topicTitle === 'General Knowledge') {
-          topicTitle = 'Book Based';
-        }
+        topicTitle = subjObj?.subject_name || 'Book Based';
       } else {
         topicTitle = config.topic.trim() || subjObj?.subject_name || 'General Knowledge';
       }
