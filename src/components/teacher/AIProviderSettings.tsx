@@ -253,67 +253,98 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     if (!userKey.ai_providers) return;
 
     setIsTestingKey(true);
-    console.log('Starting API key test for:', userKey.ai_providers.name);
+    const providerName = userKey.ai_providers.name;
+    const providerKey = (userKey.ai_providers.provider_key || '').toLowerCase();
+    const rawKey = userKey.encrypted_api_key || '';
+    const cleanKey = rawKey.replace(/^encrypted_/, '').trim();
+
+    if (!cleanKey) {
+      setTestResults(prev => ({
+        ...prev,
+        [userKey.id]: {
+          success: false,
+          message: '✗ No API key provided'
+        }
+      }));
+      setIsTestingKey(false);
+      return;
+    }
 
     try {
-      // First decrypt the API key
-      console.log('Calling decrypt-api-key function...');
-      const decryptData = { success: true, apiKey: 'decrypted' };
-      const decryptError = null;
+      let testedModel = '';
 
-      console.log('Decrypt response:', { decryptData, decryptError });
-
-      if (decryptError || !decryptData?.success) {
-        console.error('Decryption failed:', decryptError, decryptData);
-
-        if (decryptData?.error?.includes('Failed to decrypt API key')) {
-          setTestResults(prev => ({
-            ...prev,
-            [userKey.id]: {
-              success: false,
-              message: '✗ Encryption key mismatch - click Fix to resolve'
-            }
-          }));
-
-          toast({
-            title: "Encryption Key Mismatch",
-            description: `Your ${userKey.ai_providers.name} API key was encrypted with a different key. Click the "Fix Encryption" button to resolve this.`,
-            variant: "destructive",
-          });
-          return;
-        }
-        throw new Error(decryptData?.error || decryptError?.message || 'Failed to decrypt API key');
-      }
-
-      console.log('Testing API key for provider:', userKey.ai_providers.name);
-
-      console.log('Calling test-api-key function...');
-      const data = { success: true, model: 'mock-model-v1' };
-      const error = null;
-
-      console.log('Test response:', { data, error });
-
-      if (error) throw error;
-
-      if (data.success) {
-        console.log('API key test successful:', data);
-        setTestResults(prev => ({
-          ...prev,
-          [userKey.id]: {
-            success: true,
-            message: `✓ Working with ${data.model}`,
-            model: data.model
-          }
-        }));
-
-        toast({
-          title: "API Key Valid",
-          description: `${userKey.ai_providers.name} API key is working correctly with ${data.model}.`,
+      if (providerKey.includes('gemini') || providerName.toLowerCase().includes('gemini')) {
+        // Live test call to Google Gemini API
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: "Ping test" }] }]
+          })
         });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `HTTP ${res.status}: Invalid Gemini API Key`);
+        }
+        testedModel = 'gemini-1.5-flash';
+
+      } else if (providerKey.includes('groq') || providerName.toLowerCase().includes('groq')) {
+        // Live test call to Groq API
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${cleanKey}`
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: 'Ping test' }],
+            max_tokens: 5
+          })
+        });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `HTTP ${res.status}: Invalid Groq API Key`);
+        }
+        testedModel = 'llama-3.3-70b-versatile';
+
       } else {
-        console.error('API key test failed:', data);
-        throw new Error(data.error || 'API key test failed');
+        // Live test call to OpenAI API
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${cleanKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: 'Ping test' }],
+            max_tokens: 5
+          })
+        });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `HTTP ${res.status}: Invalid OpenAI API Key`);
+        }
+        testedModel = 'gpt-4o-mini';
       }
+
+      setTestResults(prev => ({
+        ...prev,
+        [userKey.id]: {
+          success: true,
+          message: `✓ Connected (${testedModel})`,
+          model: testedModel
+        }
+      }));
+
+      toast({
+        title: "API Key Verified",
+        description: `${providerName} API key verified successfully with ${testedModel}.`,
+      });
 
     } catch (error: any) {
       console.error('handleTestKey error:', error);
@@ -328,7 +359,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
       toast({
         title: "API Key Test Failed",
-        description: `${userKey.ai_providers?.name} API key test failed: ${error.message}`,
+        description: error.message || "Could not verify API key.",
         variant: "destructive",
       });
     } finally {

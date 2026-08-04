@@ -244,13 +244,6 @@ Provide your response in clear markdown format:
   await new Promise(r => setTimeout(r, 400));
 
   return {
-    explanation: `### Step-by-Step Solution
-• **Question Analysis**: "${questionText}"
-• **Correct Choice**: Option ${keyUpper} ("${correctText}")
-• **Logic**: Option ${keyUpper} directly satisfies the primary principles required by the question statement, whereas alternative choices contain incomplete or inaccurate assumptions.
-
-💡 **Shortcut / Elimination Trick**
-• **Quick Keyword Trigger**: Look for core terminology in "${correctText.slice(0, 30)}..." to immediately isolate Option ${keyUpper}.
-• **Elimination Method**: Instantly rule out choices that use extreme modifiers or contradict the question context.`
+    explanation: "AI Failed"
   };
 }
