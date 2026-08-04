@@ -17,6 +17,27 @@ export interface ExplanationAIResult {
   explanation: string;
 }
 
+function decodeApiKey(rawKey: string): string {
+  if (!rawKey) return '';
+  let str = rawKey.replace(/^(encrypted_)+/gi, '').replace(/^["']|["']$/g, '').trim();
+  if (!str.startsWith('AIzaSy') && !str.startsWith('gsk_') && !str.startsWith('sk-')) {
+    try {
+      const decoded = atob(str);
+      if (
+        decoded.startsWith('AIzaSy') ||
+        decoded.startsWith('gsk_') ||
+        decoded.startsWith('sk-') ||
+        (decoded.length >= 15 && /^[\x20-\x7E]+$/.test(decoded))
+      ) {
+        str = decoded;
+      }
+    } catch {
+      // Keep str as is
+    }
+  }
+  return str.trim();
+}
+
 // Fetch API key from DB user_ai_provider_keys or environment
 async function getAIKeyAndEndpoint(): Promise<{ apiKey: string | null; provider: string }> {
   try {
@@ -27,10 +48,14 @@ async function getAIKeyAndEndpoint(): Promise<{ apiKey: string | null; provider:
         [currentUser.id]
       );
       if (keys && keys.length > 0) {
-        const rawKey = keys[0].encrypted_api_key || '';
-        const cleanKey = rawKey.replace(/^(encrypted_)+/gi, '').replace(/^["']|["']$/g, '').trim();
-        if (cleanKey && cleanKey.length > 5) {
-          return { apiKey: cleanKey, provider: 'custom' };
+        for (const k of keys) {
+          const cleanKey = decodeApiKey(k.encrypted_api_key || '');
+          if (cleanKey && cleanKey.length > 5) {
+            if (cleanKey.startsWith('sk-')) return { apiKey: cleanKey, provider: 'openai' };
+            if (cleanKey.startsWith('gsk_')) return { apiKey: cleanKey, provider: 'groq' };
+            if (cleanKey.startsWith('AIzaSy')) return { apiKey: cleanKey, provider: 'gemini' };
+            return { apiKey: cleanKey, provider: 'custom' };
+          }
         }
       }
     }
@@ -76,7 +101,34 @@ Return ONLY valid JSON in this format:
 
   if (apiKey) {
     try {
-      if (provider === 'gemini' || provider === 'custom') {
+      if (provider === 'openai' || apiKey.startsWith('sk-')) {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.1,
+            response_format: { type: 'json_object' }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const jsonText = data.choices?.[0]?.message?.content;
+          if (jsonText) {
+            const parsed = JSON.parse(jsonText);
+            const letter = (parsed.correct_option || 'a').toLowerCase().trim();
+            const validLetter = ['a', 'b', 'c', 'd'].includes(letter) ? letter as 'a'|'b'|'c'|'d' : 'a';
+            return {
+              correct_option: validLetter,
+              reasoning: parsed.reasoning || `AI verified Option ${validLetter.toUpperCase()}`
+            };
+          }
+        }
+      } else if (provider === 'gemini' || provider === 'custom' || apiKey.startsWith('AIzaSy')) {
         const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
         for (const m of geminiModels) {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {
@@ -101,7 +153,7 @@ Return ONLY valid JSON in this format:
             }
           }
         }
-      } else if (provider === 'groq') {
+      } else if (provider === 'groq' || apiKey.startsWith('gsk_')) {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -201,7 +253,27 @@ Provide your response in clear markdown format:
 
   if (apiKey) {
     try {
-      if (provider === 'gemini' || provider === 'custom') {
+      if (provider === 'openai' || apiKey.startsWith('sk-')) {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const markdown = data.choices?.[0]?.message?.content;
+          if (markdown) {
+            return { explanation: markdown };
+          }
+        }
+      } else if (provider === 'gemini' || provider === 'custom' || apiKey.startsWith('AIzaSy')) {
         const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
         for (const m of geminiModels) {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {

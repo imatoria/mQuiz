@@ -90,7 +90,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
         };
       });
 
-      setProviders((providersData || []).filter((p: any) => ['gemini','groq'].includes(p.provider_key.toLowerCase())));
+      setProviders((providersData || []).filter((p: any) => ['gemini','groq','openai'].includes(p.provider_key.toLowerCase())));
       setUserKeys(keysData || []);
     } catch (error: any) {
       console.error('Error:', error);
