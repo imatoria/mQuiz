@@ -36,6 +36,17 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         }
       }
 
+      // 3. Ensure any missing ai_providers from imported dataset exist in baseDb.ai_providers
+      if (Array.isArray(importedData.ai_providers)) {
+        if (!Array.isArray(baseDb.ai_providers)) baseDb.ai_providers = [];
+        for (const impProv of importedData.ai_providers) {
+          const exists = baseDb.ai_providers.some((p: any) => p.provider_key === impProv.provider_key || p.id === impProv.id);
+          if (!exists) {
+            baseDb.ai_providers.push(impProv);
+          }
+        }
+      }
+
       this.db = baseDb;
       this.persist();
       this.isInitialized = true;
@@ -171,6 +182,33 @@ export class SqliteWasmProvider implements IDatabaseProvider {
         rows = rows.filter(r => !r.is_approved || r.is_approved === 0 || r.is_approved === false);
       } else if (/\bis_approved\s*=\s*(true|1)/i.test(cleanSql)) {
         rows = rows.filter(r => Boolean(r.is_approved) && r.is_approved !== 0 && r.is_approved !== -1);
+      }
+    }
+
+    // Handle ORDER BY clause
+    const orderMatch = cleanSql.match(/ORDER\s+BY\s+(.+?)(?:\s+LIMIT|\s+OFFSET|$)/i);
+    if (orderMatch) {
+      const orderExpr = orderMatch[1].trim();
+      const isDesc = /DESC/i.test(orderExpr);
+      
+      if (/display_order/i.test(orderExpr)) {
+        rows.sort((a, b) => {
+          const valA = a.display_order ?? 99;
+          const valB = b.display_order ?? 99;
+          return isDesc ? valB - valA : valA - valB;
+        });
+      } else if (/name/i.test(orderExpr)) {
+        rows.sort((a, b) => {
+          const valA = String(a.name || '');
+          const valB = String(b.name || '');
+          return isDesc ? valB.localeCompare(valA) : valA.localeCompare(valB);
+        });
+      } else if (/created_at/i.test(orderExpr)) {
+        rows.sort((a, b) => {
+          const valA = String(a.created_at || '');
+          const valB = String(b.created_at || '');
+          return isDesc ? valB.localeCompare(valA) : valA.localeCompare(valB);
+        });
       }
     }
 
