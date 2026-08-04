@@ -282,7 +282,15 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
     const maskedKey = cleanKey.length > 8 
       ? `${cleanKey.slice(0, 5)}...${cleanKey.slice(-4)}`
-      : '***';
+      : cleanKey;
+
+    console.log('[AI Key Test Debug]', {
+      providerName,
+      providerKey,
+      rawKeyStored: rawKey,
+      cleanKeyDecoded: cleanKey,
+      maskedKey
+    });
 
     if (!cleanKey) {
       setTestResults(prev => ({
