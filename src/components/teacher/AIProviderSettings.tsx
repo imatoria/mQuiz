@@ -308,21 +308,38 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
       let testedModel = '';
 
       if (providerKey.includes('gemini') || providerName.toLowerCase().includes('gemini')) {
-        // Live test call to Google Gemini API
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(cleanKey)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: "Ping test" }] }]
-          })
-        });
+        // Live test call to Google Gemini API trying supported models (gemini-2.5-flash, gemini-2.0-flash)
+        const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+        let successModel = '';
+        let lastErrorMsg = '';
 
-        if (!res.ok) {
+        for (const m of geminiModels) {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(cleanKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: "Ping test" }] }]
+            })
+          });
+
           const errJson = await res.json().catch(() => ({}));
-          const msg = errJson.error?.message || `HTTP ${res.status}: Invalid Gemini API Key`;
-          throw new Error(msg);
+          if (res.ok) {
+            successModel = m;
+            break;
+          }
+
+          const msg = errJson.error?.message || `HTTP ${res.status}`;
+          lastErrorMsg = msg;
+          // If model is not found, try next model in loop; if key is invalid, break
+          if (!msg.toLowerCase().includes('not found')) {
+            break;
+          }
         }
-        testedModel = 'gemini-1.5-flash';
+
+        if (!successModel) {
+          throw new Error(lastErrorMsg || 'Gemini API test failed');
+        }
+        testedModel = successModel;
 
       } else if (providerKey.includes('groq') || providerName.toLowerCase().includes('groq')) {
         // Live test call to Groq API
