@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { recheckQuestionWithAI, generateExplanationWithAI } from '@/services/ai/aiService';
 import {
   Dialog,
   DialogContent,
@@ -291,24 +292,40 @@ export const TestResults = () => {
     setIsRechecking(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 600));
-
       const newRecheckResults: Record<string, { status: 'verified' | 'flagged'; reason: string; isChanged: boolean }> = { ...recheckResults };
       let updateCount = 0;
+      let changedCount = 0;
 
       for (const q of questionResults) {
         if (selectedQuestionIds.has(q.question_id)) {
-          const verifiedAnswer = q.correct_answer.toLowerCase();
-          
-          // Execute database update to ensure correct answer option is saved in database
-          await dbService.getProvider().execute(
-            'UPDATE questions SET correct_answer = ? WHERE id = ?',
-            [verifiedAnswer, q.question_id]
+          // Send ONLY Question Text & Options Text to AI without revealing correct_answer to eliminate bias
+          const aiResult = await recheckQuestionWithAI(
+            q.question_text,
+            {
+              option_a: q.option_a,
+              option_b: q.option_b,
+              option_c: q.option_c,
+              option_d: q.option_d
+            }
           );
+
+          const aiOption = aiResult.correct_option.toLowerCase();
+          const existingOption = (q.correct_answer || '').toLowerCase();
+          const isChanged = aiOption !== existingOption;
+
+          // If AI determined a new/different answer, update database
+          if (isChanged) {
+            await dbService.getProvider().execute(
+              'UPDATE questions SET correct_answer = ? WHERE id = ?',
+              [aiOption, q.question_id]
+            );
+            q.correct_answer = aiOption;
+            changedCount++;
+          }
 
           newRecheckResults[q.question_id] = {
             status: 'verified',
-            reason: `Recheck verified answer: Option ${verifiedAnswer.toUpperCase()}`,
+            reason: `AI Verified: Option ${aiOption.toUpperCase()} (${aiResult.reasoning})`,
             isChanged: true
           };
           updateCount++;
@@ -318,14 +335,14 @@ export const TestResults = () => {
       setRecheckResults(newRecheckResults);
 
       toast({
-        title: "Re-check Completed Successfully",
-        description: `Re-verified ${updateCount} question(s). Correct options updated in database.`,
+        title: "AI Re-check Completed",
+        description: `AI rechecked ${updateCount} question(s). ${changedCount > 0 ? `Updated ${changedCount} answer key(s) in DB.` : 'All answer keys verified.'}`,
       });
     } catch (error) {
-      console.error('Recheck error:', error);
+      console.error('AI Recheck error:', error);
       toast({
         title: "Recheck Failed",
-        description: "An error occurred while rechecking questions.",
+        description: "An error occurred while rechecking questions with AI.",
         variant: "destructive"
       });
     } finally {
@@ -338,36 +355,37 @@ export const TestResults = () => {
     setIsGeneratingExplanation(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 600));
-
       const newExplanations: Record<string, string> = { ...explanations };
 
-      questionResults.forEach(q => {
+      for (const q of questionResults) {
         if (selectedQuestionIds.has(q.question_id)) {
-          const correctKey = (q.correct_answer || '').toUpperCase();
-          const optionTextMap: Record<string, string> = {
-            'A': q.option_a,
-            'B': q.option_b,
-            'C': q.option_c,
-            'D': q.option_d
-          };
-          const correctText = optionTextMap[correctKey] || q.option_a;
+          // Request AI explanation with step-by-step reasoning & shortcut trick
+          const aiResult = await generateExplanationWithAI(
+            q.question_text,
+            {
+              option_a: q.option_a,
+              option_b: q.option_b,
+              option_c: q.option_c,
+              option_d: q.option_d
+            },
+            q.correct_answer
+          );
 
-          newExplanations[q.question_id] = `Step-by-Step Explanation:\n• Question Context: "${q.question_text}"\n• Correct Option: ${correctKey} (${correctText})\n• Explanation: Option ${correctKey} is correct because it directly addresses the core requirements stated in the question statement while other options contain inaccurate or incomplete assertions.`;
+          newExplanations[q.question_id] = aiResult.explanation;
         }
-      });
+      }
 
       setExplanations(newExplanations);
 
       toast({
-        title: "Explanations Generated",
-        description: `Generated step-by-step explanations for ${selectedQuestionIds.size} selected question(s).`,
+        title: "AI Explanations Generated",
+        description: `Generated step-by-step reasoning and shortcut tricks for ${selectedQuestionIds.size} selected question(s).`,
       });
     } catch (error) {
       console.error('Explanation error:', error);
       toast({
         title: "Explanation Failed",
-        description: "An error occurred while generating explanations.",
+        description: "An error occurred while generating AI explanations.",
         variant: "destructive"
       });
     } finally {
