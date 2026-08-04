@@ -76,6 +76,7 @@ export async function getOrderedActiveAIConfigs(): Promise<AIConfigPipelineItem[
           if (pKey.includes('openai')) keyStr = import.meta.env?.VITE_OPENAI_API_KEY || '';
           else if (pKey.includes('gemini')) keyStr = import.meta.env?.VITE_GEMINI_API_KEY || '';
           else if (pKey.includes('groq')) keyStr = import.meta.env?.VITE_GROQ_API_KEY || '';
+          else if (pKey.includes('deepseek')) keyStr = import.meta.env?.VITE_DEEPSEEK_API_KEY || '';
         }
 
         if (keyStr && keyStr.length > 5) {
@@ -101,6 +102,9 @@ export async function getOrderedActiveAIConfigs(): Promise<AIConfigPipelineItem[
     }
     if (import.meta.env?.VITE_GROQ_API_KEY) {
       items.push({ providerName: 'Groq', providerKey: 'groq', apiKey: import.meta.env.VITE_GROQ_API_KEY });
+    }
+    if (import.meta.env?.VITE_DEEPSEEK_API_KEY) {
+      items.push({ providerName: 'DeepSeek', providerKey: 'deepseek', apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY });
     }
   }
 
@@ -197,6 +201,35 @@ Return ONLY valid JSON in this format:
           },
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.1,
+            response_format: { type: 'json_object' }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const jsonText = data.choices?.[0]?.message?.content;
+          if (jsonText) {
+            const parsed = JSON.parse(jsonText);
+            const letter = (parsed.correct_option || 'a').toLowerCase().trim();
+            const validLetter = ['a', 'b', 'c', 'd'].includes(letter) ? letter as 'a'|'b'|'c'|'d' : 'a';
+            return {
+              correct_option: validLetter,
+              reasoning: parsed.reasoning || `AI verified Option ${validLetter.toUpperCase()} via ${providerName}`
+            };
+          }
+        } else {
+          console.warn(`[AI Failover] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
+        }
+      } else if (providerKey.includes('deepseek')) {
+        const res = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.1,
             response_format: { type: 'json_object' }
@@ -346,6 +379,28 @@ Provide your response in clear markdown format:
           },
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const markdown = data.choices?.[0]?.message?.content;
+          if (markdown) {
+            return { explanation: markdown };
+          }
+        } else {
+          console.warn(`[AI Failover Explanation] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
+        }
+      } else if (providerKey.includes('deepseek')) {
+        const res = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.3
           })

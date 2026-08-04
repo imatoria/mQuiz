@@ -361,6 +361,27 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
         }
         testedModel = 'llama-3.3-70b-versatile';
 
+      } else if (providerKey.includes('deepseek') || providerName.toLowerCase().includes('deepseek')) {
+        // Live test call to DeepSeek API
+        const res = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${cleanKey}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [{ role: 'user', content: 'Ping test' }],
+            max_tokens: 5
+          })
+        });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `HTTP ${res.status}: Invalid DeepSeek API Key`);
+        }
+        testedModel = 'deepseek-chat';
+
       } else {
         // Live test call to OpenAI API
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -602,6 +623,13 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
                     <div className="text-xs text-primary pt-1">
                       <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline font-medium hover:text-primary/80">
                         → Click here to generate a Google Gemini API Key (aistudio.google.com/app/apikey)
+                      </a>
+                    </div>
+                  )}
+                  {selectedProvider.provider_key.toLowerCase().includes('deepseek') && (
+                    <div className="text-xs text-primary pt-1">
+                      <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noreferrer" className="underline font-medium hover:text-primary/80">
+                        → Click here to generate a DeepSeek API Key (platform.deepseek.com/api_keys)
                       </a>
                     </div>
                   )}
