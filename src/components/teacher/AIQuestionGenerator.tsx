@@ -23,6 +23,7 @@ import {
 
 import { dbService } from '@/services/db';
 import { authService } from '@/services/auth/authService';
+import { generateQuestionsWithAI } from '@/services/ai/aiService';
 import { 
   Zap, 
   Loader2, 
@@ -382,32 +383,55 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       const error = null;
       if (error) throw error;
 
-      // Generate actual question objects and save to database
+      // 1. Fetch book page content if in book mode
+      let bookPages: { page_number: number; content: string }[] = [];
+      if (mode === 'book' && config.document_id && selectedPages.length > 0) {
+        const { data: pageRows } = await dbService.getProvider().query(
+          'SELECT page_number, content FROM document_pages WHERE document_id = ?',
+          [config.document_id]
+        );
+        if (pageRows) {
+          bookPages = pageRows.filter((p: any) => selectedPages.includes(Number(p.page_number)));
+        }
+      }
+
+      // 2. Fetch Subject and Class names for prompt context
+      const subjObj = uniqueSubjects.find(s => s.id === targetSubjId);
+      const classObj = uniqueClasses.find(c => c.id === targetClassId);
+
+      // 3. Call AI model via priority failover pipeline
+      const generatedAIList = await generateQuestionsWithAI({
+        topic: config.topic.trim() || 'General Knowledge',
+        subjectName: subjObj?.subject_name,
+        className: classObj?.class_name,
+        difficulty: config.difficulty || difficulty,
+        questionCount: questionCount,
+        questionType: config.question_type,
+        customInstructions: config.custom_instructions,
+        bookPages
+      });
+
+      // 4. Save AI generated questions to database & prepare output array
       const currentUser = authService.getCurrentUser();
       const newQuestions: any[] = [];
       const topicTitle = config.topic.trim() || 'General Knowledge';
 
-      const questionTemplates = [
-        `What is the primary concept behind ${topicTitle}?`,
-        `Which of the following best describes the key principles of ${topicTitle}?`,
-        `In the context of ${topicTitle}, what factor plays the most critical role?`,
-        `How does ${topicTitle} apply to practical real-world scenarios?`,
-        `What is the main outcome when implementing ${topicTitle}?`
-      ];
-
-      for (let i = 1; i <= questionCount; i++) {
+      for (let i = 0; i < generatedAIList.length; i++) {
+        const aiQ = generatedAIList[i];
         const qId = crypto.randomUUID();
-        const optionA = `Core principle of ${topicTitle}`;
-        const optionB = `Secondary application of ${topicTitle}`;
-        const optionC = `Theoretical framework`;
-        const optionD = `None of the above`;
-        const optionsArr = [optionA, optionB, optionC, optionD];
-        
-        const assignedPage = mode === 'book' && selectedPages.length > 0
-          ? selectedPages[(i - 1) % selectedPages.length]
-          : 1;
 
-        const qText = questionTemplates[(i - 1) % questionTemplates.length];
+        const optMap: Record<string, string> = {
+          'a': aiQ.option_a,
+          'b': aiQ.option_b,
+          'c': aiQ.option_c,
+          'd': aiQ.option_d
+        };
+        const correctText = optMap[aiQ.correct_option_letter] || aiQ.option_a;
+        const optionsArr = aiQ.question_type === 'true_false' 
+          ? ['True', 'False'] 
+          : [aiQ.option_a, aiQ.option_b, aiQ.option_c, aiQ.option_d];
+
+        const assignedPage = aiQ.page_number || (selectedPages.length > 0 ? selectedPages[i % selectedPages.length] : 1);
 
         const qRecord = {
           id: qId,
@@ -415,15 +439,15 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
           subject_id: targetSubjId,
           class_id: targetClassId,
           topic: topicTitle,
-          question_text: qText,
-          question_type: config.question_type === 'mixed' ? (i % 2 === 0 ? 'multiple_choice' : 'true_false') : config.question_type,
-          option_a: optionA,
-          option_b: optionB,
-          option_c: optionC,
-          option_d: optionD,
+          question_text: aiQ.question_text,
+          question_type: aiQ.question_type,
+          option_a: aiQ.option_a,
+          option_b: aiQ.option_b,
+          option_c: aiQ.option_c,
+          option_d: aiQ.option_d,
           options: JSON.stringify(optionsArr),
-          correct_answer: optionA,
-          explanation: `Detailed explanation covering ${topicTitle}.`,
+          correct_answer: correctText,
+          explanation: aiQ.explanation,
           page_number: assignedPage,
           created_at: new Date().toISOString()
         };

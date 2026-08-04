@@ -433,3 +433,247 @@ Provide your response in clear markdown format:
 • Look for direct key terms in Option ${keyUpper} ("${correctText}") that match the main concepts in the question.`
   };
 }
+
+export interface GenerateAIQuestionsRequest {
+  topic: string;
+  subjectName?: string;
+  className?: string;
+  difficulty?: string;
+  questionCount: number;
+  questionType?: string;
+  customInstructions?: string;
+  bookPages?: { page_number: number; content: string }[];
+}
+
+export interface GeneratedAIQuestion {
+  question_text: string;
+  question_type: 'multiple_choice' | 'true_false';
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option_letter: 'a' | 'b' | 'c' | 'd';
+  explanation: string;
+  page_number?: number;
+}
+
+export async function generateQuestionsWithAI(
+  req: GenerateAIQuestionsRequest
+): Promise<GeneratedAIQuestion[]> {
+  const pipeline = await getOrderedActiveAIConfigs();
+
+  const count = req.questionCount || 5;
+  const topic = req.topic || 'General Knowledge';
+  const typeStr = req.questionType || 'mixed';
+  const custom = req.customInstructions ? `Custom Instructions: ${req.customInstructions}` : '';
+  const diffStr = req.difficulty ? `Difficulty Level: ${req.difficulty}` : '';
+  const subjStr = req.subjectName ? `Subject: ${req.subjectName}` : '';
+  const classStr = req.className ? `Class / Grade: ${req.className}` : '';
+
+  let bookContextPrompt = '';
+  if (req.bookPages && req.bookPages.length > 0) {
+    const pageTexts = req.bookPages.map(p => `--- PAGE ${p.page_number} ---\n${p.content}`).join('\n\n');
+    bookContextPrompt = `\nSOURCE BOOK PAGES TEXT CONTENT:\n${pageTexts}\n\nIMPORTANT: Base your questions directly on the facts, concepts, definitions, and statements found in the book pages above.`;
+  }
+
+  const prompt = `You are an elite academic curriculum item developer and exam question author.
+Generate exactly ${count} high-quality ${typeStr} questions based on the following specifications:
+
+Topic: "${topic}"
+${subjStr}
+${classStr}
+${diffStr}
+${custom}
+${bookContextPrompt}
+
+CRITICAL RULES:
+1. Return ONLY a valid JSON object matching this exact schema:
+{
+  "questions": [
+    {
+      "question_text": "Clear, precise question text here...",
+      "question_type": "multiple_choice",
+      "option_a": "First plausible option text",
+      "option_b": "Second plausible option text",
+      "option_c": "Third plausible option text",
+      "option_d": "Fourth plausible option text",
+      "correct_option_letter": "a",
+      "explanation": "Detailed step-by-step reasoning explaining why the correct option is right.",
+      "page_number": 1
+    }
+  ]
+}
+
+2. For 'true_false' question_type:
+   - set option_a to "True"
+   - set option_b to "False"
+   - set option_c to ""
+   - set option_d to ""
+   - correct_option_letter MUST be "a" (True) or "b" (False).
+3. Do NOT include markdown code fences or conversational text outside the JSON object.`;
+
+  for (const config of pipeline) {
+    const { providerName, providerKey, apiKey } = config;
+    try {
+      if (providerKey.includes('openai') || apiKey.startsWith('sk-')) {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            response_format: { type: 'json_object' }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const jsonText = data.choices?.[0]?.message?.content;
+          if (jsonText) {
+            const parsed = JSON.parse(jsonText);
+            const rawQs = parsed.questions || parsed.data || parsed;
+            if (Array.isArray(rawQs) && rawQs.length > 0) {
+              return cleanAndNormalizeQuestions(rawQs, req);
+            }
+          }
+        } else {
+          console.warn(`[AI Failover Question Gen] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
+        }
+      } else if (providerKey.includes('gemini') || apiKey.startsWith('AIzaSy')) {
+        const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+        for (const m of geminiModels) {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.7, responseMimeType: "application/json" }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (jsonText) {
+              const parsed = JSON.parse(jsonText);
+              const rawQs = parsed.questions || parsed.data || parsed;
+              if (Array.isArray(rawQs) && rawQs.length > 0) {
+                return cleanAndNormalizeQuestions(rawQs, req);
+              }
+            }
+          }
+        }
+        console.warn(`[AI Failover Question Gen] ${providerName} failed. Trying next provider...`);
+      } else if (providerKey.includes('deepseek')) {
+        const res = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            response_format: { type: 'json_object' }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const jsonText = data.choices?.[0]?.message?.content;
+          if (jsonText) {
+            const parsed = JSON.parse(jsonText);
+            const rawQs = parsed.questions || parsed.data || parsed;
+            if (Array.isArray(rawQs) && rawQs.length > 0) {
+              return cleanAndNormalizeQuestions(rawQs, req);
+            }
+          }
+        } else {
+          console.warn(`[AI Failover Question Gen] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
+        }
+      } else if (providerKey.includes('groq') || apiKey.startsWith('gsk_')) {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            response_format: { type: 'json_object' }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const jsonText = data.choices?.[0]?.message?.content;
+          if (jsonText) {
+            const parsed = JSON.parse(jsonText);
+            const rawQs = parsed.questions || parsed.data || parsed;
+            if (Array.isArray(rawQs) && rawQs.length > 0) {
+              return cleanAndNormalizeQuestions(rawQs, req);
+            }
+          }
+        } else {
+          console.warn(`[AI Failover Question Gen] ${providerName} returned HTTP ${res.status}. Trying next provider...`);
+        }
+      }
+    } catch (err) {
+      console.warn(`[AI Failover Question Gen] ${providerName} execution failed:`, err);
+    }
+  }
+
+  // Fallback question builder if all AI calls fail
+  return buildFallbackQuestions(req);
+}
+
+function cleanAndNormalizeQuestions(rawQs: any[], req: GenerateAIQuestionsRequest): GeneratedAIQuestion[] {
+  return rawQs.map((q: any, idx: number) => {
+    const letter = (q.correct_option_letter || 'a').toLowerCase().trim();
+    const validLetter = ['a', 'b', 'c', 'd'].includes(letter) ? letter as 'a'|'b'|'c'|'d' : 'a';
+
+    const isTF = q.question_type === 'true_false' || (q.option_a === 'True' && q.option_b === 'False');
+
+    const assignedPage = q.page_number || (req.bookPages && req.bookPages.length > 0
+      ? req.bookPages[idx % req.bookPages.length].page_number
+      : undefined);
+
+    return {
+      question_text: q.question_text || `Question ${idx + 1} regarding ${req.topic}`,
+      question_type: isTF ? 'true_false' : 'multiple_choice',
+      option_a: isTF ? 'True' : (q.option_a || 'Option A'),
+      option_b: isTF ? 'False' : (q.option_b || 'Option B'),
+      option_c: isTF ? '' : (q.option_c || 'Option C'),
+      option_d: isTF ? '' : (q.option_d || 'Option D'),
+      correct_option_letter: validLetter,
+      explanation: q.explanation || `Detailed analysis of ${req.topic}.`,
+      page_number: assignedPage
+    };
+  });
+}
+
+function buildFallbackQuestions(req: GenerateAIQuestionsRequest): GeneratedAIQuestion[] {
+  const count = req.questionCount || 5;
+  const topic = req.topic || 'General Knowledge';
+  const pages = req.bookPages || [];
+
+  const list: GeneratedAIQuestion[] = [];
+  for (let i = 1; i <= count; i++) {
+    const pageNum = pages.length > 0 ? pages[(i - 1) % pages.length].page_number : undefined;
+    list.push({
+      question_text: `Which core concept best characterizes ${topic} (Item #${i})?`,
+      question_type: 'multiple_choice',
+      option_a: `Primary principle of ${topic}`,
+      option_b: `Secondary application of ${topic}`,
+      option_c: `Theoretical constraint`,
+      option_d: `None of the above`,
+      correct_option_letter: 'a',
+      explanation: `Option A accurately states the foundational concept of ${topic}.`,
+      page_number: pageNum
+    });
+  }
+  return list;
+}
