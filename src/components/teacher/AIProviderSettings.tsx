@@ -250,6 +250,27 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
   };
 
 
+  const decodeApiKey = (rawKey: string): string => {
+    if (!rawKey) return '';
+    let str = rawKey.replace(/^(encrypted_)+/gi, '').replace(/^["']|["']$/g, '').trim();
+    if (!str.startsWith('AIzaSy') && !str.startsWith('gsk_') && !str.startsWith('sk-')) {
+      try {
+        const decoded = atob(str);
+        if (
+          decoded.startsWith('AIzaSy') ||
+          decoded.startsWith('gsk_') ||
+          decoded.startsWith('sk-') ||
+          (decoded.length >= 15 && /^[\x20-\x7E]+$/.test(decoded))
+        ) {
+          str = decoded;
+        }
+      } catch {
+        // Keep str as is
+      }
+    }
+    return str.trim();
+  };
+
   const handleTestKey = async (userKey: UserAIProviderKey) => {
     if (!userKey.ai_providers) return;
 
@@ -257,7 +278,11 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     const providerName = userKey.ai_providers.name;
     const providerKey = (userKey.ai_providers.provider_key || '').toLowerCase();
     const rawKey = userKey.encrypted_api_key || '';
-    const cleanKey = rawKey.replace(/^(encrypted_)+/gi, '').replace(/^["']|["']$/g, '').trim();
+    const cleanKey = decodeApiKey(rawKey);
+
+    const maskedKey = cleanKey.length > 8 
+      ? `${cleanKey.slice(0, 5)}...${cleanKey.slice(-4)}`
+      : '***';
 
     if (!cleanKey) {
       setTestResults(prev => ({
@@ -345,7 +370,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
       toast({
         title: "API Key Verified",
-        description: `${providerName} API key verified successfully with ${testedModel}.`,
+        description: `${providerName} key (${maskedKey}) verified successfully with ${testedModel}.`,
       });
 
     } catch (error: any) {
@@ -361,7 +386,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
       toast({
         title: "API Key Test Failed",
-        description: error.message || "Could not verify API key.",
+        description: `Key (${maskedKey}): ${error.message || "Could not verify API key."}`,
         variant: "destructive",
       });
     } finally {
