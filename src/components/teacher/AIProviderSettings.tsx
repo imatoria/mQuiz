@@ -134,6 +134,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
       const user = authService.getCurrentUser();
       
       if (user) {
+        const sanitizedKey = apiKey.replace(/^["']|["']$/g, '').trim();
         const { data: existing } = await dbService.getProvider().query(
           'SELECT id FROM user_ai_provider_keys WHERE user_id = ? AND ai_provider_id = ?',
           [user.id, selectedProvider.id]
@@ -141,12 +142,12 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
         if (existing && existing.length > 0) {
           await dbService.getProvider().execute(
             'UPDATE user_ai_provider_keys SET encrypted_api_key = ? WHERE id = ?',
-            ['encrypted_' + apiKey, existing[0].id]
+            ['encrypted_' + sanitizedKey, existing[0].id]
           );
         } else {
           await dbService.getProvider().execute(
             'INSERT INTO user_ai_provider_keys (id, user_id, ai_provider_id, encrypted_api_key, created_at) VALUES (?, ?, ?, ?, ?)',
-            [crypto.randomUUID(), user.id, selectedProvider.id, 'encrypted_' + apiKey, new Date().toISOString()]
+            [crypto.randomUUID(), user.id, selectedProvider.id, 'encrypted_' + sanitizedKey, new Date().toISOString()]
           );
         }
       }
@@ -256,7 +257,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
     const providerName = userKey.ai_providers.name;
     const providerKey = (userKey.ai_providers.provider_key || '').toLowerCase();
     const rawKey = userKey.encrypted_api_key || '';
-    const cleanKey = rawKey.replace(/^encrypted_/, '').trim();
+    const cleanKey = rawKey.replace(/^encrypted_/, '').replace(/^["']|["']$/g, '').trim();
 
     if (!cleanKey) {
       setTestResults(prev => ({
@@ -275,7 +276,7 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
       if (providerKey.includes('gemini') || providerName.toLowerCase().includes('gemini')) {
         // Live test call to Google Gemini API
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(cleanKey)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -285,7 +286,8 @@ export const AIProviderSettings = ({ onSettingsUpdate }: AIProviderSettingsProps
 
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
-          throw new Error(errJson.error?.message || `HTTP ${res.status}: Invalid Gemini API Key`);
+          const msg = errJson.error?.message || `HTTP ${res.status}: Invalid Gemini API Key`;
+          throw new Error(msg);
         }
         testedModel = 'gemini-1.5-flash';
 
